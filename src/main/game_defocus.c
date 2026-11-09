@@ -69,7 +69,6 @@ static u64 GetTex0(int type, int tex_cc)
 
 extern void sceVif1PkCnt(XglPacket *packet, int count);
 extern void sceVif1PkAddDataN(XglPacket *packet, const void *data, int count);
-extern u64 Head_0[12];
 typedef struct {
     u32 header[3];
     u32 gif_tag;
@@ -99,6 +98,11 @@ typedef struct {
 
 static void DefocusMainType01(DefocusLayer *layer, XglPacket *packet)
 {
+    static u64 Head_0[12] __asm__("Head.0") __attribute__((aligned(16))) = {
+        0x0ULL, 0x5100000500000000ULL, 0x4000000000008001ULL, 0xEEEEULL,
+        0x60ULL, 0x14ULL, 0x70000ULL, 0x47ULL,
+        0x44ULL, 0x42ULL, 0x0ULL, 0x6ULL
+    };
     int i;
     int z;
     u8 *color;
@@ -154,13 +158,36 @@ typedef struct {
     int width_b;
     int unmodeled_6c[5];
     u64 tex0_b;
+    u64 unmodeled_88; /* last qword of the 0x90-byte packet (TestPrim.2) */
 } DefocusPrimBuf;
-extern u64 TestPrim_1[];
-extern DefocusPrimBuf TestPrim_2;
-extern u64 TestPrim_3[];
 
 static void DefocusMainType02(DefocusLayer *layer, XglPacket *packet)
 {
+    static u64 TestPrim_1[30] __asm__("TestPrim.1") __attribute__((aligned(16))) = {
+        0x0ULL, 0x5100000E00000000ULL, 0xD08B400000008001ULL, 0xEE53531EEEEEEULL,
+        0x131000000ULL, 0x4EULL, 0x71001ULL, 0x47ULL,
+        0x0ULL, 0x14ULL, 0x1ULL, 0x4AULL,
+        0x0ULL, 0x4CULL, 0x0ULL, 0x6ULL,
+        0x8000000080ULL, 0x80ULL, 0x0ULL, 0x0ULL,
+        0x71F700006FF8ULL, 0xFFFFFFFFULL, 0x1C0000002000ULL, 0x0ULL,
+        0x8DF700008FF8ULL, 0xFFFFFFFFULL, 0x0ULL, 0x3FULL,
+        0x0ULL, 0x4AULL
+    };
+    static DefocusPrimBuf TestPrim_2 __asm__("TestPrim.2") __attribute__((aligned(16))) = {
+        { 0x0ULL, 0x5100000800000000ULL, 0x7003400000008001ULL, 0xEE551EEULL, 0x70000ULL, 0x47ULL },
+        0x0ULL,
+        { 0x4C, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xF8, 0x6F, 0x0, 0x0, 0xF7, 0x71, 0x0, 0x0 },
+        0xC000,
+        { 0x0, 0x8FF8, 0x8DF7 },
+        0xC000,
+        { 0x0, 0x0, 0x0, 0x3F, 0x0 },
+        0x0ULL,
+        0x4CULL
+    };
+    static u64 TestPrim_3[6] __asm__("TestPrim.3") __attribute__((aligned(16))) = {
+        0x0ULL, 0x5100000200000000ULL, 0x1000000000008001ULL, 0xEULL,
+        0x0ULL, 0x4CULL
+    };
     TestPrim_1[12] = (u64)sRender.tex0_state_14 | 0x80000;
     TestPrim_1[14] = (u64)0x24020000 | (u64)(sRender.tex0_state_20 << 5) |
                      ((u64)0xC800 << 19);
@@ -206,10 +233,14 @@ typedef struct {
     u32 z1;
     u32 flags1;
 } DefocusType03Packet;
-extern u64 Head_4_00367170[];
 
 static void DefocusMainType03(DefocusLayer *layer, XglPacket *packet)
 {
+    static u64 Head_4_00367170[12] __asm__("Head.4") __attribute__((aligned(16))) = {
+        0x0ULL, 0x5100000500000000ULL, 0x4000000000008001ULL, 0xEEEEULL,
+        0x60ULL, 0x14ULL, 0x7000DULL, 0x47ULL,
+        0x4000000064ULL, 0x42ULL, 0x0ULL, 0x6ULL
+    };
     int i;
     u8 *color;
     DefocusType03Packet *draw;
@@ -278,10 +309,15 @@ typedef struct {
     u32 second_color;
     u32 second_flags;
 } DefocusType05Packet;
-extern u64 Head_5[];
 
 static void DefocusMainType05(DefocusLayer *layer, XglPacket *packet)
 {
+    static u64 Head_5[14] __asm__("Head.5") __attribute__((aligned(16))) = {
+        0x0ULL, 0x5100000600000000ULL, 0x5000000000008001ULL, 0xEEEEEULL,
+        0x0ULL, 0x14ULL, 0x71001ULL, 0x47ULL,
+        0x44ULL, 0x42ULL, 0x0ULL, 0x6ULL,
+        0x0ULL, 0x8ULL
+    };
     DefocusType05Packet *draw;
     u8 *color;
     u32 v;
@@ -371,12 +407,17 @@ typedef struct {
 #define DEFOCUS_SCREEN_Y_BIAS 29175
 #define DEFOCUS_HEAD_WORDS 16
 #define DEFOCUS_SOLID_WORDS 20
-extern const u32 Head_6_00367240[];
 extern void sceVif1PkCnt(XglPacket *packet, int count);
 extern void sceVif1PkAddDataN(XglPacket *packet, const void *data, int count);
 
 static void DefocusMainType06(DefocusSolidRect *rect, XglPacket *packet)
 {
+    static u32 Head_6_00367240[16] __asm__("Head.6") __attribute__((aligned(16))) = {
+        0x0, 0x0, 0x0, 0x51000003,
+        0x8001, 0x20000000, 0xEE, 0x0,
+        0x71001, 0x0, 0x47, 0x0,
+        0x84, 0x0, 0x42, 0x0
+    };
     DefocusSolidPacket *draw;
     DefocusSolidColor *color;
     u32 left;
@@ -422,7 +463,6 @@ typedef struct {
     u64 texture;
     u8 unmodeled_58[8];
 } DefocusTexturedHeader;
-extern DefocusTexturedHeader Head_7;
 typedef struct {
     u32 header[3];
     u32 gif_tag;
@@ -453,6 +493,22 @@ typedef struct {
 
 static void DefocusMainType07(DefocusLayer *layer, XglPacket *packet)
 {
+    static DefocusTexturedHeader Head_7 __asm__("Head.7") __attribute__((aligned(16))) = {
+        {
+            0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+            0x0, 0x0, 0x0, 0x0, 0x5, 0x0, 0x0, 0x51,
+            0x1, 0x80, 0x0, 0x0, 0x0, 0x0, 0x0, 0x40,
+            0xEE, 0xEE, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+            0x60, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+            0x14, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+            0x0, 0x0, 0x7, 0x0, 0x0, 0x0, 0x0, 0x0,
+            0x47, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+            0x44, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+            0x42, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0
+        },
+        0x0ULL,
+        { 0x6, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }
+    };
     const u8 *color;
     float angle;
     float next_angle;
@@ -553,8 +609,6 @@ static void DefocusMainType07(DefocusLayer *layer, XglPacket *packet)
 
 extern unsigned short xglSRand(void);
 extern float xglFRand(void);
-extern u8 rate_9[37];
-extern u64 Head_8[12];
 typedef struct {
     u32 header[3];
     u32 gif_tag;
@@ -589,6 +643,15 @@ typedef struct {
 
 static void DefocusMainType08(DefocusLayer *layer, XglPacket *packet)
 {
+    static u64 Head_8[8] __asm__("Head.8") __attribute__((aligned(16))) = {
+        0x0ULL, 0x5100000300000000ULL, 0x2000000000008001ULL, 0xEEULL,
+        0x71001ULL, 0x47ULL, 0x44ULL, 0x42ULL
+    };
+    static u8 rate_9[37] __asm__("rate.9") = {
+        0x11, 0x09, 0x01, 0x00, 0x00, 0x00, 0x00, 0x08, 0x10, 0x18, 0x20, 0x30, 0x30,
+        0x30, 0x20, 0x18, 0x10, 0x08, 0x00, 0x00, 0x00, 0x00, 0x01, 0x09, 0x11, 0x19,
+        0x21, 0x31, 0x31, 0x31, 0x21, 0x19, 0x11, 0x09, 0x01, 0x00, 0x00
+    };
     DefocusStarHeader *header = DEFOCUS_STAR_HEADER;
     float base_angle;
     float spread;
@@ -928,12 +991,21 @@ typedef struct {
     int h;
 } DefocusType10Layer;
 #define D(i) (*(u32 *)(0x70000000 + (i) * 4))
-extern u64 Copy_10[14];
-extern u64 Head_11[12];
 extern void GameDefocusSet(int index, int type, const int *settings);
 
 static void DefocusMainType10(DefocusType10Layer *layer, XglPacket *packet)
 {
+    static u64 Copy_10[14] __asm__("Copy.10") __attribute__((aligned(16))) = {
+        0x0ULL, 0x5100000600000000ULL, 0x5000000000008001ULL, 0xEEEEEULL,
+        0x0ULL, 0x50ULL, 0x0ULL, 0x51ULL,
+        0x1C000000200ULL, 0x52ULL, 0x2ULL, 0x53ULL,
+        0x0ULL, 0x3FULL
+    };
+    static u64 Head_11[12] __asm__("Head.11") __attribute__((aligned(16))) = {
+        0x0ULL, 0x5100000500000000ULL, 0x4000000000008001ULL, 0xEEEEULL,
+        0x60ULL, 0x14ULL, 0x7000DULL, 0x47ULL,
+        0x44ULL, 0x42ULL, 0x0ULL, 0x6ULL
+    };
   u8 s0;
   int s1;
   int new_var2;
@@ -1057,7 +1129,6 @@ static void DefocusMainType10(DefocusType10Layer *layer, XglPacket *packet)
 
 }
 
-extern DefocusTexturedHeader Head_12;
 typedef struct {
     int x[17];
     int y[17];
@@ -1083,6 +1154,22 @@ typedef struct {
 
 static void DefocusMainType11(DefocusLayer *layer, XglPacket *packet)
 {
+    static DefocusTexturedHeader Head_12 __asm__("Head.12") __attribute__((aligned(16))) = {
+        {
+            0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+            0x0, 0x0, 0x0, 0x0, 0x5, 0x0, 0x0, 0x51,
+            0x1, 0x80, 0x0, 0x0, 0x0, 0x0, 0x0, 0x40,
+            0xEE, 0xEE, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+            0x60, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+            0x14, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+            0x0, 0x0, 0x7, 0x0, 0x0, 0x0, 0x0, 0x0,
+            0x47, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+            0x44, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+            0x42, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0
+        },
+        0x0ULL,
+        { 0x6, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }
+    };
     const u8 *color;
     float phase_x;
     float phase_y;
@@ -1164,12 +1251,35 @@ static void DefocusMainType11(DefocusLayer *layer, XglPacket *packet)
     }
 }
 
-extern const u32 Head_13[];
-extern const u32 Tail_15[];
-extern void (*func_14[])(DefocusLayer *layer, XglPacket *packet);
 
 static void DefocusMain(XglPacket *packet)
 {
+    static u32 Head_13[20] __asm__("Head.13") __attribute__((aligned(16))) = {
+        0x0, 0x0, 0x0, 0x51000004,
+        0x8001, 0x30000000, 0xEEE, 0x0,
+        0x0, 0x0, 0x3F, 0x0,
+        0x31000000, 0x1, 0x4E, 0x0,
+        0x7FC005, 0x6FC, 0x8, 0x0
+    };
+    static void (*func_14[11])(DefocusLayer *layer, XglPacket *packet) __asm__("func.14") __attribute__((aligned(16))) = {
+        (void (*)(DefocusLayer *, XglPacket *))DefocusMainType01,
+        (void (*)(DefocusLayer *, XglPacket *))DefocusMainType02,
+        (void (*)(DefocusLayer *, XglPacket *))DefocusMainType03,
+        (void (*)(DefocusLayer *, XglPacket *))DefocusMainType01,
+        (void (*)(DefocusLayer *, XglPacket *))DefocusMainType05,
+        (void (*)(DefocusLayer *, XglPacket *))DefocusMainType06,
+        (void (*)(DefocusLayer *, XglPacket *))DefocusMainType07,
+        (void (*)(DefocusLayer *, XglPacket *))DefocusMainType08,
+        (void (*)(DefocusLayer *, XglPacket *))DefocusMainType09,
+        (void (*)(DefocusLayer *, XglPacket *))DefocusMainType10,
+        (void (*)(DefocusLayer *, XglPacket *))DefocusMainType11
+    };
+    static u32 Tail_15[16] __asm__("Tail.15") __attribute__((aligned(16))) = {
+        0x0, 0x0, 0x0, 0x51000003,
+        0x8001, 0x20000000, 0xEE, 0x0,
+        0x0, 0x0, 0x3F, 0x0,
+        0x31000000, 0x0, 0x4E, 0x0
+    };
     DefocusLayer *layer;
     int i;
     int type;
@@ -1190,6 +1300,8 @@ static void DefocusMain(XglPacket *packet)
     sceVif1PkCnt(packet, 0);
     sceVif1PkAddDataN(packet, Tail_15, 16);
 }
+
+DefocusLayer GameDefocusParam[16] = {{0}};
 
 void GameDefocusCheck(void)
 {
@@ -1232,7 +1344,6 @@ static void GameDefocusFinalize(int index)
 }
 
 extern int printf(const char *format, ...);
-extern const char D_004C0200[];
 
 void GameDefocusSet(int index, int type, const int *settings)
 {
@@ -1241,7 +1352,7 @@ void GameDefocusSet(int index, int type, const int *settings)
     DefocusLayer *layer;
 
     if (index >= 16) {
-        printf(D_004C0200, index);
+        printf("GameDefocusSet()\244\316\260\372\277\364\244\254\260\333\276\357\244\307\244\271(%d)\241\243\n", index);
         return;
     }
     if (index < 0) {
@@ -1265,7 +1376,6 @@ void GameDefocusSet(int index, int type, const int *settings)
     GameDefocusCheck();
 }
 
-extern const char D_004C0228[];
 
 void GameDefocusQuickSet(int group_index, int preset, int color, int intensity)
 {
@@ -1275,7 +1385,7 @@ void GameDefocusQuickSet(int group_index, int preset, int color, int intensity)
 
     row_address = (u32)GameDefocusParam + (u32)group_index * 0x110u;
     if (group_index >= 4) {
-        printf(D_004C0228, group_index);
+        printf("GameDefocusQuickSet()\244\316\260\372\277\364\244\254\260\333\276\357\244\307\244\271(%d)\241\243\n", group_index);
         return;
     }
 

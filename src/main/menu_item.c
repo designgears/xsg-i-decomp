@@ -91,7 +91,6 @@ typedef struct MenuItemPasWork {
     unsigned char buf[4];
 } MenuItemPasWork;
 extern MenuItemPasWork *MenuItemPas;
-extern char *msg00_0_0036D670[];
 typedef struct MenuItemPasMenuWork {
     unsigned char menu_state[0x30];
     signed char select;
@@ -108,6 +107,7 @@ extern void endPrintExtFunc(int color, int id, void *data);
 
 void MenuItemPasMain(void)
 {
+    static char *msg00[] __asm__("msg00.0") = {"Items", "Special Items", "Character Weapons", "Character Accessories", "Character Ammo", "A.G.W.S. Weapons", "A.G.W.S. Accessories", "A.G.W.S. Ammo", "Segment File"};
   MenuItemPasWork *w = MenuItemPas;
   short target[9];
   short slide[1];
@@ -143,7 +143,7 @@ void MenuItemPasMain(void)
       w->wstate = 3;
       for (i = 0; i < 9; i++)
       {
-        eMessageSet(&w->msg[i], msg00_0_0036D670[i]);
+        eMessageSet(&w->msg[i], msg00[i]);
         w->msg[i].mode = 0x20;
         w->msg[i].x = 0x120;
         w->msg[i].color = w->color + 2;
@@ -234,20 +234,16 @@ typedef struct MenuItemInfoLabels {
     const char *sortPrefix;
     const char *cancel;
 } MenuItemInfoLabels;
-extern const MenuItemInfoLabels D_004C4ED0;
 typedef struct MenuItemInfoHelpLabels {
     const char *unavailable;
     const char *restricted;
 } MenuItemInfoHelpLabels;
-extern const MenuItemInfoHelpLabels D_004DAAC8[];
 typedef struct MenuItemInfoPad {
     unsigned char unmodeled_00[0x2A];
     unsigned short pressed;
     unsigned char unmodeled_2C[8];
     unsigned short activity;
 } MenuItemInfoPad;
-extern const unsigned char D_004DAAD0[];
-extern const char D_004DAAD8[];
 typedef struct MenuItemInfoRow {
     unsigned char unmodeled_00[9];
     signed char state;
@@ -298,8 +294,8 @@ void MenuItemInfoMain(void)
     extern MenuItemWorkData MenuWorkAlias __asm__("MenuWork");
     extern MenuItemInfoPad PadDataAlias __asm__("PadData");
     MenuItemInfoWork *info = MenuItemInfo;
-    MenuItemInfoLabels labels = D_004C4ED0;
-    MenuItemInfoHelpLabels helpLabels = D_004DAAC8[0];
+    MenuItemInfoLabels labels = {{"Categorical Order", "Numerical Order", "Alphabetical Order"}, "Sort by ", "Cancel."};
+    MenuItemInfoHelpLabels helpLabels = {"This item cannot be used here.", "This item can only be used at save points."};
     short targetY;
     short targetHeight;
 
@@ -366,7 +362,7 @@ void MenuItemInfoMain(void)
                     }
                 }
             } else {
-                info->buffer[0] = D_004DAAD0[0];
+                __builtin_memcpy(info->buffer, "", 1);
             }
         }
         break;
@@ -376,7 +372,7 @@ void MenuItemInfoMain(void)
         } else {
             strcpy(info->buffer, labels.sortPrefix);
             strcat(info->buffer, labels.sortMethods[MenuWorkAlias.sortSelection]);
-            strcat(info->buffer, D_004DAAD8);
+            strcat(info->buffer, ".");
         }
         break;
     case 48:
@@ -414,7 +410,6 @@ typedef struct {
 } MenuItemLineWork;
 extern MenuItemLineWork *MenuItemLine;
 typedef struct { int v[5]; } MenuItemLinePos;
-extern MenuItemLinePos D_004C4F38;
 struct MenuItemListMenuWork;
 extern struct MenuItemListMenuWork MenuWork;
 extern void MoveSlide(short *value, short *destination, float speed);
@@ -435,7 +430,7 @@ void MenuItemLineMain(void)
   {
     case 0:
       ln->color = 0xFFFFF0;
-      pos = D_004C4F38;
+      pos = (MenuItemLinePos){{0, 0x134, 0x138, 0x13C, 0x200}};
       for (i = 0; i < 5; i++)
       {
         ln->line[i].b = 0x60;
@@ -651,7 +646,7 @@ typedef struct MenuItemPartyStatusWork {
     /* Two backgrounds, two outlines, then the clipping rectangle. */
     MenuItemPasBox boxes[5];
 } MenuItemPartyStatusWork;
-extern short MenuItemParty[];
+static short MenuItemParty[8];
 extern char *MenuTagTextGet(int index);
 extern int PartyAttackerCheck(int characterId);
 extern void eCursolSet(void *cursor, int mode);
@@ -939,8 +934,7 @@ typedef struct MenuItemWorkDataSA {
     signed char sortSelection; /* +0x72 */
 } MenuItemWorkDataSA;
 extern void *MenuItemStatusAgws;
-extern short MenuItemAgws[];
-extern const char D_004DAAE0[];
+static short MenuItemAgws[8];
 extern const char *MenuCharNameGet(int character);
 extern void eTagFontSet(void *tag, const char *text);
 extern void eTagFontMain(void *tag);
@@ -975,7 +969,7 @@ void MenuItemStatusAgwsMain(void)
             eMessageSet(&status->rows[i].name, MenuCharNameGet(MenuItemAgws[i]));
             status->rows[i].name.mode = 32;
             status->rows[i].name.color = status->rows[i].window.color + 2;
-            eTagFontSet(&status->rows[i].hpLabel, D_004DAAE0);
+            eTagFontSet(&status->rows[i].hpLabel, "\001FHP");
             status->rows[i].hpLabel.work = status->color + 2;
             status->rows[i].hpLabel.color[0] = 112;
             eNumberSet(&status->rows[i].hpNumber, 0);
@@ -1090,7 +1084,6 @@ extern void WindowSPItemChange(MenuItemListWindow *window);
 
 extern void WindowSPSetSelect(MenuItemListWindow *window, unsigned char *saved_selection);
 
-extern const char D_004C4F50[];
 extern int *MenuSortAddrGet(int list);
 extern int MenuSortCheck(int list);
 
@@ -1131,7 +1124,7 @@ void MenuItemListMake00(void)
   next:
     row++;
   }
-  MenuItemList->window.title = D_004C4F50;
+  MenuItemList->window.title = "List\003\215Num";
   MenuItemList->window.row_count = 7;
   MenuItemList->window.columns = 1;
   MenuItemList->window.rows = 0xB;
@@ -1172,7 +1165,7 @@ void MenuItemListMake00_1(void) {
         }
         row++;
     }
-    MenuItemList->window.title = D_004C4F50;
+    MenuItemList->window.title = "List\003\215Num";
     MenuItemList->window.row_count = 7;
     MenuItemList->window.columns = 1;
     MenuItemList->window.rows = 0xB;
@@ -1183,7 +1176,6 @@ void MenuItemListMake00_1(void) {
     WindowSPSetSelect(&MenuItemList->window, MenuKeepSelect);
 }
 
-extern const char D_004C4F60[];
 
 void MenuItemListMake01(unsigned int type)
 {
@@ -1210,7 +1202,7 @@ void MenuItemListMake01(unsigned int type)
   MenuSortChange(0, 0);
   MenuSortChange(0, ((signed char *)&MenuWork)[0x33 + type]);
   MenuListMake(0, 0);
-  MenuItemList->window.title = D_004C4F60;
+  MenuItemList->window.title = "List\003\231Num\003\231\0033Num";
   MenuItemList->window.row_count = 7;
   MenuItemList->window.columns = 2;
   MenuItemList->window.rows = 0xB;
@@ -1227,7 +1219,7 @@ void MenuItemListMake02(void)
   MenuSortChange(0, 0);
   MenuSortChange(0, MenuWork.menuCount);
   MenuListMake(0, 0);
-  MenuItemList->window.title = &D_004C4F60;
+  MenuItemList->window.title = &"List\003\231Num\003\231\0033Num";
   MenuItemList->window.row_count = 7;
   MenuItemList->window.columns = 2;
   MenuItemList->window.rows = 0xB;
@@ -1238,7 +1230,6 @@ void MenuItemListMake02(void)
   WindowSPSetSelect(&MenuItemList->window, &MenuKeepSelect[5]);
 }
 
-extern char msg00_1_0036D698[];
 extern unsigned short PadData[];
 void WindowSPSet(void *);
 void WindowSPMain(void *);
@@ -1255,6 +1246,7 @@ static inline void MenuItemListSlide(MenuItemListData *p, short *slide)
 
 void MenuItemListMain(void)
 {
+  static char msg00[] __asm__("msg00.1") = "List\x03\x8d" "Num";
   MenuItemListData *d;
   MenuItemListData *p;
   MenuItemListData *w;
@@ -1267,7 +1259,7 @@ void MenuItemListMain(void)
       *((short *) (((char *) p) + 0x10)) = 0x210;
       *((int *) (((char *) p) + 0x8)) = 0xFFFFF0;
       *((int *) (0x14 + ((char *) p))) = 0xFFFFF0;
-      p->window.title = msg00_1_0036D698;
+      p->window.title = msg00;
       *((short *) (((char *) p) + 0x12)) = 0x40;
       p->window.row_count = 7;
       p->window.rows = 0xB;
@@ -1473,14 +1465,14 @@ typedef struct MenuSortMenuWork {
     u8 unmodeled_39[0x72 - 0x39];
     signed char sortSelection;  /* +0x72 */
 } MenuSortMenuWork;
-extern const char *msg10_3[];
-extern const char *msg00_2_0036D6A8[];
 extern int MenuSelectWindow();
 extern void eSpriteSet(void *sprite, short spriteId);
 extern void eSpriteMain(void *sprite);
 
 void MenuItemSelectMain(void)
 {
+    static const char *msg00[] __asm__("msg00.2") = {"Categorical\nNumerical\nAlphabetical\nBack"};
+    static const char *msg10[] __asm__("msg10.3") = {"Sort"};
     MenuSortSelectWork *select = MenuItemSelect;
     struct {
         short x;
@@ -1502,8 +1494,8 @@ void MenuItemSelectMain(void)
         windowHeight = 102;
         for (n = 0, m = 0; n < 1; n++, m++) {
         int *color = &select->color;
-        const char **titleTable = msg10_3;
-        const char **sortTextTable = msg00_2_0036D6A8;
+        const char **titleTable = msg10;
+        const char **sortTextTable = msg00;
         short *size = &select->window[n].width;
         int spriteColor;
         int windowState;
@@ -1597,7 +1589,6 @@ extern void *MenuItemIcon;
 typedef struct MenuItemSpriteIds {
     short ids[10];
 } MenuItemSpriteIds;
-extern const MenuItemSpriteIds D_004C4FC0;
 typedef struct MenuItemIconSprite {
     u8 state;
     u8 unmodeled_01[3];
@@ -1624,8 +1615,6 @@ typedef struct MenuItemIconWork {
 extern void eSpriteSet(void *sprite, short spriteId);
 extern void eSpriteMain(void *sprite);
 extern float xglCos(float angle);
-extern const float D_004D7E08;
-extern const float D_004D7E0C;
 
 void MenuItemIconMain(void)
 {
@@ -1640,7 +1629,7 @@ void MenuItemIconMain(void)
     }
     switch (icon->state) {
     case 0: {
-        MenuItemSpriteIds spriteIds = D_004C4FC0;
+        MenuItemSpriteIds spriteIds = {{0x112, 0x110, 0x322, 0x323, 0x324, 0x325, 0x328, 0x326, 0x327, 0x329}};
         signed char *bounce;
 
         icon->style = 0xFFFFF0;
@@ -1717,7 +1706,7 @@ void MenuItemIconMain(void)
         int slideOffset;
 
         icon->sprites[i].x = 264 + i * 208 + icon->displacement[i];
-        cosine = xglCos(i * D_004D7E08);
+        cosine = xglCos(i * 3.1415927f);
         slideOffset = -2 * icon->slide;
         icon->sprites[i].y = 13;
         icon->sprites[i].x += cosine * slideOffset;
@@ -1735,7 +1724,7 @@ void MenuItemIconMain(void)
         int slideOffset;
 
         icon->sprites[i].x = 296 + tab * 22;
-        cosine = xglCos(tab * D_004D7E0C);
+        cosine = xglCos(tab * 0.4487989545f);
         slideOffset = -2 * icon->slide;
         icon->sprites[i].y = 12;
         icon->sprites[i].x += cosine * slideOffset;
@@ -1767,13 +1756,13 @@ typedef struct MenuItemExWork {
     int color2;
 } MenuItemExWork;
 extern MenuItemExWork *MenuItemEx;
-extern char *msg00_4_0036D6B8[];
 extern void eMessageSet(void *message, const char *text);
 extern void eMessageMain(void *message);
 extern void MoveSlide(short *value, short *destination, float speed);
 
 void MenuItemExMain(void)
 {
+  static char *msg00[] __asm__("msg00.4") = {"\x0c\x80\x80\x80\x1e\x02\xa1\xa7" "Sort"};
   MenuItemExWork *ex = MenuItemEx;
   int *col = &ex->color2;
   short target[8];
@@ -1791,7 +1780,7 @@ void MenuItemExMain(void)
       x = 0x220;
       y = 0x159;
       m = 0x20;
-      eMessageSet(ex->message, msg00_4_0036D6B8[0]);
+      eMessageSet(ex->message, msg00[0]);
       ex->x = x;
       (*(new_var = &ex))->y = y;
       *col = ex->color;
@@ -1804,7 +1793,7 @@ void MenuItemExMain(void)
       if (mw[3] == 0x20)
     {
       target[0] = 400;
-      p = ((unsigned char *) msg00_4_0036D6B8[0]) + 1;
+      p = ((unsigned char *) msg00[0]) + 1;
       if ((*((int *) (mw + 0x50))) >= 0)
       {
         p[2] = 0x80;
@@ -2073,8 +2062,6 @@ extern MenuItemCharacterPoints *func_A19210(int character);
 extern int func_00A114C0(int character, int itemId);
 extern void ChangeTopLevel(int level);
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
-extern const char D_004DAB00[];
-extern const char D_004DAB08[];
 short WindowSPSelect(void *, int);
 void WindowSPKeepSelect(void *cursor, unsigned char *keep);
 void WindowSPKeepSelectCheck(unsigned char *keep);
@@ -2120,8 +2107,6 @@ typedef struct MenuItemSegmentAlignedWork {
     MenuItemSegmentOutline outlines[2];
     int texture;
 } __attribute__((aligned(32))) MenuItemSegmentAlignedWork;
-extern const char *tag_msg_5[];
-extern const char D_004DAAF8[];
 extern const char *MenuSegmentInfoTextGet(int segment);
 extern const char *MenuSegmentItemNameGet(int segment);
 extern const char *MenuSegmentMapNameGet(int segment);
@@ -2206,11 +2191,12 @@ void MenuItemSegmentMain(void)
         eRibbonSet(&segment->ribbon, 3);
         {
             short labelSpriteIds[2] = {4886, 4887};
+        static const char *tag_msg[] __asm__("tag_msg.5") = {"Location", "Rare item"};
 
             for (i = 0; i < 2; i++) {
                 WindowDXSet(&segment->windows[i]);
                 segment->windows[i].color = 0;
-                segment->windows[i].tag_id = tag_msg_5[i];
+                segment->windows[i].tag_id = tag_msg[i];
                 segment->windows[i].x = 544;
                 segment->windows[i].width = 247;
                 segment->windows[i].height = (2 - i) * 24 + 7;
@@ -2219,7 +2205,7 @@ void MenuItemSegmentMain(void)
                 WindowDXMain(&segment->windows[i]);
                 segment->windows[i].state = 3;
                 eSpriteSet(&segment->labels[i], labelSpriteIds[i]);
-                eMessageSet(&segment->text[i], D_004DAAF8);
+                eMessageSet(&segment->text[i], "\262\276");
                 segment->text[i].mode = 32;
             }
         }
@@ -2376,7 +2362,7 @@ void MenuItemSegmentMain(void)
             segment->text[1].work = segment->windows[1].color + 2;
             eMessageMain(&segment->text[1]);
         } else {
-            description[0] = D_004DAAD0[0];
+            __builtin_memcpy(description, "", 1);
         }
     }
     segment->texture = WindowTexAddrGet(2);
@@ -3005,8 +2991,19 @@ int MenuItem(void)
     MenuItemExMain();
     MenuItemLineMain();
     MenuItemSegmentMain();
-    xglFontDebugPrintf(0, 0x40, D_004DAB00);
-    xglFontDebugPrintf(0, 0x48, D_004DAB08, MenuWork_MI.selectDir);
-    xglFontDebugPrintf(0, 0x50, D_004DAB08, MenuWork_MI.selectionMode);
+    xglFontDebugPrintf(0, 0x40, "item");
+    xglFontDebugPrintf(0, 0x48, "lst%2d", MenuWork_MI.selectDir);
+    xglFontDebugPrintf(0, 0x50, "lst%2d", MenuWork_MI.selectionMode);
     return 0;
 }
+
+MenuItemPasWork *MenuItemPas = 0;
+void *MenuItemInfo = 0;
+MenuItemLineWork *MenuItemLine = 0;
+void *MenuItemStatus = 0;
+void *MenuItemStatusAgws = 0;
+MenuItemListData *MenuItemList = 0;
+void *MenuItemSelect = 0;
+void *MenuItemIcon = 0;
+MenuItemExWork *MenuItemEx = 0;
+void *MenuItemSegment = 0;

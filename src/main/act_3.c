@@ -161,10 +161,10 @@ extern ActShadowRenderState sRender;
 
 extern void nmlModelDirectSend(int mode, u8 *data, int count);
 
-extern ActShadowCommand Head_9;
+extern ActShadowCommand Head_9 __asm__("Head.9");
 
 
-extern ActShadowEndPacket Tail_10;
+extern ActShadowEndPacket Tail_10 __asm__("Tail.10");
 
 
 typedef unsigned int ActShadowQuadword __attribute__((mode(TI)));
@@ -402,7 +402,6 @@ typedef struct {
 
 extern u8 *D_00478CCC[];
 
-extern float D_004D85C8;
 
 extern int F2I(float value);
 
@@ -473,7 +472,7 @@ typedef struct {
     ActShadowQuadword qwords[4];
 } ActShadowMatrixStorage;
 
-extern u8 TestEnv_3_00478D80[0x30];
+extern u8 TestEnv_3_00478D80[0x30] __asm__("TestEnv.3");
 
 
 
@@ -565,7 +564,7 @@ static void Footstep(ActShadowActor *actor)
             sound = 0;
             contacts = D_00478CCC[((ActFootstepSaveData *)SaveData)->language];
             if (motion == 3) contacts += 2;
-            frame = F2I(actor->motion_frame / D_004D85C8);
+            frame = F2I(actor->motion_frame / 0.033333335f);
             contact_frame = contacts[0];
             before_first = previous < contact_frame;
             if ((before_first != 0 && frame >= contact_frame) ||
@@ -683,9 +682,9 @@ typedef struct {
 
 extern void xglMatrixUnit(float matrix[4][4]);
 extern void xglMatrixRotY(Matrix4 destination, Matrix4 source, float angle);
-extern u8 Head_1[80];
-extern u8 Tail_2[48];
-extern u8 rgbaw_0[16];
+extern u8 Head_1[80] __asm__("Head.1");
+extern u8 Tail_2[48] __asm__("Tail.2");
+extern u8 rgbaw_0[16] __asm__("rgbaw.0");
 
 static void DrawCircleShadow(void *actor_pointer)
 {
@@ -905,9 +904,6 @@ static void DrawZeldaShadowSub(ActShadowScratchpad *scratchpad,
     nmlModelDirectSend(1, (u8 *)&scratchpad->packet, 0x12);
 }
 
-extern float D_004D85EC;
-extern volatile float D_004D85F0;
-extern float D_004D85F4;
 extern StudioCamera *xglStudioGetCamera2(int camera_id);
 extern float atan2f(float y, float x);
 extern float sqrtf(float x);
@@ -918,9 +914,9 @@ static void DrawZeldaShadow(char *obj) {
 
     float h = *(float *)(obj + 0x4DC);
     if (!(h != -1000.0f)) {
-        *(float *)0x70000130 = *(float *)(obj + 0x14) + D_004D85EC;
+        *(float *)0x70000130 = *(float *)(obj + 0x14) + 0.02f;
     } else {
-        *(float *)0x70000130 = h + D_004D85F0;
+        *(float *)0x70000130 = h + 0.02f;
     }
     for (i = 0; i < 8; i++) {
         if (xglStudioGetCamera2(i)->active == 1) {
@@ -936,8 +932,8 @@ static void DrawZeldaShadow(char *obj) {
         : : "r"((void *)0x70000010), "r"(*(void **)(obj + 0x824)) : "$2", "memory");
     dir = (float *)(obj + 0xA0);
     *(float *)0x70000138 = __builtin_sqrtf(1.0f - dir[1] * dir[1]) * 0.5f;
-    if (*(float *)0x70000138 < D_004D85F4) {
-        *(float *)0x70000138 = D_004D85F4;
+    if (*(float *)0x70000138 < 0.15f) {
+        *(float *)0x70000138 = 0.15f;
     }
     *(float *)0x70000134 = atan2f(-dir[0], -dir[2]);
     DrawZeldaShadowSub((void *)0x70000000, *(char **)(obj + 0x824) + 0x780);
@@ -1115,7 +1111,6 @@ static void DrawDropShadowSubFront(ActDropShadowFrontState *shadow, int count)
     }
 }
 
-extern const float D_004D85F8;
 extern void xglMatrixTrans(Matrix4 destination, const Matrix4 source,
                            const float translation[4]);
 extern void xglVectorOuter(Vector4 *destination, const Vector4 *left,
@@ -1178,7 +1173,7 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
                 work->temporary[1] = 0.0f;
                 work->temporary[2] = 0.0f;
                 work->temporary[(signed char)next_contact[2]] =
-                    I2F((signed char)next_contact[1]) * D_004D85F8;
+                    I2F((signed char)next_contact[1]) * 0.01f;
                 work->temporary[3] = 1.0f;
                 xglMatrixTrans(translated_end->elements,
                                 first->elements, work->temporary);
@@ -1200,12 +1195,12 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
             xglVectorOuter(perpendicular, (const Vector4 *)(const void *)work->temporary,
                              light_direction);
             xglVectorLength(&length, perpendicular);
-            xglVectorScaleXYZ(I2F((signed char)contact[1]) * D_004D85F8 / length,
+            xglVectorScaleXYZ(I2F((signed char)contact[1]) * 0.01f / length,
                                 &work->outer_offset, perpendicular);
-            xglVectorScaleXYZ(I2F((signed char)contact[2]) * D_004D85F8 / length,
+            xglVectorScaleXYZ(I2F((signed char)contact[2]) * 0.01f / length,
                                 inner_offset, perpendicular);
             xglVectorLength(&length, (const Vector4 *)(const void *)work->temporary);
-            xglVectorScaleXYZ(I2F((signed char)contact[1]) * D_004D85F8 / length,
+            xglVectorScaleXYZ(I2F((signed char)contact[1]) * 0.01f / length,
                                 axial_offset, (const Vector4 *)(const void *)work->temporary);
 
             work->temporary[3] = ground_height;
@@ -1369,8 +1364,8 @@ typedef struct {
     u16 kind_value;
     DropShadowContactRecord *contacts;
 } DropShadowContactDefinition;
-extern DropShadowHeadPacket Head_4_00478DB0;
-extern ActShadowEndPacket Tail_5;
+extern DropShadowHeadPacket Head_4_00478DB0 __asm__("Head.4");
+extern ActShadowEndPacket Tail_5 __asm__("Tail.5");
 extern DropShadowContactDefinition DropShadowDefineTable[10];
 
 static void DrawDropShadow(ActShadowActor *actor_pointer)
@@ -1454,12 +1449,10 @@ static void DrawDropShadow(ActShadowActor *actor_pointer)
     nmlModelDirectSend(1, (u8 *)&Tail_5, 3);
 }
 
-extern DropShadowHeadPacket Head_6_00478E30;
-extern u8 TestEnv_7[48];
-extern ActShadowEndPacket Tail_8;
-extern const DrawDropCircleIndexTable D_004D1DD8;
-extern const float D_004D8604;
-extern const float D_004D8608;
+extern DropShadowHeadPacket Head_6_00478E30 __asm__("Head.6");
+extern u8 TestEnv_7[48] __asm__("TestEnv.7");
+extern ActShadowEndPacket Tail_8 __asm__("Tail.8");
+const DrawDropCircleIndexTable D_004D1DD8 = { 4, 0, 1, 6, 1, 6, 7, 2, 7, 2, 3, 5, 0xC, 9, 8, 0xF, 8, 0xF, 0xE, 0xB, 0xE, 0xB, 0xA, 0xD, 0, 4, 8, 0xC, 4, 1, 0xC, 9, 1, 7, 9, 0xF, 7, 3, 0xF, 0xB, 3, 5, 0xB, 0xD, 5, 2, 0xD, 0xA, 2, 6, 0xA, 0xE, 6, 0, 0xE, 8 };
 
 static void DrawDropCircle(ActShadowActor *actor)
 {
@@ -1499,7 +1492,7 @@ static void DrawDropCircle(ActShadowActor *actor)
         work->temporary[1] = actor->height_override + 0.02f;
     }
     radius = actor->shadow_radius;
-    corner = radius * D_004D8604;
+    corner = radius * 0.7f;
     vertices[4].x = vertices[5].x = center[0];
     vertices[0].x = vertices[2].x = center[0] + corner;
     vertices[1].x = vertices[3].x = center[0] - corner;
@@ -1507,7 +1500,7 @@ static void DrawDropCircle(ActShadowActor *actor)
     vertices[7].x = center[0] - radius;
     vertices[0].y = vertices[1].y = vertices[2].y =
         vertices[3].y = vertices[4].y = vertices[5].y =
-        vertices[6].y = vertices[7].y = work->temporary[1] + D_004D8608;
+        vertices[6].y = vertices[7].y = work->temporary[1] + 0.2f;
     vertices[6].z = vertices[7].z = center[2];
     vertices[0].z = vertices[1].z = center[2] + corner;
     vertices[2].z = vertices[3].z = center[2] - corner;
@@ -1638,3 +1631,23 @@ void ACT_DrawShadow(ActDrawShadowActor *actor)
 void ACT_DrawShadowInit(void)
 {
 }
+
+/* ---- initialized .data (original order) ---- */
+static u8 foot_sion[4] __attribute__((section(".data"))) = { 2, 0x10, 1, 0xC };
+static u8 foot_kosmos[4] __attribute__((section(".data"))) = { 2, 0x10, 1, 0xC };
+static u8 foot_chaos[4] __attribute__((section(".data"))) = { 2, 0x10, 1, 0xC };
+static u8 foot_momo[4] __attribute__((section(".data"))) = { 2, 0xF, 1, 0xC };
+static u8 foot_ziggy[4] __attribute__((section(".data"))) = { 2, 0x10, 1, 0xC };
+static u8 foot_jr[4] __attribute__((section(".data"))) = { 2, 0x10, 1, 0xC };
+static u8 *foot_tbl[6] = { foot_sion, foot_kosmos, foot_chaos, foot_momo, foot_ziggy, foot_jr };
+static u8 rgbaw_0[16] __asm__("rgbaw.0") = { 2, 3, 1, 1, 1, 1, 1, 0, 2, 3, 1, 1, 1, 1, 1, 0 };
+static u8 Head_1[80] __asm__("Head.1") __attribute__((aligned(16))) = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0x51, 1, 0x80, 0, 0, 0, 0, 0, 0x30, 0xEE, 0xE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x31, 1, 0, 0, 0, 0x4E, 0, 0, 0, 0, 0, 0, 0, 1, 0x30, 5, 0, 0, 0, 0, 0, 0x47, 0, 0, 0, 0, 0, 0, 0, 0x44, 0, 0, 0, 0, 0, 0, 0, 0x42, 0, 0, 0, 0, 0, 0, 0 };
+static u8 Tail_2[48] __asm__("Tail.2") = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0x51, 1, 0x80, 0, 0, 0, 0, 0, 0x10, 0xE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x31, 0, 0, 0, 0, 0x4E, 0, 0, 0, 0, 0, 0, 0 };
+static u8 TestEnv_3_00478D80[0x30] __asm__("TestEnv.3") = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0x51, 1, 0x80, 0, 0, 0, 0, 0, 0x10, 0xE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x3F, 0, 0, 0, 0, 0, 0, 0 };
+static DropShadowHeadPacket Head_4_00478DB0 __asm__("Head.4") = { 0, 0, 0x51000004, 0x8001, 0x30000000, 0xEEE, 0, 0, 0x42, 0, 0, 6, 0, 0, 0x14, 0 };
+static ActShadowEndPacket Tail_5 __asm__("Tail.5") = { 0, 0, 0x51000002, 0x8001, 0x10000000, 0xE, 0, 0, 0x4C, 0 };
+static DropShadowHeadPacket Head_6_00478E30 __asm__("Head.6") = { 0, 0, 0x51000004, 0x8001, 0x30000000, 0xEEE, 0, 0, 0x42, 0, 0, 6, 0, 0, 0x14, 0 };
+static u8 TestEnv_7[48] __asm__("TestEnv.7") = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0x51, 1, 0x80, 0, 0, 0, 0, 0, 0x10, 0xE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x3F, 0, 0, 0, 0, 0, 0, 0 };
+static ActShadowEndPacket Tail_8 __asm__("Tail.8") = { 0, 0, 0x51000002, 0x8001, 0x10000000, 0xE, 0, 0, 0x4C, 0 };
+static ActShadowCommand Head_9 __asm__("Head.9") = { 0, 0, 0x51000009, 0x8001, 0x80034000, 0xE551EEEE, 0, 0x131000000LL, 0x4E, 0, 0x71001LL, 0x47, 0, 0x6FC007FC00ALL, 8, 0, 0, 0x4C, 0, 0, 0, 0x80, 0x6FF8, 0, 0x71F7, 0, 0xF00000, 0, 0x8FF8, 0, 0x8DF7, 0, 0xF00000, 0, 0, 0x4C, 0 };
+static ActShadowEndPacket Tail_10 __asm__("Tail.10") = { 0, 0, 0x51000002, 0x8001, 0x10000000, 0xE, 0, 0x31000000LL, 0x4E, 0 };

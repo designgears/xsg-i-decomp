@@ -299,25 +299,32 @@ typedef struct ParticleState {
 
 extern void ppSetPos(ParticleState *particle, float x, float y, float z);
 
-extern ParticleState pos1;
+static ParticleState pos1 __attribute__((aligned(16)));
 
-extern ParticleState pos2;
+static ParticleState pos2 __attribute__((aligned(16)));
 
-extern CollisionPoint box1;
+static CollisionPoint box1 __attribute__((aligned(16)));
 
-extern CollisionPoint box2;
+static CollisionPoint box2 __attribute__((aligned(16)));
 
-extern CollisionPoint box3;
+static CollisionPoint hitpos __attribute__((aligned(16)));
 
-extern CollisionPoint box4;
+static CollisionPoint box3 __attribute__((aligned(16)));
 
-extern CollisionPoint hitpos;
+static CollisionPoint box4 __attribute__((aligned(16)));
 
-extern float radius;
+static struct InitTestCamera *pCamera_004DC65C __asm__("pCamera");
 
-extern int hit;
+static float radius;
 
-extern int mode_004DB9D8;
+static int mode = 0;
+
+static int hit = 0;
+
+/* Debug colours (r, g, b, a); nothing in this build reads them. */
+static int col1[4] = {0x80, 0x80, 0x80, 0xFF};
+static int col2[4] = {0xA0, 0x00, 0x00, 0xFF};
+static int col3[4] = {0x00, 0x90, 0x90, 0xFF};
 
 typedef struct InitTestCamera {
     unsigned char pad[0xA0];
@@ -333,7 +340,6 @@ extern float D_004D827C;
 extern float D_004D8280;
 extern float D_004D8284;
 extern float D_004D8288;
-extern InitTestCamera *pCamera_004DC65C;
 extern void xglStudioInit(void);
 extern void xglStudioChange(int);
 extern void xglStudioMainCameraInit(void);
@@ -377,7 +383,7 @@ static int InitTest(void)
     hitpos.z = 0.0f;
     hitpos.y = 0.0f;
     hitpos.w = radius;
-    mode_004DB9D8 = 0;
+    mode = 0;
     hit = 0;
     return 1;
 }
@@ -401,9 +407,6 @@ extern CollisionPadState PadData;
 static int CheckBallBoxCollision(CollisionPoint *hit_position,
                                  const BallBoxCollisionArgs *args, int mode);
 static int InitTest(void);
-extern const float D_004D828C;
-extern const char D_004CBC58[];
-extern const char D_004CBC70[];
 extern void xglRenderClearFrame(void);
 extern void xglSleep(void);
 extern void xglFontDebugPrintf(int x, int y, const char *text, ...);
@@ -425,9 +428,9 @@ void ColliTest(void)
     if ((PadData.state.bits & 0x08000100ULL) == 0x08000100ULL)
         return;
 
-    move_step = D_004D828C;
+    move_step = 0.1f;
     do {
-        switch (mode_004DB9D8) {
+        switch (mode) {
         case 0:
         default:
             particle = &pos1;
@@ -447,7 +450,7 @@ void ColliTest(void)
         if (PadData.movement & 0x2000)
             particle->position.x += move_step;
 
-        switch (mode_004DB9D8) {
+        switch (mode) {
         case 0:
         default:
             if (!(PadData.state.halves.held & 0x40)) {
@@ -490,26 +493,37 @@ void ColliTest(void)
         ppNextEnd(particle);
 
         if (PadData.state.halves.pressed & 0x20) {
-            switch (mode_004DB9D8) {
+            switch (mode) {
             case 0:
             default:
-                mode_004DB9D8 = 1;
+                mode = 1;
                 ppSetPos(&pos2, pos1.position.x, pos1.position.y,
                          pos1.position.z);
                 break;
             case 1:
-                mode_004DB9D8 = 2;
+                mode = 2;
                 ppSetPos(&pos1, pos2.position.x, pos2.position.y,
                          pos2.position.z);
                 break;
             }
         }
-        if (mode_004DB9D8 == 1)
+        if (mode == 1)
             pos2.position.w = radius;
         pos1.position.w = radius;
         if (hit)
-            xglFontDebugPrintf(0, 8, D_004CBC58);
-        xglFontDebugPrintf(0, 0, D_004CBC70);
+            xglFontDebugPrintf(0, 8, "\x0B\x0C\x80\0\0CollisionHit!!");
+        xglFontDebugPrintf(0, 0, "\x0B" "CollisionTest");
         xglSleep();
     } while ((PadData.state.bits & 0x08000100ULL) != 0x08000100ULL);
 }
+
+/* Shift-JIS full-width menu captions (\n + TITLE, DEBUG, CFDEBUG, BATTLEDEBUG,
+ * BATTLE) kept in this TU's .rodata; no code here refers to them. */
+const char D_004CBC80[] = "\x0A\xA3\xD4\xA3\xC9\xA3\xD4\xA3\xCC\xA3\xC5";
+const char D_004CBC90[] = "\x0A\xA3\xC4\xA3\xC5\xA3\xC2\xA3\xD5\xA3\xC7";
+const char D_004CBCA0[] = "\x0A\xA3\xC3\xA3\xC6\xA3\xC4\xA3\xC5\xA3\xC2\xA3\xD5\xA3\xC7";
+const char D_004CBCB0[] = "\x0A\xA3\xC2\xA3\xC1\xA3\xD4\xA3\xD4\xA3\xCC\xA3\xC5\xA3\xC4\xA3\xC5\xA3\xC2\xA3\xD5\xA3\xC7";
+const char D_004CBCC8[] = "\x0A\xA3\xC2\xA3\xC1\xA3\xD4\xA3\xD4\xA3\xCC\xA3\xC5";
+
+/* Unreferenced zero fill that ends the original .rodata (alignment of the next TU). */
+static const short D_004CBCD6 __attribute__((section(".rodata"))) = 0;

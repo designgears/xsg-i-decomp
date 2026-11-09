@@ -65,7 +65,17 @@ typedef struct CameraRecord {
     unsigned char unmodeled_12b8[8]; /* +0x12b8 to the established 0x12c0 stride */
 } CameraRecord;
 
-extern CameraRecord tcamera[8];
+static unsigned int tblHand[9] = {
+    0x54453030, 0x54453031, 0x54453032, 0x54453033,
+    0x54453034, 0x54453035, 0x54453036, 0x54453037, 0
+};
+CameraRecord tcamera[8] __attribute__((aligned(16))) = {0};
+float newsToDirection[16] = {
+    0.0f, 3.141592741f, 1.570796371f, 2.356194496f,
+    -1.570796371f, -2.356194496f, 0.0f, 0.0f,
+    0.0f, 0.0f, 0.7853981853f, 0.0f,
+    -0.7853981853f, 0.0f, 0.0f, 0.0f
+};
 
 
 extern void ACT_resetParent(Actor *actor, Actor *other);
@@ -106,7 +116,6 @@ extern void MDL_setGroupVisible(void *model, int part, int visible);
 
 extern void MDL_setVisible(void *model, int part, int visible);
 
-extern unsigned int tblHand[9];
 
 
 struct JntProducer;
@@ -542,9 +551,6 @@ extern void JNT_setCurve(void *static_value_records, void *value_records);
 extern void ANM_update(void *anim);
 extern void FCV2_setStep(float frame_step);
 extern unsigned char enepc[];
-extern const char D_004D1800[];
-extern const char D_004DC230[];
-extern const char D_004D1810[];
 
 static void ACT_updateMotionSub(Actor *actor, int pause)
 {
@@ -642,10 +648,10 @@ block_12:
                 }
                 if (temp_20 != 0) {
                     char *name = (char *)temp_20 + 0x10;
-                    if (strstr(name, D_004DC230) != 0) {
+                    if (strstr(name, "chaos") != 0) {
                         var_18 |= 0x40000;
                     }
-                    if ((strstr(name, D_004D1800) != 0) || (strstr(name, D_004D1810) != 0)) {
+                    if ((strstr(name, "boss_016") != 0) || (strstr(name, "boss_019") != 0)) {
                         var_18 |= 0x20000;
                     }
                 }
@@ -1084,9 +1090,6 @@ typedef struct ActInitMotionEnemy {
     unsigned char unmodeled_3888[0x38b0 - 0x3888];
 } ActInitMotionEnemy;
 extern ActInitMotionEnemy act_im_enepc[16] __asm__("enepc");
-extern const char D_004DC238[];
-extern float min_0[];
-extern float max_1[];
 extern void *JNT_computeMatrix(void *work, void *channels, int argument);
 extern void *LOOK_sebo_cont(void *work, void *channels, int argument);
 extern void *LOOK_head_cont(void *work, void *channels, int argument);
@@ -1100,6 +1103,8 @@ extern void *LOOK_eyeR_cont(void *work, void *channels, int argument);
 
 void ACT_initMotion(Actor *actor)
 {
+    static float min[4];
+    static float max[4];
     ActorAnimationState *animation = &actor->animation;
     ActorAnimSlot *slot = &animation->slot;
     int enemyIndex;
@@ -1125,7 +1130,7 @@ void ACT_initMotion(Actor *actor)
     ACT_IM_ADD(actor->jointProducer, 0, JNT_computeMatrix, 0);
 
     do {
-        if (actor->modelResource != 0 && strstr((char *)actor->modelResource + 0x10, D_004DC238) != 0) {
+        if (actor->modelResource != 0 && strstr((char *)actor->modelResource + 0x10, "_face") != 0) {
             ACT_IM_ADD(actor->jointProducer, 5, LOOK_eyeL_cont, actor);
             ACT_IM_ADD(actor->jointProducer, 8, LOOK_eyeR_cont, actor);
             break;
@@ -1136,13 +1141,13 @@ void ACT_initMotion(Actor *actor)
             act_im_enepc[enemyIndex].look_target.lookat_point = 0;
             act_im_enepc[enemyIndex].look_target.control = 0;
             act_im_enepc[enemyIndex].look_angles.x = act_im_enepc[enemyIndex].look_angles.y = act_im_enepc[enemyIndex].look_angles.z = 0.0f;
-            act_im_enepc[enemyIndex].look_limits.minimum = min_0;
-            act_im_enepc[enemyIndex].look_limits.maximum = max_1;
-            min_0[0] = -0.52359879f;
-            min_0[1] = -1.39626348f;
-            min_0[2] = max_1[0] = 0.52359879f;
-            max_1[1] = 1.39626348f;
-            max_1[2] = 1.91986215f;
+            act_im_enepc[enemyIndex].look_limits.minimum = min;
+            act_im_enepc[enemyIndex].look_limits.maximum = max;
+            min[0] = -0.52359879f;
+            min[1] = -1.39626348f;
+            min[2] = max[0] = 0.52359879f;
+            max[1] = 1.39626348f;
+            max[2] = 1.91986215f;
         }
         ACT_IM_ADD(actor->jointProducer, 36, LOOK_sebo_cont, actor);
         ACT_IM_ADD(actor->jointProducer, 48, LOOK_head_cont, actor);

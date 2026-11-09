@@ -15,12 +15,8 @@ struct HddInstallRenderState {
     u16 buffer_select;
 };
 
-extern struct HddInstallParams *HddInstallParam;
+static struct HddInstallParams *HddInstallParam;
 extern struct HddInstallRenderState sRender;
-extern u64 TestEnv_0_00A0FE10[];
-extern u8 TransEnv_1_00A0FE70[];
-extern u8 FlushEnv_2_00A0FE90[];
-extern const char D_00A11620[];
 
 extern void sceVif1PkCnt(XglPacket *packet, int count);
 extern void sceVif1PkAddDataN(XglPacket *packet, const void *data, int count);
@@ -28,21 +24,40 @@ extern void xglFontPrintDirectOT(int color, const char *text);
 
 static void HddInstallSync(void)
 {
+    /* GS register packets (GIF A+D tags); TestEnv's word 4 is the FRAME
+     * register, rewritten every call with the current draw buffer. */
+    static u64 TestEnv[12] __attribute__((aligned(16))) = {
+        0, 0x5100000500000000ULL,
+        0x1000000000000004ULL, 0xE,
+        0, 0x50,
+        0, 0x51,
+        0x000001C000000200ULL, 0x52,
+        0, 0x53,
+    };
+    static u64 TransEnv[4] __attribute__((aligned(16))) = {
+        0, 0x5100000100000000ULL,
+        0x0800000000007000ULL, 0,
+    };
+    static u64 FlushEnv[6] __attribute__((aligned(16))) = {
+        0, 0x5100000200000000ULL,
+        0x1000000000008001ULL, 0xE,
+        0, 0x3F,
+    };
     XglPacket *packet;
     u8 *transfer_buffer;
 
     packet = xglPacketGetCurrent();
     transfer_buffer = HddInstallParam->transfer_buffer;
-    TestEnv_0_00A0FE10[4] = ((u64)sRender.buffer_select << 37) | ((u64)0x8000 << 36);
+    TestEnv[4] = ((u64)sRender.buffer_select << 37) | ((u64)0x8000 << 36);
     sceVif1PkCnt(packet, 0);
-    sceVif1PkAddDataN(packet, TestEnv_0_00A0FE10, 0x18);
-    sceVif1PkRef(packet, TransEnv_1_00A0FE70, 2, 0, 0, 0);
+    sceVif1PkAddDataN(packet, TestEnv, 0x18);
+    sceVif1PkRef(packet, TransEnv, 2, 0, 0, 0);
     sceVif1PkRef(packet, transfer_buffer, 0x7000, 0, 0x51007000, 0);
-    sceVif1PkRef(packet, TransEnv_1_00A0FE70, 2, 0, 0, 0);
+    sceVif1PkRef(packet, TransEnv, 2, 0, 0, 0);
     sceVif1PkRef(packet, transfer_buffer + 0x70000, 0x7000, 0, 0x51007000, 0);
-    sceVif1PkRef(packet, FlushEnv_2_00A0FE90, 3, 0, 0, 0);
+    sceVif1PkRef(packet, FlushEnv, 3, 0, 0, 0);
     xglSleep();
-    xglFontPrintDirectOT(-1, D_00A11620);
+    xglFontPrintDirectOT(-1, "\017D\000\200\015\003");
 }
 
 struct TitlePadData {
@@ -52,28 +67,6 @@ struct TitlePadData {
 
 extern struct TitlePadData PadData;
 
-extern const char D_00A11628[];
-extern const char D_00A11688[];
-extern const char D_00A11698[];
-extern const char D_00A116B0[];
-extern const char D_00A116C0[];
-extern const char D_00A116E0[];
-extern const char D_00A116F8[];
-extern const char D_00A11708[];
-extern const char D_00A11718[];
-extern const char D_00A11738[];
-extern const char D_00A117A0[];
-extern const char D_00A117B8[];
-extern const char D_00A117C8[];
-extern const char D_00A117D8[];
-extern const char D_00A117F0[];
-extern const char D_00A11800[];
-extern const char D_00A11818[];
-extern const char D_00A11828[];
-extern char sztmp_5[];
-extern const char *sztmp_6[];
-extern char anim_4[];
-extern u8 D_00A13654;
 extern void tyaDrawGauge(void *g);
 extern void xglFontPrintf(int x, int y, unsigned int color, void *arg);
 extern int xglJpegDecode(void *request_address);
@@ -104,32 +97,36 @@ static int HddInstallCB(int arg0, int arg1, int *arg2) {
         HddInstallSync();
         return *arg2;
     }
-    xglFontPrint(0x20, 0x10, -1, D_00A11628);
+    xglFontPrint(0x20, 0x10, -1, "\031\001\245\244\245\363\245\271\245\310\241\274\245\353\303\346\244\307\244\271\241\243\241\310\243\320\243\354\243\341\243\371\243\323\243\364\243\341\243\364\243\351\243\357\243\356\010\210\000\010\243\262\241\311\313\334\302\316\244\316\n\n\305\305\270\273\244\362\300\332\244\351\244\312\244\244\244\307\244\257\244\300\244\265\244\244\241\243");
     switch (arg0) {
     case 0:
-        xglFontDebugPrintf(0x54, 0xD0, D_00A11688);
+        xglFontDebugPrintf(0x54, 0xD0, "Install Start");
         goto done;
     case 1:
-        xglFontDebugPrintf(0x54, 0xD0, D_00A11698);
+        xglFontDebugPrintf(0x54, 0xD0, "Create Partition");
         goto done;
     case 2:
-        xglFontDebugPrintf(0x54, 0xD0, D_00A116B0);
+        xglFontDebugPrintf(0x54, 0xD0, "Write Resource");
         goto done;
     case 3:
-        xglFontDebugPrintf(0x54, 0xD0, D_00A116C0, arg1);
+        xglFontDebugPrintf(0x54, 0xD0, "Create Sub Partition %1d", arg1);
         goto done;
     case 4:
-        xglFontDebugPrintf(0x54, 0xD0, D_00A116E0);
+        xglFontDebugPrintf(0x54, 0xD0, "Format Partition");
         goto done;
     case 5:
-        xglFontDebugPrintf(0x54, 0xD0, D_00A116F8);
+        xglFontDebugPrintf(0x54, 0xD0, "Mount Partition");
         goto done;
     case 6:
         if (arg1 == 0) {
-            xglFontDebugPrintf(0x54, 0xD0, D_00A11708);
+            xglFontDebugPrintf(0x54, 0xD0, "Start Install");
             goto done;
         }
         {
+            static u8 frame;
+            static char anim[4] = { '-', 0x7F, '|', '/' };
+            static char sztmp[] = "%c";
+
             g.w0 = 0xA8;
             g.w2 = 0x1A0;
             g.w4 = -1;
@@ -146,14 +143,18 @@ static int HddInstallCB(int arg0, int arg1, int *arg2) {
             g.b[6] = 0x40;
             g.b[7] = 0x80;
             tyaDrawGauge(&g);
-            xglFontPrint(0x20, 0x50, -1, D_00A11718);
-            args[0] = (u64)(u32)sztmp_5;
-            args[1] = (u64)(u32)(int)(signed char)anim_4[(D_00A13654 >> 3) & 3];
+            xglFontPrint(0x20, 0x50, -1, "\031\000\014  \200\241\337\014\200\200\200\245\334\245\277\245\363\241\247\303\346\303\307");
+            args[0] = (u64)(u32)sztmp;
+            args[1] = (u64)(u32)(int)(signed char)anim[(frame >> 3) & 3];
             xglFontPrintf(0x98, 0x19E, -1, args);
-            D_00A13654++;
-            args[0] = (u64)(u32)sztmp_6;
-            args[1] = (u64)(long long)(((arg1 & 0xFFFF) * 100) / (arg1 >> 16));
-            xglFontPrintf(0xA8, 0x190, -1, args);
+            frame++;
+            {
+                static char sztmp[] = "%3d\033\022";
+
+                args[0] = (u64)(u32)sztmp;
+                args[1] = (u64)(long long)(((arg1 & 0xFFFF) * 100) / (arg1 >> 16));
+                xglFontPrintf(0xA8, 0x190, -1, args);
+            }
             t18 = (int)__udivdi3(args[1], 0x14);
             if (t18 != HddInstallParam->unmodeled_00[4] && t18 < 5) {
                 t16 = *(int *)HddInstallParam->unmodeled_00;
@@ -168,7 +169,7 @@ static int HddInstallCB(int arg0, int arg1, int *arg2) {
                 HddInstallSync();
                 for (;;) {
                     int trig;
-                    xglFontPrint(0x20, 0x10, -1, D_00A11738);
+                    xglFontPrint(0x20, 0x10, -1, "\245\244\245\363\245\271\245\310\241\274\245\353\244\317\244\336\244\300\264\260\316\273\244\267\244\306\244\244\244\336\244\273\244\363\241\243\n\n\303\346\303\307\244\267\244\336\244\271\244\253\241\251\n\n\014\200  \241\373\014\200\200\200\245\334\245\277\245\363\241\247\303\346\303\307\241\277\014  \200\241\337\014\200\200\200\245\334\245\277\245\363\241\247\267\321\302\263");
                     trig = PadData.trigger;
                     if (trig & 0x20) {
                         xglSoundEffectNormalDirect(1);
@@ -191,25 +192,25 @@ static int HddInstallCB(int arg0, int arg1, int *arg2) {
     case 7:
         switch (arg1) {
         case 0:
-            xglFontDebugPrintf(0x54, 0xD0, D_00A117A0);
+            xglFontDebugPrintf(0x54, 0xD0, "CheckFile Create");
             goto done;
         case 1:
-            xglFontDebugPrintf(0x54, 0xD0, D_00A117B8);
+            xglFontDebugPrintf(0x54, 0xD0, "CheckFile Write");
             goto done;
         case 2:
-            xglFontDebugPrintf(0x54, 0xD0, D_00A117C8);
+            xglFontDebugPrintf(0x54, 0xD0, "CheckFile Close");
             goto done;
         case 3:
-            xglFontDebugPrintf(0x54, 0xD0, D_00A117D8);
+            xglFontDebugPrintf(0x54, 0xD0, "CheckFile Unmount");
             goto done;
         case 4:
-            xglFontDebugPrintf(0x54, 0xD0, D_00A117F0);
+            xglFontDebugPrintf(0x54, 0xD0, "CheckFile Mount");
             goto done;
         default:
             goto done;
         }
     case 8:
-        xglFontDebugPrintf(0x54, 0xD0, D_00A11800);
+        xglFontDebugPrintf(0x54, 0xD0, "Install Complete");
         goto done;
     case -15:
     case -14:
@@ -226,8 +227,8 @@ static int HddInstallCB(int arg0, int arg1, int *arg2) {
     case -3:
     case -2:
     case -1:
-        printf(D_00A11818, arg0, arg1, arg1);
-        xglFontDebugPrintf(0x54, 0xD0, D_00A11828, arg0, arg1);
+        printf("%d:%d(%08x)\n", arg0, arg1, arg1);
+        xglFontDebugPrintf(0x54, 0xD0, "Error %2d/%8x", arg0, arg1);
         goto done;
     default:
         goto done;
@@ -237,9 +238,6 @@ done:
     return 0;
 }
 
-extern const char D_00A118B8[];
-extern const char D_00A11928[];
-extern const char D_00A11970[];
 extern void xglSoundEffectNormalDirect(int id);
 extern int xglHddCheck(void);
 extern int xglHddInstall(void *cb, void *param);
@@ -258,7 +256,7 @@ static void TitleHddInstallSubInstall(void)
     param[0] = 0;
     for (;;)
     {
-      xglFontPrint(0x20, 0x10, -1, D_00A118B8);
+      xglFontPrint(0x20, 0x10, -1, "\245\274\245\316\245\265\241\274\245\254\244\316\245\244\245\363\245\271\245\310\241\274\245\353\244\362\263\253\273\317\244\267\244\336\244\271\241\243\n\n\244\350\244\355\244\267\244\244\244\307\244\271\244\253\241\251\n\n\014\200  \241\373\014\200\200\200\245\334\245\277\245\363\241\247\263\253\273\317\241\277\014  \200\241\337\014\200\200\200\245\334\245\277\245\363\241\247\245\255\245\343\245\363\245\273\245\353");
       HddInstallSync();
       if (wait > 0)
       {
@@ -306,7 +304,7 @@ static void TitleHddInstallSubInstall(void)
       pad = &PadData;
       for (;;)
       {
-        xglFontPrint(0x20, 0x10, -1, D_00A11928);
+        xglFontPrint(0x20, 0x10, -1, "\245\244\245\363\245\271\245\310\241\274\245\353\244\254\300\265\276\357\244\313\275\252\316\273\244\267\244\336\244\267\244\277\241\243\n\n\014\200  \241\373\014\200\200\200\245\334\245\277\245\363\241\247\245\277\245\244\245\310\245\353\244\313\314\341\244\353");
         pad = &PadData;
         HddInstallSync();
         new_var = &pad;
@@ -326,7 +324,7 @@ static void TitleHddInstallSubInstall(void)
     }
     for (;;)
     {
-      xglFontPrint(0x20, 0x10, -1, D_00A11970);
+      xglFontPrint(0x20, 0x10, -1, "\245\244\245\363\245\271\245\310\241\274\245\353\244\313\274\272\307\324\244\267\244\336\244\267\244\277\241\243\n\n\245\244\245\363\245\271\245\310\241\274\245\353\244\362\303\346\273\337\244\267\244\336\244\271\244\253\241\251\n\n\014\200  \241\373\014\200\200\200\245\334\245\277\245\363\241\247\244\317\244\244\241\277\014  \200\241\337\014\200\200\200\245\334\245\277\245\363\241\247\244\244\244\244\244\250");
       HddInstallSync();
       if (wait > 0)
       {
@@ -350,9 +348,6 @@ static void TitleHddInstallSubInstall(void)
 
 }
 
-extern const char D_00A119E0[];
-extern const char D_00A11A58[];
-extern const char D_00A11AA8[];
 extern void xglFontPrint(int x, int y, int color, const char *text);
 extern int xglHddCheck2(void);
 extern int xglHddUninstall(void);
@@ -369,7 +364,7 @@ static void TitleHddInstallSubUninstall(void)
     wait = 4;
     for (;;)
     {
-      xglFontPrint(0x20, 0x10, -1, D_00A119E0);
+      xglFontPrint(0x20, 0x10, -1, "\245\274\245\316\245\265\241\274\245\254\244\316\245\242\245\363\245\244\245\363\245\271\245\310\241\274\245\353\244\362\263\253\273\317\244\267\244\336\244\271\241\243\n\n\244\350\244\355\244\267\244\244\244\307\244\271\244\253\241\251\n\n\014\200  \241\373\014\200\200\200\245\334\245\277\245\363\241\247\263\253\273\317\241\277\014  \200\241\337\014\200\200\200\245\334\245\277\245\363\241\247\245\255\245\343\245\363\245\273\245\353");
       HddInstallSync();
       if (wait > 0)
       {
@@ -400,7 +395,7 @@ static void TitleHddInstallSubUninstall(void)
       struct TitlePadData *p2 = &PadData;
       for (;;)
       {
-        xglFontPrint(0x20, 0x10, -1, D_00A11A58);
+        xglFontPrint(0x20, 0x10, -1, "\245\242\245\363\245\244\245\363\245\271\245\310\241\274\245\353\244\254\300\265\276\357\244\313\275\252\316\273\244\267\244\336\244\267\244\277\241\243\n\n\014\200  \241\373\014\200\200\200\245\334\245\277\245\363\241\247\245\277\245\244\245\310\245\353\244\313\314\341\244\353");
         if ((p2 && (&PadData)) && (&PadData))
         {
         }
@@ -423,7 +418,7 @@ static void TitleHddInstallSubUninstall(void)
     {
       for (;;)
       {
-        xglFontPrint(0x20, 0x10, -1, D_00A11AA8);
+        xglFontPrint(0x20, 0x10, -1, "\245\242\245\363\245\244\245\363\245\271\245\310\241\274\245\353\244\313\274\272\307\324\244\267\244\336\244\267\244\277\241\243\n\n\245\242\245\363\245\244\245\363\245\271\245\310\241\274\245\353\244\362\303\346\273\337\244\267\244\336\244\271\244\253\241\251\n\n\014\200  \241\373\014\200\200\200\245\334\245\277\245\363\241\247\244\317\244\244\241\277\014  \200\241\337\014\200\200\200\245\334\245\277\245\363\241\247\244\244\244\244\244\250");
         new_var = (char *) (&PadData);
         HddInstallSync();
         if (wait > 0)
@@ -451,12 +446,8 @@ static void TitleHddInstallSubUninstall(void)
 
 }
 
-extern const char *sztmp_6[];
 extern int WorkEnd_w[] __asm__("WorkEnd");
 extern int xglJpegDecode(void *request_address);
-extern const char D_00A11C60[];
-extern const char D_00A11C90[];
-extern const char D_00A11CD8[];
 
 void TitleHddInstall(u32 arg0)
 {
@@ -493,7 +484,7 @@ void TitleHddInstall(u32 arg0)
     xglJpegDecode(&jpeg);
     HddInstallParam = &hp;
     HddInstallSync();
-    xglFontPrintDirectOT(-1, D_00A11620);
+    xglFontPrintDirectOT(-1, "\017D\000\200\015\003");
     switch (mode) {
     case 0:
         TitleHddInstallSubInstall();
@@ -503,11 +494,17 @@ void TitleHddInstall(u32 arg0)
         break;
     case 2:
     case 3:
-    case 4:
+    case 4: {
+        static char *mes[] = {
+            "\245\317\241\274\245\311\245\307\245\243\245\271\245\257\245\311\245\351\245\244\245\326\244\313\245\242\245\257\245\273\245\271\244\307\244\255\244\336\244\273\244\363\241\243",
+            "\245\317\241\274\245\311\245\307\245\243\245\271\245\257\245\311\245\351\245\244\245\326\244\254\245\325\245\251\241\274\245\336\245\303\245\310\244\265\244\354\244\306\n\n\244\244\244\336\244\273\244\363\241\243",
+            "\245\317\241\274\245\311\245\307\245\243\245\271\245\257\245\311\245\351\245\244\245\326\244\313\241\242\245\274\245\316\245\265\241\274\245\254\244\316\n\n\245\244\245\363\245\271\245\310\241\274\245\353\244\313\311\254\315\327\244\312\266\365\244\255\315\306\316\314\244\254\302\255\244\352\244\336\244\273\244\363\241\243\n\n\010\210\377\370\241\312\266\365\244\255\315\306\316\314\244\310\244\267\244\306\031\001\243\261\243\267\243\271\243\262\243\315\243\302\031\000\260\312\276\345\311\254\315\327\244\307\244\271\241\243\010\210\377\370\241\313\n\n\n\n\302\276\244\316\245\242\245\327\245\352\245\261\241\274\245\267\245\347\245\363\244\362\245\242\245\363\245\244\245\363\245\271\245\310\241\274\245\353\244\271\244\353\244\310\241\242\n\n\245\244\245\363\245\271\245\310\241\274\245\353\244\307\244\255\244\353\244\350\244\246\244\313\244\312\244\353\262\304\307\275\300\255\244\254\244\242\244\352\244\336\244\271\241\243",
+        };
+
         n = 4;
         for (;;) {
-            xglFontPrint(0x20, 0x10, -1, sztmp_6[mode]);
-            xglFontPrintDirectOT(-1, D_00A11C90);
+            xglFontPrint(0x20, 0x10, -1, mes[mode - 2]);
+            xglFontPrintDirectOT(-1, "\n\n\n\n\245\244\245\363\245\271\245\310\241\274\245\353\244\362\303\346\273\337\244\267\244\336\244\271\241\243\n\n\014\200  \241\373\014\200\200\200\245\334\245\277\245\363\241\247\245\277\245\244\245\310\245\353\244\313\314\341\244\353");
             HddInstallSync();
             if (n > 0) {
                 n--;
@@ -519,11 +516,12 @@ void TitleHddInstall(u32 arg0)
         }
         xglSoundEffectNormalDirect(1);
         break;
+    }
     case 5:
         n = 4;
         for (;;) {
-            xglFontPrint(0x20, 0x10, -1, D_00A11C60);
-            xglFontPrintDirectOT(-1, D_00A11CD8);
+            xglFontPrint(0x20, 0x10, -1, "\245\317\241\274\245\311\245\307\245\243\245\271\245\257\245\311\245\351\245\244\245\326\244\313\245\242\245\257\245\273\245\271\244\307\244\255\244\336\244\273\244\363\241\243");
+            xglFontPrintDirectOT(-1, "\n\n\n\n\245\242\245\363\245\244\245\363\245\271\245\310\241\274\245\353\244\362\303\346\273\337\244\267\244\336\244\271\241\243\n\n\014\200  \241\373\014\200\200\200\245\334\245\277\245\363\241\247\245\277\245\244\245\310\245\353\244\313\314\341\244\353");
             HddInstallSync();
             if (n > 0) {
                 n--;

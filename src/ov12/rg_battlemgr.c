@@ -13,6 +13,8 @@ const char D_00A54CE0[8] = "2";
 const char D_00A54CE8[16] = "pList != NIL";
 const char D_00A54CF8[16] = "i < PLAYER_MAX";
 const char D_00A54D08[24] = "i < pList->m_uNum";
+const char D_00A54D20[16] = "pPlayer != NIL";
+const char D_00A54D30[32] = "pList->m_uNum < PLAYER_MAX";
 const char D_00A54D50[16] = "pField != NIL";
 const char D_00A54D60[24] = "uIndex < pField->m_uNum";
 const char D_00A54D78[32] = "pField->m_uNum < BTL_STUDIO_MAX";
@@ -170,8 +172,6 @@ static RgPlayer *_GetInPlayerList(PlayerList *pList, RgRobot *robot)
     return players[slotIndex];
 }
 
-extern const char D_00A54D20[];
-extern const char D_00A54D30[];
 
 static void _AddPlayerList(PlayerList *pList, RgPlayer *pPlayer)
 {

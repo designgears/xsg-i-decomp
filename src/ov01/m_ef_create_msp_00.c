@@ -11,7 +11,6 @@ extern Matrix4 *MMathScaleMatrix(Matrix4 *destination,
                                  Matrix4 *matrix,
                                  const Vector4 *scale);
 extern void MEfDrawModel(const Vector4 *place, int entry, const char *texture);
-extern const Vector4 scale_0_00A51380;
 
 extern void MEfGetActorMatrix(void *destination, u32 actor, u32 part);
 extern void MEfGetActorCoord(void *destination, u32 actor, u32 part);
@@ -166,11 +165,12 @@ typedef struct MSP00DrawState {
 
 static void fnMSP00_DM000(void *self, MSP00DrawState *work)
 {
+    static const Vector4 scale = { 0.04f, 0.04f, 0.2f, 1.0f };
     Matrix4 matrix;
 
     if (work->frame < 18) {
         MMathRotateMatrixYXZ(&matrix, 0, &work->angles);
-        MMathScaleMatrix(&matrix, &matrix, &scale_0_00A51380);
+        MMathScaleMatrix(&matrix, &matrix, &scale);
         __asm__ __volatile__(
             "lqc2 vf1, 0(%1)\n\t"
             "vmove.w vf1, vf0\n\t"
@@ -195,8 +195,6 @@ typedef union Msp00QW {
 extern int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angleBase);
 extern void MGsGPTerm(void *packet);
 extern Msp00Quad McEfSTQtbl[];
-extern Msp00Quad coltbl_1_00A51390[];
-extern float sztbl_2_00A51430[];
 typedef struct Msp00Packet {
     void *data;
     int capacity;
@@ -215,6 +213,21 @@ typedef struct Msp00Draw {
 
 static void fnMSP00_DP000(void *self, void *work)
 {
+    static const Msp00QW coltbl[10] = {
+        { ul: { 0x0000008000000080UL, 0x0000002000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002400000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000001800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000001000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000000800000080UL } },
+    };
+    static const float sztbl[10] = {
+        0.1f, 0.13f, 0.16f, 0.18f, 0.2f, 0.22f, 0.24f, 0.26f, 0.28f, 0.25f,
+    };
     Msp00Draw *effect = (Msp00Draw *)work;
     int i;
     long regs;
@@ -264,9 +277,9 @@ static void fnMSP00_DP000(void *self, void *work)
     pk->count += n;
     for (i = 0; i < 10; i++) {
         if ((sub = (void *)((char *)work + 4))->active[i] != 0) {
-                        color = coltbl_1_00A51390[i];
+                        color = coltbl[i].q;
             for (j = 0; j < 3; j++) {
-                if (MEfMake4Vertex2(verts, &effect->points[i][j], sztbl_2_00A51430[i], effect->twist[i][j]) == 0) {
+                if (MEfMake4Vertex2(verts, &effect->points[i][j], sztbl[i], effect->twist[i][j]) == 0) {
                     Msp00QW *t;
                     Msp00QW *g;
                     unsigned long texVal;

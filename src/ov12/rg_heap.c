@@ -20,11 +20,54 @@ extern void XrgLog(const char *format, const char *source_file, int line,
 extern int RgHeapIsInSelf(RgHeap *pHeap, void *pPtr);
 extern void RgHeapDump_sub(RgHeap *pHeap, const char *comment,
                            const char *source_file, int line);
-extern const char D_00A52A40[];
-extern const char D_00A52A80[];
-extern const char D_00A52A98[];
-extern const char D_00A52AB8[];
-extern const char D_00A52AC8[];
+const char D_00A52A40[] = "-------- Heap Assert %s ---------\n";
+const char D_00A52A68[] = "../rg_heap.euc.c";
+const char D_00A52A80[] = "%s (in %s at %d)\n\n";
+const char D_00A52A98[] = "heap = %p top = %p size = %d\n\n";
+const char D_00A52AB8[] = "heap-dump";
+const char D_00A52AC8[] = "heap = NIL\n";
+const char D_00A52AD8[] = "gAMe sHoW 2001.10.15";
+const char D_00A52AF0[] = "HEAD_SIZE < nBlockSize";
+const char D_00A52B08[] = "make block";
+const char D_00A52B18[] = "pHeap != NIL";
+const char s_str_00A52B28[] __asm__("D_00A52B28") = "(HEAD_SIZE & 0xf) == 0";
+const char s_str_00A52B40[] __asm__("D_00A52B40") = "init-1";
+const char D_00A52B48[] = "(nBufSize & 0xf) == 0";
+const char D_00A52B60[] = "init-2";
+const char D_00A52B68[] = "size <= 0 error allocated at %s,%d";
+const char D_00A52B90[] = "(pHeap != NIL)";
+const char D_00A52BA0[] = "alloc-entry-heap-ptr";
+const char D_00A52BB8[] = "there is no heap for allocation at %s,%d";
+const char D_00A52BE8[] = "no heap 1";
+const char D_00A52BF8[] = "too big size (%d) of allocation\nat %s,%d\nfrom data heap";
+const char D_00A52C30[] = "no heap 2";
+const char D_00A52C40[] = "too big size (%d) of allocation\nat %s,%d\nfrom normal heap";
+const char D_00A52C80[] = "no heap 3";
+const char D_00A52C90[] = "too big size (%d) of allocation\nat %s,%d\nfrom unknown heap";
+const char D_00A52CD0[] = "(nMatchBlockSiz >= nNeedBlockSiz)";
+const char D_00A52CF8[] = "block align";
+const char D_00A52D08[] = "(((int)(BYTE*)pAlloc + HEAD_SIZE) & 0xf) == 0";
+const char D_00A52D38[] = "not aligned block";
+const char D_00A52D50[] = "free entry";
+const char D_00A52D60[] = "free NIL address at %s,%d";
+const char D_00A52D80[] = "heap error";
+const char D_00A52D90[] = "%p is already free at %s,%d\n(MAYBE allocated at %s,%d !?)";
+const char D_00A52DD0[] = "not allocated %p free at %s,%d";
+const char D_00A52DF0[] = "heap block is destroyed or not in heap %p free at %s,%d";
+const char D_00A52E28[] = "%p is not in %p HEAP memory area\nfree at %s %d";
+const char D_00A52E58[] = "alloc list node 1 && free block is not this";
+const char D_00A52E88[] = "\n\n---------------------------------\n";
+const char D_00A52EB0[] = "HEAD DUMP %p from %s %d\n";
+const char D_00A52ED0[] = "***** FREE MAP top %p (comment %s)\n";
+const char D_00A52EF8[] = "%p : size = %x(%d) next:%p\n";
+const char D_00A52F18[] = "***** ALLOC MAP top %p (comment %s)\n";
+const char D_00A52F40[] = "%p : size = %x(%d) next:%p allocated at %s,%d\n";
+const char D_00A52F70[] = "pHeap != NIL && pPtr != NIL";
+const char D_00A52F90[] = "------------ dump %p\n";
+const char D_00A52FA8[] = "pre %p next %p\n";
+const char D_00A52FB8[] = "size %p mark %d\n";
+const char D_00A52FD0[] = "module '%s' line %d\n";
+const char D_00A52FE8[] = "  this block is not in heap %p\n";
 
 /*
  * External file-backed witnesses, not candidate-emitted data: this window is
@@ -43,16 +86,6 @@ extern const char D_00A52AC8[];
  * ov12:0x00a52fe8 contains the format string
  *      "  this block is not in heap %p\n".
  */
-extern const char D_00A52A68[];
-extern const char D_00A52B18[];
-extern const char D_00A52B48[];
-extern const char D_00A52B60[];
-extern const char D_00A52F70[];
-extern const char D_00A52F90[];
-extern const char D_00A52FA8[];
-extern const char D_00A52FB8[];
-extern const char D_00A52FD0[];
-extern const char D_00A52FE8[];
 
 static void _Error(const char *expression, const char *tag, RgHeap *pHeap,
                    const char *source_file, int line)
@@ -169,8 +202,6 @@ static int _IsCollectMagicString(struct RgHeapBlock *pBlock)
  *      "HEAD_SIZE < nBlockSize".
  * ov12:0x00a52b08 contains the tag "make block".
  */
-extern const char D_00A52AF0[];
-extern const char D_00A52B08[];
 
 static struct RgHeapBlock *_SetHeapHead(void *pTop, u32 nBufSize)
 {
@@ -207,15 +238,16 @@ static void _MergeBlocks(struct RgHeapBlock *pHead)
 /*
  * ov12:0x00a59aa0 (0x10 bytes) and 0x00a5a2b0 (0x10 bytes) are the two
  * RgHeap singletons; 0x00a59ab0 and 0x00a5a2c0 (0x800 bytes each) are the
- * raw memory arenas InitRgHeap hands to _SetHeapHead. asm-owned scaffold
- * data, no config/symbols/ov12.txt entry.
+ * raw memory arenas InitRgHeap hands to _SetHeapHead. Function-local
+ * statics of the two accessors (original names unknown).
  */
-extern RgHeap D_00A59AA0;
-extern u8 D_00A59AB0[0x800];
 extern int s_bInit1_0;
 
 RgHeap *InstanceOfRgHeap(void)
 {
+    static RgHeap D_00A59AA0 __asm__("D_00A59AA0");
+    static u8 D_00A59AB0[0x800] __asm__("D_00A59AB0");
+
     if (s_bInit1_0 == 0) {
         s_bInit1_0 = 1;
         InitRgHeap(&D_00A59AA0, D_00A59AB0, 0x800);
@@ -223,12 +255,13 @@ RgHeap *InstanceOfRgHeap(void)
     return &D_00A59AA0;
 }
 
-extern RgHeap D_00A5A2B0;
-extern u8 D_00A5A2C0[0x800];
 extern int s_bInit2_3;
 
 RgHeap *InstanceOfRgHeapData(void)
 {
+    static RgHeap D_00A5A2B0 __asm__("D_00A5A2B0");
+    static u8 D_00A5A2C0[0x800] __asm__("D_00A5A2C0");
+
     if (s_bInit2_3 == 0) {
         s_bInit2_3 = 1;
         InitRgHeap(&D_00A5A2B0, D_00A5A2C0, 0x800);
@@ -264,20 +297,6 @@ void InitRgHeap(RgHeap *pHeap, void *pTop, u32 nBufSize)
 
 extern void RgError(const char *message, const char *source_file, int line, ...);
 extern char *strncpy(char *dst, const char *src, unsigned int n);
-extern const char D_00A52B68[];
-extern const char D_00A52B90[];
-extern const char D_00A52BA0[];
-extern const char D_00A52BB8[];
-extern const char D_00A52BE8[];
-extern const char D_00A52BF8[];
-extern const char D_00A52C30[];
-extern const char D_00A52C40[];
-extern const char D_00A52C80[];
-extern const char D_00A52C90[];
-extern const char D_00A52CD0[];
-extern const char D_00A52CF8[];
-extern const char D_00A52D08[];
-extern const char D_00A52D38[];
 
 void *RgHeapAlloc(RgHeap *pHeap, u32 nSize, const char *source_file, int line)
 {
@@ -370,14 +389,6 @@ void *RgHeapAlloc(RgHeap *pHeap, u32 nSize, const char *source_file, int line)
 }
 
 extern void RgError(const char *message, const char *source_file, int line, ...);
-extern const char D_00A52D50[];
-extern const char D_00A52D60[];
-extern const char D_00A52D80[];
-extern const char D_00A52D90[];
-extern const char D_00A52DD0[];
-extern const char D_00A52DF0[];
-extern const char D_00A52E28[];
-extern const char D_00A52E58[];
 
 void RgHeapFree(RgHeap *pHeap, void *pPtr, const char *source_file, int line)
 {
@@ -487,12 +498,6 @@ int RgHeapIsInvalidMemory(RgHeap *pHeap, void *pPtr)
  * ov12:0x00a52f40 contains the format string
  *      "%p : size = %x(%d) next:%p allocated at %s,%d\n".
  */
-extern const char D_00A52E88[];
-extern const char D_00A52EB0[];
-extern const char D_00A52ED0[];
-extern const char D_00A52EF8[];
-extern const char D_00A52F18[];
-extern const char D_00A52F40[];
 
 void RgHeapDump_sub(RgHeap *pHeap, const char *comment, const char *source_file,
                     int line)
@@ -537,3 +542,7 @@ void RgHeapDumpBlock(RgHeap *pHeap, void *pPtr)
     }
     XrgLog(D_00A52FE8, D_00A52A68, 471, pHeap);
 }
+
+const unsigned char *s_szMagicString = (const unsigned char *)D_00A52AD8;
+int s_bInit1_0 = 0;
+int s_bInit2_3 = 0;

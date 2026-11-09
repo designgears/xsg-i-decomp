@@ -171,6 +171,22 @@ void JTHREAD_defaultStage(JThreadHandle *thread)
     }
 }
 
+/* The default thread hooks, each with its name, closed by a NULL entry; no
+   code in this build refers to the table. */
+typedef struct JThreadHookSymbol {
+    void (*entry)();
+    const char *name;
+} JThreadHookSymbol;
+
+JThreadHookSymbol tiSymbol[] = {
+    { (void (*)())JTHREAD_defaultUnit, "JTHREAD_defaultUnit" },
+    { (void (*)())JTHREAD_defaultChr, "JTHREAD_defaultChr" },
+    { (void (*)())JTHREAD_defaultScene, "JTHREAD_defaultScene" },
+    { (void (*)())JTHREAD_defaultStage, "JTHREAD_defaultStage" },
+    { (void (*)())JTHREAD_default, "JTHREAD_default" },
+    { 0, 0 },
+};
+
 void JTHREAD_init(void)
 {
 }
@@ -303,6 +319,16 @@ void JTHREAD_waitFor(JThreadNode *thread)
         break;
     }
 }
+
+/* Thread-algorithm names; no code in this build refers to them. */
+const char *tiAlgName[] = {
+    "JTHREAD_ALG_SYSTEM",
+    "JTHREAD_ALG_CHR",
+    "JTHREAD_ALG_STAGE",
+    "JTHREAD_ALG_SCENE",
+    "JTHREAD_ALG_DEFAULT",
+    "JTHREAD_ALG_UNIT",
+};
 
 void JTHREAD_info(void)
 {

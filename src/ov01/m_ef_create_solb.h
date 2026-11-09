@@ -108,6 +108,6 @@ typedef struct SolbState {
 
 int MEfCreate_SOLB(void *work);
 
-extern int timetbl[];
+extern const int timetbl[];
 
 #endif /* SRC_OV01_M_EF_CREATE_SOLB_H */

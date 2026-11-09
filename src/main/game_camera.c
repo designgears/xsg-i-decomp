@@ -208,12 +208,43 @@ typedef struct CameraDefocusLayer {
     int parameters[16];
 } CameraDefocusLayer;
 
-extern unsigned char CfCameraDefine[];
-extern float HokanNow[];
-extern float CfCameraOfsNow[3];
+extern CameraDefinition CfCameraDefine[33];
+struct CameraArea;
+typedef struct CamQueryBlk {
+    int flags0;                         /* +0x00 */
+    int flags4;                         /* +0x04 */
+    short mode;                         /* +0x08 */
+    unsigned short result;              /* +0x0A */
+    unsigned char unmodeled_0c[0x14 - 0x0C];
+    float height;                       /* +0x14 */
+    struct CameraArea *area;            /* +0x18 */
+    unsigned char unmodeled_1c[0x40 - 0x1C];
+} CamQueryBlk;
+typedef struct CamLookAtQuery {
+    int flags0;                         /* +0x00 */
+    int flags4;                         /* +0x04 */
+    short mode;                         /* +0x08 */
+    unsigned short result;              /* +0x0A */
+    unsigned char unmodeled_0c[0x14 - 0x0C];
+    float height;                       /* +0x14 */
+    struct CameraArea *area;                   /* +0x18 */
+    unsigned char unmodeled_1c[0x40 - 0x1C];
+} CamLookAtQuery;
+
+/* .bss (file-local, original order) */
+static float CfCameraOfsNow[3];
+static CameraUnduParam CamPlayer;
+static Vector4 CamPlyPosOld;
+static CamLookAtQuery CamLookAt;
+static float CamLookAtPos[4];
+static CamQueryBlk CamPos;
+static float CamPosPos[4];
+/* 0x30 bytes in the original (nm: the next object is 0x30 on); the code
+ * reads the HokanState view at its head */
+static float HokanNow[12];
 extern void GameCamera(void);
 void GameCameraChangeID(int id, int id2, int id3);
-#define CFD ((CameraDefinition *)CfCameraDefine)
+#define CFD CfCameraDefine
 #define HKN (*(HokanState *)HokanNow)
 #define GLS (*(GameLoopCameraView *)GameLoopState)
 
@@ -269,7 +300,6 @@ void GameCameraReset(void)
 
 typedef struct { long long b[0x5F0 / 8]; } CamBlob;
 extern StudioCamera save_cam;
-extern unsigned char CfCameraDefine[];
 static inline void QCopy(void *dst, void *src)
 {
     __asm__ __volatile__("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(dst), "r"(src) : "$2", "memory");
@@ -280,12 +310,11 @@ void GameCameraStateSave(void) {
     StudioCamera *cam = xglStudioGetCamera2(0);
     *(CamBlob *)&save_cam = *(CamBlob *)cam;
     q = GameLoopState + 0x240;
-    QCopy(q, CfCameraDefine + 0x30);
+    QCopy(q, (unsigned char *)CfCameraDefine + 0x30);
     q -= 0x240;
     *(int *)(q + 0x230) = *(int *)(q + 0x28);
 }
 
-extern float HokanNow[4];
 
 extern StudioCamera *xglStudioGetActiveCamera(void);
 
@@ -300,7 +329,7 @@ void GameCameraStateRestore(void) {
 
     cam->state = 4;
     cam->rotation.z = 0.0f;
-    d = CfCameraDefine + 0x30;
+    d = (unsigned char *)CfCameraDefine + 0x30;
     q = GameLoopState + 0x240;
     QCopy(d, q);
     q -= 0x240;
@@ -320,19 +349,6 @@ loop_3:
     xglStudioGetCamera2(0)->active = 1;
 }
 
-struct CameraArea;
-typedef struct CamQueryBlk {
-    int flags0;                         /* +0x00 */
-    int flags4;                         /* +0x04 */
-    short mode;                         /* +0x08 */
-    unsigned short result;              /* +0x0A */
-    unsigned char unmodeled_0c[0x14 - 0x0C];
-    float height;                       /* +0x14 */
-    struct CameraArea *area;            /* +0x18 */
-    unsigned char unmodeled_1c[0x40 - 0x1C];
-} CamQueryBlk;
-extern struct CamLookAtQuery CamLookAt;
-extern CamQueryBlk CamPos;
 extern void *UnduDataGetHeader(int, int);
 
 void GameCameraChangeID(int id, int id2, int id3)
@@ -476,14 +492,12 @@ struct CameraCenterSource {
     unsigned char unmodeled_20[0x66];
     short type;
 };
-extern volatile const float D_004D7BB4;
-extern float CfCameraOfsNow[3];
 
 static void GetCenter(Vector4 *center, const struct CameraCenterSource *source)
 {
     float vertical_offset;
 
-    vertical_offset = D_004D7BB4;
+    vertical_offset = 1.2f;
     if (source->type >= 1618) {
         vertical_offset = 3.0f;
     }
@@ -573,18 +587,6 @@ static void GetNearestCenter(float *center, CameraArea *area, float *pos)
 }
 
 extern double sqrt(double x);
-typedef struct CamLookAtQuery {
-    int flags0;                         /* +0x00 */
-    int flags4;                         /* +0x04 */
-    short mode;                         /* +0x08 */
-    unsigned short result;              /* +0x0A */
-    unsigned char unmodeled_0c[0x14 - 0x0C];
-    float height;                       /* +0x14 */
-    CameraArea *area;                   /* +0x18 */
-    unsigned char unmodeled_1c[0x40 - 0x1C];
-} CamLookAtQuery;
-extern CamLookAtQuery CamLookAt;
-extern float CamLookAtPos[4];
 extern float UnduCheck(float *sample, void *output, CamLookAtQuery *query);
 typedef struct CalcLookAtCamera {
     unsigned char unmodeled_00[0x20];
@@ -656,7 +658,6 @@ static void CalcLookAt(CalcLookAtCamera *camera)
     }
 }
 
-extern float CamPosPos[4];
 extern float D_004D7BC4;
 extern float D_004D7BC8;
 extern float D_004D7BCC;
@@ -911,7 +912,6 @@ static void CameraType0(void)
         : "$2", "memory");
 }
 
-extern float D_004D7BF0;
 typedef struct CameraType1CoreCam {
     unsigned char unmodeled_00[0x30];
     float angle[4];  /* +0x30 */
@@ -966,10 +966,10 @@ static void CameraType1Core(void)
     MoveHokan((void *)0x70000000, HokanNow[0], (Vector4 *)CamPosPos,
               (Vector4 *)((unsigned char *)((CT1Scr *)scratch)->st + 0x40),
               (float *)((unsigned char *)HokanNow + 8));
-    if (((CameraType1CoreState *)((CT1Scr *)scratch)->st)->f48 - D_004D7BF0 <
+    if (((CameraType1CoreState *)((CT1Scr *)scratch)->st)->f48 - 0.01f <
         ((CameraType1CoreState *)((CT1Scr *)scratch)->st)->f98) {
         ((CameraType1CoreState *)((CT1Scr *)scratch)->st)->f98 =
-            ((CameraType1CoreState *)((CT1Scr *)scratch)->st)->f48 - D_004D7BF0;
+            ((CameraType1CoreState *)((CT1Scr *)scratch)->st)->f48 - 0.01f;
     }
 }
 
@@ -1066,7 +1066,6 @@ static void CameraType1(void)
         : "$2", "memory");
 }
 
-extern float D_004D7C08;
 extern int F2I(float f);
 extern float xglAtan2(float x, float y);
 
@@ -1112,7 +1111,7 @@ static void CameraType4(void)
                 :
                 : "r"(*(unsigned char **)(scratch + 0xC) + 0x90), "r"(*(unsigned char **)(scratch + 0xC) + 0x40), "r"(scratch + 0xB0)
                 : "memory");
-            *(float *)(*(unsigned char **)(scratch + 0xC) + 0x14) = xglAtan2(*(float *)(scratch + 0xB0), *(float *)(scratch + 0xB8)) + D_004D7C08;
+            *(float *)(*(unsigned char **)(scratch + 0xC) + 0x14) = xglAtan2(*(float *)(scratch + 0xB0), *(float *)(scratch + 0xB8)) + 3.1415927f;
             horizontal = sqrtBuiltinBoundary(*(float *)(scratch + 0xB0) * *(float *)(scratch + 0xB0)
                                              + *(float *)(scratch + 0xB8) * *(float *)(scratch + 0xB8));
             *(float *)(*(unsigned char **)(scratch + 0xC) + 0x10) = xglAtan2(*(float *)(scratch + 0xB4), horizontal);
@@ -1260,11 +1259,7 @@ typedef struct CameraEnemyWork {
     unsigned char unmodeled_3832[0x38b0 - 0x3832];
 } CameraEnemyWork;
 extern CameraEnemyWork enepc[16];
-extern unsigned char pre_mode;
-extern float pa_0;
-extern int t_1;
-extern CameraUnduParam CamPlayer;
-extern Vector4 CamPlyPosOld;
+static unsigned char pre_mode;
 extern void nmlModelSetGlobalFogDist(float start, float end, float parameter0, float parameter1);
 extern void nmlModelSetGlobalFogCol(const Vector4 *color);
 #define CLAP (*(Vector4 *)CamLookAtPos)
@@ -1273,6 +1268,8 @@ extern void nmlModelSetGlobalFogCol(const Vector4 *color);
 
 void GameCamera(void)
 {
+    static float pa;
+    static int t;
     UpCamScratch *scratchpad = (void *)0x70000000;
     const CameraDefinition *previous;
     unsigned char mode;
@@ -1448,14 +1445,14 @@ void GameCamera(void)
     pre_mode = GLS.camera_mode;
     if (scratchpad->definition->pedestal_mode == 0) {
         distance = scratchpad->target->facing_enabled != 0.0f ? scratchpad->target->facing_angle : 100.0f;
-        if (pa_0 != distance) {
-            pa_0 = distance;
-            t_1 = 0;
+        if (pa != distance) {
+            pa = distance;
+            t = 0;
             count = 0;
         } else {
-            count = t_1;
+            count = t;
             count++;
-            t_1 = count;
+            t = count;
         }
         if (distance == 100.0f) {
             if (scratchpad->definition->parameters.offset.second_mode < count) {
@@ -1514,3 +1511,8 @@ void GameCamera(void)
     }
     GLS.camera_flags &= 0x3f;
 }
+
+/* The CF-camera definition records and the saved studio camera
+ * (main 0x00362E80..0x00364910), zero until the game fills them. */
+CameraDefinition CfCameraDefine[33] __attribute__((aligned(16))) = { { 0 } };
+StudioCamera save_cam = { 0 };

@@ -3,6 +3,20 @@
 #include "game_pause_disp.h"
 #include "main/xgl_packet.h"
 
+/*
+ * Seven-quadword VIF1 direct packet (GIF tag + register writes) that draws
+ * the pause screen's darkening rectangle.
+ */
+static unsigned int ShadowEnv[28] __attribute__((aligned(16))) = {
+    0x0, 0x0, 0x0, 0x51000006,
+    0x8001, 0x50234000, 0x551EE, 0x0,
+    0x71001, 0x0, 0x47, 0x0,
+    0x44, 0x0, 0x42, 0x0,
+    0x0, 0x0, 0x0, 0x40,
+    0x6FF8, 0x71F7, 0x40000000, 0x0,
+    0x8FF8, 0x8DF7, 0x40000000, 0x0
+};
+
 static void DrawShadow(PauseDrawContext *context)
 {
     sceVif1PkAddDirectDataN(context->packet, ShadowEnv, 7);
@@ -82,16 +96,27 @@ void GamePauseDispBG(void)
 
 void GamePauseDispCf(void)
 {
-    xglFontPrint(256 - xglFontGetStringWidth(pause_0) / 2,
-                 200, 0x00ffffff, pause_0);
+    static char pause[] = "\013\015\003\031\003PAUSE\031\002";
+
+    xglFontPrint(256 - xglFontGetStringWidth(pause) / 2,
+                 200, 0x00ffffff, pause);
     GamePauseDispBG();
 }
 
 void GamePauseDispEvent(void)
 {
+    static char msg1[] = "\013\015\003\014 \200 \242\244\014\200\200\200\031\003 Button : Skip and proceed\031\002";
+    static char msg2[] = "\013\015\003\031\003START Button : Cancel PAUSE\031\002";
+
     GamePauseDispCf();
-    xglFontPrint(256 - xglFontGetStringWidth(msg1_1) / 2,
-                 256, 0x00ffffff, msg1_1);
-    xglFontPrint(256 - xglFontGetStringWidth(msg2_2) / 2,
-                 288, 0x00ffffff, msg2_2);
+    xglFontPrint(256 - xglFontGetStringWidth(msg1) / 2,
+                 256, 0x00ffffff, msg1);
+    xglFontPrint(256 - xglFontGetStringWidth(msg2) / 2,
+                 288, 0x00ffffff, msg2);
 }
+
+/*
+ * Labels for the alignment fill after the first two messages (splat pad
+ * items), so the data carve owns the whole section.
+ */
+/* The zero fill that ends the original .data (to its 16-byte end). */

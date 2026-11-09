@@ -382,7 +382,6 @@ typedef struct PtXrg {
     RgMatrix pakaBaseMatrix;          /* 0x120 */
     int pakaBaseMatrixSet;            /* 0x160 */
 } PtXrg;
-extern int D_00A5ACE4;
 extern const char D_00A589F8[];
 extern const char D_00A58A10[];
 extern void ACT_updateMotion(void *pXenoAct);
@@ -391,6 +390,7 @@ extern double atan2(double, double);
 
 void _PassTime(XrgActor *pActorArg, float dt)
 {
+    static int D_00A5ACE4 __asm__("D_00A5ACE4");
     RgMatrix locals[64];
     RgMatrix a;
     RgMatrix b;
@@ -1634,3 +1634,106 @@ void XrgActorDebugDisp(XrgActor *pActor)
         XrgLog(D_00A58CF0, D_00A587E0, 0x668, m->flags, 0x1000, m->next);
     }
 }
+
+const char s_str_00A587B0[] __asm__("D_00A587B0") = "_ActJntToAccID_sub joint=%d error(%s:%d)";
+const char D_00A587E0[] = "../xrg_actor.euc.c";
+const char D_00A587F8[] = "pXenoAct != NIL";
+const char D_00A58808[] = "data\\robo\\ag\\ag_02";
+const char D_00A58820[] = "data\\nisimori\\ag02_all.fpk";
+const char D_00A58840[] = "data\\robo\\vx\\vx_06";
+const char D_00A58858[] = "data\\nisimori\\vx06_all.fpk";
+const char D_00A58878[] = "data\\robo\\ag\\ag_04";
+const char D_00A58890[] = "data\\nisimori\\ag04_all.fpk";
+const char D_00A588B0[] = "data\\robo\\vx\\vx_02";
+const char D_00A588C8[] = "data\\nisimori\\vx02_all.fpk";
+const char D_00A588E8[] = "data\\robo\\ag\\ag_05";
+const char D_00A58900[] = "data\\nisimori\\ag05_all.fpk";
+const char D_00A58920[] = "data\\robo\\vx\\vx_01";
+const char D_00A58938[] = "data\\nisimori\\vx01_all.fpk";
+const char D_00A58958[] = "invalid actor char ID = %d";
+const char s_str_00A58978[] __asm__("D_00A58978") = "joint id error (jnt:%d elm:%d)\nat %s %d";
+const char s_str_00A589A0[] __asm__("D_00A589A0") = "pJnt->numElement > 1";
+const char D_00A589B8[] = "pUnit != NIL";
+const char D_00A589C8[] = "pActor != NIL";
+const char D_00A589D8[] = "parent mat list nul (char %d)";
+const char D_00A589F8[] = "over 32 joint actor";
+const char D_00A58A10[] = "char %s -> eff %d %d error\n";
+const char s_str_00A58A30[] __asm__("D_00A58A30") = "pActor != NIL && pChild != NIL";
+const char s_str_00A58A50[] __asm__("D_00A58A50") = "RG_ACTOR_JNT_LEFT_HAND <= (eJntID) && (eJntID) < RG_ACTOR_JNT_MAX";
+const char D_00A58A98[] = "pszMdlName != NIL";
+const char D_00A58AB0[] = ".xtx";
+const char D_00A58AB8[] = ".lex";
+const char D_00A58AC0[] = ".jnt";
+const char s_str_00A58AC8[] __asm__("D_00A58AC8") = "pSrcActor != NIL";
+const char s_str_00A58AE0[] __asm__("D_00A58AE0") = "pActor->m_pXenoAct != NIL";
+const char D_00A58B00[] = "pEss != NIL";
+const char D_00A58B10[] = "pEntry != NIL";
+const char D_00A58B20[] = "pEntry->m_pszMdlName != NIL";
+const char D_00A58B40[] = "pDup != NIL";
+const char D_00A58B50[] = "pNewParent != NIL";
+const char D_00A58B68[] = "already disposed XrgActor %p";
+const char D_00A58B88[] = "\n***\n***\nactor %p Pakapaka %s -> %d : paka base %d\n";
+const char D_00A58BC0[] = "cannot delete %p from %p\n";
+const char D_00A58BE0[] = "3\n";
+const char D_00A58BE8[] = "4\n";
+const char D_00A58BF0[] = "pActor != NIL && pWep != NIL";
+const char D_00A58C10[] = "pEff != NIL";
+const char D_00A58C20[] = "jntID = %d accID = %d\n";
+const char D_00A58C38[] = "0 <= eEffID && eEffID < RG_ACTOR_EFF_TYPE_NUM";
+const char D_00A58C68[] = "pActor->m_auEffsNum[eEffID] < 4";
+const char D_00A58C88[] = "pWpn != NIL";
+const char D_00A58C98[] = "eff over (%d)->%d";
+const char D_00A58CB0[] = "actor %p (xeno %p) ---------\n";
+const char D_00A58CD0[] = "time = %f start %f end %f\n";
+const char D_00A58CF0[] = "flags = %x(end %x) next %x\n";
+int s_jntIDToAccIDTbl_00A50920[21] __asm__("s_aJntIDToAccID_0") = {
+    24, 32, 25, 33, 26, 34, 27, 35, 0, 1, 2, 3, 4, 5, 6, 7, 17, 18, 15, 16, 23,
+};
+XenoDatEntry s_aDatTbl_1[25] = {
+    { 0, { 0x2001, (int)D_00A58938, (int)D_00A58920 } },
+    { 1, { 0x2105, (int)D_00A58900, (int)D_00A588E8 } },
+    { 2, { 0x2002, (int)D_00A588C8, (int)D_00A588B0 } },
+    { 3, { 0x2104, (int)D_00A58890, (int)D_00A58878 } },
+    { 4, { 0x2006, (int)D_00A58858, (int)D_00A58840 } },
+    { 5, { 0x2102, (int)D_00A58820, (int)D_00A58808 } },
+    { 6, { 0x3605, 0, 0 } },
+    { 7, { 0x360d, 0, 0 } },
+    { 8, { 0x3617, 0, 0 } },
+    { 9, { 0x3602, 0, 0 } },
+    { 10, { 0x360c, 0, 0 } },
+    { 11, { 0x360a, 0, 0 } },
+    { 12, { 0x3616, 0, 0 } },
+    { 13, { 0x3603, 0, 0 } },
+    { 14, { 0x3607, 0, 0 } },
+    { 15, { 0x3608, 0, 0 } },
+    { 16, { 0x3615, 0, 0 } },
+    { 17, { 0x3604, 0, 0 } },
+    { 18, { 0x360f, 0, 0 } },
+    { 19, { 0x3619, 0, 0 } },
+    { 20, { 0x3625, 0, 0 } },
+    { 21, { 0x360e, 0, 0 } },
+    { 22, { 0x361c, 0, 0 } },
+    { 23, { 0x361e, 0, 0 } },
+    { 24, { 0x3606, 0, 0 } },
+};
+RgFog *s_pUseFog = 0;
+/* Initializer view of RawJntData: the 0x88-byte tail is 34 ints. */
+typedef struct RawJntDataInit {
+    int id;
+    int jntID;
+    int words[(0x90 - 0x008) / 4];
+} RawJntDataInit;
+RawJntDataInit s_rawJntDataInit_00A50B10[12] __asm__("s_aRawJntData") = {
+    { 0, 0, { 53, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 80, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 53, 53 } },
+    { 0, 1, { 67, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 83, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 67, 67 } },
+    { 1, 0, { 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 138, 138 } },
+    { 1, 1, { 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 149, 149 } },
+    { 3, 0, { 73, 76, 119, 120, 121, 122, 123, 124, 125, 126, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 126, 126 } },
+    { 3, 1, { 87, 90, 127, 128, 129, 130, 131, 132, 133, 134, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 134, 134 } },
+    { 2, 0, { 50, 53, 54, 55, 56, 57, 58, 59, 77, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 49, 77 } },
+    { 2, 1, { 65, 68, 69, 70, 71, 72, 73, 74, 80, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64, 80 } },
+    { 4, 0, { 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40, 40 } },
+    { 4, 1, { 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 59, 59 } },
+    { 5, 0, { 118, 119, 120, 121, 122, 123, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 119, 119 } },
+    { 5, 1, { 125, 126, 127, 128, 129, 130, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 126, 126 } },
+};

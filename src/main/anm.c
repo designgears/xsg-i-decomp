@@ -295,14 +295,14 @@ int PACK_getSize(FpkFcvPack *pack)
     return 0;
 }
 
-extern float D_004D852C;
+
 
 void *ANM_resetDefault(AnmClock *clock, FpkFcvPack *pack) {
     u16 *e;
     float k, t;
 
     e = PACK_getEntry(pack, *(u16 *)&clock->unmodeled_14[0]);
-    k = D_004D852C;
+    k = 0.033333335f;
     clock->flags &= ~ANM_FINISHED;
     if (e != 0) {
         clock->speed = k;

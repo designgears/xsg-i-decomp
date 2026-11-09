@@ -693,22 +693,13 @@ extern SceneClass *classJava_xeno_Unit;
 extern int JNI_isInstanceOf(SceneObject object, SceneClass *target_class);
 extern SceneString *loadConstString(const char *bytes, int length);
 extern JavaField *lookupClassField(void *class_object, void *name, int flags);
-extern const char chr_peer_string[];
-extern const char chr_algorithm_string[];
-extern const char D_004DC1A0[];
-extern const char D_004DC1A8[];
-extern const char D_004DC1B0[];
 /*
  * "rx"/"ry"/"rz", the rotation-field counterparts of the "px"/"py"/"pz"
  * strings above: Java_xeno_Chr_stop__ reads the peer's rotation into the
  * Java fields these name (lui/addiu at 0x002fe54c/0x002fe57c/0x002fe5ac),
  * and Java_xeno_Chr_getRotate__ (still asm here) uses the same three.
  */
-extern const char D_004DC1B8[];
-extern const char D_004DC1C0[];
-extern const char D_004DC1C8[];
 extern u8 actSequence[0x9800];
-extern float defaultOffset[];
 extern void SEQ_scale(void);
 
 #endif

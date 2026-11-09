@@ -348,7 +348,6 @@ void SEQ_scaleUnit(MapUnitMotionRecord *unit)
 }
 
 extern void SPL_getValueXYZ(float *destination, void *spline, float frame);
-extern float D_004D8788;
 typedef struct {
     void *spline;
     short frame;
@@ -368,9 +367,9 @@ void SEQ_rotateUnitSPL(MapUnitMotionRecord *unit)
         track->frame = 0;
     }
     SPL_getValueXYZ(v, spline, (float)track->frame);
-    unit->rotation.x = v[0] / 180.0f * D_004D8788;
-    unit->rotation.y = v[1] / 180.0f * D_004D8788;
-    unit->rotation.z = v[2] / 180.0f * D_004D8788;
+    unit->rotation.x = v[0] / 180.0f * 3.1415927f;
+    unit->rotation.y = v[1] / 180.0f * 3.1415927f;
+    unit->rotation.z = v[2] / 180.0f * 3.1415927f;
     if (track->end < ++track->frame) {
         seq->state &= ~0xE;
     }

@@ -149,7 +149,6 @@ void SPL_init2(SplineState *spline, int weight_mode, SplinePoint *samples,
     }
 }
 
-extern float D_004D84FC;
 enum {
     SPL_LINEAR_TERM,
     SPL_QUADRATIC_TERM,
@@ -208,7 +207,7 @@ static void SPL_cardinalInit(SplineState *state)
 
                     workspace->interval[segment] = interval;
                     if (interval == 0.0f)
-                        workspace->interval[segment] = D_004D84FC;
+                        workspace->interval[segment] = 1e-06f;
                     workspace->slope[segment] =
                         (samples[next + component + 1] - samples[current + component + 1]) /
                         workspace->interval[segment];

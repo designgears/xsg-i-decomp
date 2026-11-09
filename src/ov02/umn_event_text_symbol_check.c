@@ -50,6 +50,15 @@ int UmnEventTextSymbolCheck(unsigned char **str)
   return 0;
 }
 
+const char D_00A13550[] = "speech";
+const char D_00A13558[] = "char";
+const char D_00A13560[] = "msg";
+const char D_00A13568[] = "mot";
+const char D_00A13570[] = "/speech";
+const char D_00A13578[] = "memo";
+const char D_00A13580[] = "/memo";
+const UmnEventTextSymTbl D_00A13588 = { D_00A13550, 6, 1, D_00A13558, 4, 2, D_00A13560, 3, 3, D_00A13568, 3, 4, D_00A13570, 7, 5, D_00A13578, 4, 6, D_00A13580, 5, 7 };
+
 typedef struct {
     unsigned char *str;
     short len;
@@ -79,6 +88,10 @@ int UmnEventTextCharCheck(unsigned char **str)
     }
     return 0;
 }
+
+const char D_00A135C0[] = "UKUN";
+const char D_00A135C8[] = "SHION";
+const UmnEventTextCharTbl D_00A135D0 = { D_00A135C0, 4, 1, D_00A135C8, 5, 2 };
 
 int UmnEventTextNumberGet(unsigned char **str, int mode)
 {
@@ -142,7 +155,9 @@ void UmnEventTextMessageMake(unsigned char **str, unsigned char **out)
 
 extern int xglCdGetFileSize(const char *name);
 extern char *eMessageNextWaitKeySearch(char *text);
-extern char D_00A135E0[];
+/* defined under its own name so UmnEventTextMake keeps copying it from memory */
+const char s_eventPath_00A135E0[] __asm__("D_00A135E0") = "data\\umn\\event00.txt";
+extern const char D_00A135E0[];
 extern int UmnEventTextMakeWork;
 extern unsigned int uet_file_end;
 typedef struct UmnEventTextRec {
@@ -317,6 +332,7 @@ int UmnEventEndMailCheck(int mail_id)
  * work is the arena address UmnFirstLoad passes (UmnWorkEnd): the tree is
  * read into the next 0x800-aligned block and the address after it returned.
  */
+const char D_00A13620[] = "data\\endou\\umn\\histree.bin";
 int UmnHistoryTreeLoad(int work)
 {
     int aligned = (work + 0x7FF) & ~0x7FF;
@@ -444,6 +460,7 @@ typedef struct UmnMailHeaderView {
     int data;
 } UmnMailHeaderView;
 
+const char D_00A13640[] = "data\\umn\\header.lst";
 int UmnMailHeaderCreate(int work)
 {
     int aligned = (work + 0xF) & ~0xF;
@@ -569,3 +586,18 @@ int UmnEventTextInit(int work)
     uet_flag = 0;
     return aligned + 0x2000;
 }
+
+/* ---- initialized .data (original order) ---- */
+unsigned char umn_attach_tbl[69] = { 1, 1, 1, 1, 2, 1, 1, 3, 1, 2, 2, 5, 2, 6, 5, 2, 0xA, 5, 4, 4, 1, 4, 6, 1, 2, 0x17, 2, 3, 0x14, 1, 4, 4, 1, 4, 8, 1, 1, 4, 1, 4, 0x48, 1, 4, 0x30, 1, 4, 0x18, 1, 4, 0x3C, 1, 4, 0x28, 1, 1, 5, 1, 3, 0x16, 1, 4, 0xA, 2, 4, 0x14, 2, 3, 0x15, 1 };
+unsigned char event_tbl[18] = { 0, 9, 6, 5, 0x11, 0x16, 0x1D, 0x29, 0x2C, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x43, 0x44, 0x47, 0x4D };
+EventEndMail event_end_mail = { 0x1D, 0x1E };
+unsigned char kosmos_special_tbl[4][4] = { 0x29, 0x37, 0, 0, 0x42, 0x38, 0, 0, 0x46, 0x39, 0x3A, 0, 0x4A, 0x3B, 0, 0 };
+char f_name_0[32] = "data\\endou\\umn\\umntxt.bin";
+signed char compulsion_down_load_tbl[13] = { 9, 0x11, 0x26, 0x27, 0x2D, 0x2E, 0x35, 0x36, 0x37, 0x39, 0x3A, 0x44, 0x4D };
+int UmnEventTextMakeWork = 0;
+char *uet_text_buf = 0;
+int uet_flag = 0;
+unsigned int uet_file_end = 0;
+int *UmnHistoryTreeBuf = 0;
+UmnMailHeader *UmnMailHeaderBuf = 0;
+char *umn_text = 0;

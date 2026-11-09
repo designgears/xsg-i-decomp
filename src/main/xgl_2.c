@@ -8,7 +8,7 @@
 
 extern unsigned int D_004ADE80[];
 
-extern unsigned long long iRandSeed;
+static unsigned long long iRandSeed;
 
 
 extern void xglDmaDirectSrcChain(unsigned int channel, unsigned int address);
@@ -19,7 +19,6 @@ extern char Vu0CallSin[];
 
 extern char Vu0CallCos[];
 
-extern const int D_004D27C8[3];
 
 float xglAtan2(float y, float x)
 {
@@ -664,10 +663,15 @@ void xglMatrixUnit(float matrix[4][4])
         : "$2", "memory");
 }
 
-extern float unit_1[16];
-
 void xglMatrixUnit4s(float matrix[4][4])
 {
+    static Matrix4 unit = {
+        {1.0f, 0.0f, 0.0f, 1.0f},
+        {0.0f, 1.0f, 0.0f, 1.0f},
+        {0.0f, 0.0f, 1.0f, 1.0f},
+        {0.0f, 0.0f, 0.0f, 1.0f}
+    };
+
     __asm__ __volatile__(
         "lq $2, 0x0(%0)\n\t"
         "sq $2, 0x0(%1)\n\t"
@@ -678,7 +682,7 @@ void xglMatrixUnit4s(float matrix[4][4])
         "lq $2, 0x30(%0)\n\t"
         "sq $2, 0x30(%1)\n\t"
         :
-        : "r"(unit_1), "r"(matrix)
+        : "r"(unit), "r"(matrix)
         : "$2", "memory");
 }
 
@@ -1416,7 +1420,6 @@ void xglMatrix2Quaternion(float quaternion[4], const Matrix *matrix)
     int largestAxis;
     int nextAxis;
     int lastAxis;
-    int nextAxes[3];
     float *largestComponent;
     float *nextComponent;
     float *lastComponent;
@@ -1430,7 +1433,8 @@ void xglMatrix2Quaternion(float quaternion[4], const Matrix *matrix)
         quaternion[1] = (matrix->elements[8] - matrix->elements[2]) * scale;
         quaternion[2] = (matrix->elements[1] - matrix->elements[4]) * scale;
     } else {
-        __builtin_memcpy(nextAxes, D_004D27C8, sizeof(nextAxes));
+        int nextAxes[3] = {1, 2, 0};
+
         largestAxis = 0;
         if (diagonalX < diagonalY) largestAxis = 1;
         if (matrix->elements[5 * largestAxis] < diagonalZ) largestAxis = 2;

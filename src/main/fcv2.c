@@ -303,9 +303,6 @@ static f32 FCV_getPackVal2f(FCVPack *pack, s32 keyCount, f32 frame)
     return 0.0f;
 }
 
-extern f32 D_004D8500;
-extern f32 D_004D8504;
-extern f32 D_004D8508;
 typedef struct FCV2SampleValues {
     f32 value;
     f32 in_tangent;
@@ -365,7 +362,7 @@ static f32 FCV_getPackVal2s(FCVPack *pack, s32 key_count, f32 frame)
         }
     }
 
-    frame_scale = D_004D8500;
+    frame_scale = 0.033333335f;
     boundary_frame = (f32)previous->frame * frame_scale;
     pack->key_values = (f32 *)end;
     if (frame < boundary_frame) {
@@ -379,7 +376,7 @@ static f32 FCV_getPackVal2s(FCVPack *pack, s32 key_count, f32 frame)
     for (index = 1;
          (next_frame_index = next->frame, index < key_count);
          index++) {
-        boundary_frame = (f32)next_frame_index * D_004D8504;
+        boundary_frame = (f32)next_frame_index * 0.033333335f;
 
         if (frame <= boundary_frame) {
             if (frame == boundary_frame) {
@@ -403,8 +400,8 @@ static f32 FCV_getPackVal2s(FCVPack *pack, s32 key_count, f32 frame)
         }
     }
 
-    next_frame = (f32)next->frame * D_004D8508;
-    previous_frame = (f32)previous->frame * D_004D8508;
+    next_frame = (f32)next->frame * 0.033333335f;
+    previous_frame = (f32)previous->frame * 0.033333335f;
     values = &next->values;
     switch (next->type) {
     case 0:
@@ -907,10 +904,6 @@ void FCV2_setStep(f32 step)
     fcv2Step = __builtin_fabsf(step) * 0.5f;
 }
 
-extern f32 D_004D8518;
-extern f32 D_004D851C;
-extern f32 D_004D8520;
-extern f32 D_004D8524;
 typedef struct FCV2Curve {
     u32 signature;
     u16 type;
@@ -940,11 +933,11 @@ void FCV2_resetPack(FcvAttribute *pack, FCV2Curve *curve)
 
     if (curve != 0) {
         if (curve->type >= 2) {
-            b = curve->scale * D_004D851C;
-            a = curve->count * D_004D8518 * D_004D851C;
+            a = curve->count * 1.5259022e-05f * 0.033333335f;
+            b = curve->scale * 0.033333335f;
         } else {
             b = 0.0f;
-            a = (curve->end - curve->start) * D_004D8520 * D_004D8524;
+            a = (curve->end - curve->start) * 1.5259022e-05f * 0.033333335f;
         }
         type = curve->type;
         pack->value_c = 0;
@@ -971,7 +964,10 @@ typedef struct FCV2AttrDefault {
     unsigned char unmodeled_00[0x10];
 } FCV2AttrDefault;
 
-extern FCV2AttrDefault defaultAttr;
+static FCV2AttrDefault defaultAttr = {
+    { 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
+};
 
 typedef struct FCV2Pack {
     FCV2AttrHeader *cursor;
@@ -1016,7 +1012,6 @@ f32 FCV2_getPackValue(void **arg0, f32 frame) {
     return r;
 }
 
-extern f32 D_004D8528;
 
 u16 *FCV2_getKey(u16 *key, f32 time)
 {
@@ -1030,7 +1025,7 @@ u16 *FCV2_getKey(u16 *key, f32 time)
         key += 2;
         for (i = 0; i < n; i++) {
             ret = key;
-            if (time <= key[1] * D_004D8528) {
+            if (time <= key[1] * 0.033333335f) {
                 return ret;
             }
             switch (key[0]) {

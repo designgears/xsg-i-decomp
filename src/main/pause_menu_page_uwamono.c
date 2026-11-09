@@ -1,8 +1,6 @@
 #include "common.h"
 #include "shared.h"
 
-extern float D_004D7F88;
-extern float D_004D7F8C;
 extern float xglSin(float angle);
 extern float xglCos(float angle);
 
@@ -10,22 +8,18 @@ extern struct { char pad[0x2A]; unsigned short trg; unsigned short btn; } PadDat
 
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 
-extern int debmode;
+static int debmode = 0;
 
-extern char D_004CA788[];
 
-extern char D_004CA7A0[];
 
 extern void DebDispEvtItem(void);
 extern void DebDispItemBox(void);
 extern void UnlockMapUnit(void);
 extern struct { char pad[0x20]; int flags; } GameLoopState;
-extern int cursol_0;
 extern char lineflg, dispflg, printflg, collflg;
-extern char D_004CA680[], D_004DB798[], D_004CA698[], D_004CA6B0[], D_004CA6C8[], D_004CA6E0[];
-extern char D_004CA6F8[], D_004CA710[], D_004CA728[], D_004CA740[], D_004CA758[], D_004CA770[];
 
 void PauseMenuPageUwamono(void) {
+    static int cursol_0 __asm__("cursol.0") = 0;
     int c;
 
     if (debmode == 1) {
@@ -36,20 +30,20 @@ void PauseMenuPageUwamono(void) {
         DebDispItemBox();
         return;
     }
-    xglFontDebugPrintf(0x10, 0x10, D_004CA680);
-    xglFontDebugPrintf(0x30, cursol_0 * 0x10 + 0x20, D_004DB798);
-    if (lineflg) xglFontDebugPrintf(0x40, 0x20, D_004CA698);
-    else xglFontDebugPrintf(0x40, 0x20, D_004CA6B0);
-    if (dispflg) xglFontDebugPrintf(0x40, 0x30, D_004CA6C8);
-    else xglFontDebugPrintf(0x40, 0x30, D_004CA6E0);
-    if (printflg) xglFontDebugPrintf(0x40, 0x40, D_004CA6F8);
-    else xglFontDebugPrintf(0x40, 0x40, D_004CA710);
-    if (collflg) xglFontDebugPrintf(0x40, 0x50, D_004CA728);
-    else xglFontDebugPrintf(0x40, 0x50, D_004CA740);
-    if (GameLoopState.flags & 1) xglFontDebugPrintf(0x40, 0x60, D_004CA758);
-    else xglFontDebugPrintf(0x40, 0x60, D_004CA770);
-    xglFontDebugPrintf(0x40, 0x70, D_004CA788);
-    xglFontDebugPrintf(0x40, 0x80, D_004CA7A0);
+    xglFontDebugPrintf(0x10, 0x10, "\276\345\312\252\315\321\245\307\245\320\245\303\245\260\245\341\245\313\245\345\241\274");
+    xglFontDebugPrintf(0x30, cursol_0 * 0x10 + 0x20, "\241\344");
+    if (lineflg) xglFontDebugPrintf(0x40, 0x20, "\274\315\267\342\265\260\300\327\311\275\274\250\241\241\241\241\245\252\245\363");
+    else xglFontDebugPrintf(0x40, 0x20, "\274\315\267\342\265\260\300\327\311\275\274\250\241\241\241\241\245\252\245\325");
+    if (dispflg) xglFontDebugPrintf(0x40, 0x30, "\276\345\312\252\276\360\312\363\311\275\274\250\241\241\241\241\245\252\245\363");
+    else xglFontDebugPrintf(0x40, 0x30, "\276\345\312\252\276\360\312\363\311\275\274\250\241\241\241\241\245\252\245\325");
+    if (printflg) xglFontDebugPrintf(0x40, 0x40, "\276\345\312\252\276\360\312\363\275\320\316\317\241\241\241\241\245\252\245\363");
+    else xglFontDebugPrintf(0x40, 0x40, "\276\345\312\252\276\360\312\363\275\320\316\317\241\241\241\241\245\252\245\325");
+    if (collflg) xglFontDebugPrintf(0x40, 0x50, "\245\263\245\352\245\270\245\347\245\363\311\275\274\250\241\241\245\252\245\363");
+    else xglFontDebugPrintf(0x40, 0x50, "\245\263\245\352\245\270\245\347\245\363\311\275\274\250\241\241\245\252\245\325");
+    if (GameLoopState.flags & 1) xglFontDebugPrintf(0x40, 0x60, "\274\315\267\342\245\325\245\351\245\260\241\241\241\241\241\241\245\252\245\363");
+    else xglFontDebugPrintf(0x40, 0x60, "\274\315\267\342\245\325\245\351\245\260\241\241\241\241\241\241\245\252\245\325");
+    xglFontDebugPrintf(0x40, 0x70, "\245\244\245\331\245\363\245\310\245\242\245\244\245\306\245\340\260\354\315\367");
+    xglFontDebugPrintf(0x40, 0x80, "\312\365\310\242\303\346\277\310\260\354\315\367");
     if (PadData.trg & 0x1000) {
         cursol_0--;
         if (cursol_0 < 0) cursol_0 = 6;
@@ -84,29 +78,26 @@ void PauseMenuPageUwamono(void) {
     }
 }
 
-extern char D_004CA7E8[];
-extern char D_004CA7F8[];
-extern char D_004DB7A0[];
 extern char EvtItemTbl[][0x80];
-extern int page_1;
 
 void DebDispEvtItem(void)
 {
+    static int page_1 __asm__("page.1") = 0;
     int i;
     int n;
     int y1, y2;
     char *p;
 
-    xglFontDebugPrintf(0x10, 0x10, D_004CA788);
-    xglFontDebugPrintf(0x10, 0x20, D_004CA7E8);
+    xglFontDebugPrintf(0x10, 0x10, "\245\244\245\331\245\363\245\310\245\242\245\244\245\306\245\340\260\354\315\367");
+    xglFontDebugPrintf(0x10, 0x20, "\241\337\245\334\245\277\245\363\244\307\314\341\244\353");
     for (i = 0; i < 4; i++) {
         n = i + page_1 * 4;
         if (n >= 0xFF) break;
         p = EvtItemTbl[n];
-        xglFontDebugPrintf(4, i * 0x22 + 0x3C, D_004CA7F8, n + 1, p, *p);
+        xglFontDebugPrintf(4, i * 0x22 + 0x3C, "%3d %s %c", n + 1, p, *p);
         while (*p++ != 0) {
         }
-        xglFontDebugPrintf(0x10, i * 0x22 + 0x48, D_004DB7A0, p);
+        xglFontDebugPrintf(0x10, i * 0x22 + 0x48, "%s", p);
     }
     if (PadData.btn & 0x1000) {
         if (--page_1 < 0) {
@@ -127,16 +118,10 @@ extern int xglFlagsGet1(int bit_offset);
 extern void *memset(void *, int, unsigned int);
 typedef struct { signed char kind; unsigned char id; signed char c; signed char d; int e; } ItemBoxEnt;
 extern ItemBoxEnt ItemBoxTbl[];
-extern int page_2;
-extern char D_004CA808[];
-extern char D_004DB7A8[];
-extern char D_004DB7B0[];
-extern char D_004DB7B8[];
-extern char D_004DB7C0[];
-extern char D_004DB7C8[];
 
 void DebDispItemBox(void)
 {
+    static int page_2 __asm__("page.2") = 0;
     char buf1[16];
     char buf2[16];
     int i;
@@ -147,8 +132,8 @@ void DebDispItemBox(void)
     char *name;
     ItemBoxEnt *p;
 
-    xglFontDebugPrintf(0x10, 0x10, D_004CA7A0);
-    xglFontDebugPrintf(0x10, 0x20, D_004CA7E8);
+    xglFontDebugPrintf(0x10, 0x10, "\312\365\310\242\303\346\277\310\260\354\315\367");
+    xglFontDebugPrintf(0x10, 0x20, "\241\337\245\334\245\277\245\363\244\307\314\341\244\353");
     for (i = 0; i < 8; i++) {
         memset(buf1, 0, 0x10);
         memset(buf2, 0, 0x10);
@@ -160,22 +145,22 @@ void DebDispItemBox(void)
         d = p->d;
         name = GetItemName(p->kind, p->id);
         if (name == 0) {
-            name = D_004DB7A8;
+            name = "NULL";
         }
         if (e == 0) {
             HexToStr(c, buf1);
-            xglFontDebugPrintf(4, i * 0x10 + 0x3C, D_004DB7B0, n, name);
-            xglFontDebugPrintf(0x80, i * 0x10 + 0x3C, D_004DB7B8, buf1);
+            xglFontDebugPrintf(4, i * 0x10 + 0x3C, "%3d %s", n, name);
+            xglFontDebugPrintf(0x80, i * 0x10 + 0x3C, "%s\270\304", buf1);
         } else {
             HexToStr(e, buf1);
-            xglFontDebugPrintf(4, i * 0x10 + 0x3C, D_004CA808, n, buf1);
+            xglFontDebugPrintf(4, i * 0x10 + 0x3C, "%3d \244\252\266\342 %s\243\307", n, buf1);
         }
         if (xglFlagsGet1(n + 0x79EC7) == 1) {
-            xglFontDebugPrintf(0x98, i * 0x10 + 0x3C, D_004DB7C0);
+            xglFontDebugPrintf(0x98, i * 0x10 + 0x3C, "\274\350\306\300\272\321");
         }
         if (d != 0) {
             HexToStr(d, buf2);
-            xglFontDebugPrintf(0xBA, i * 0x10 + 0x3C, D_004DB7C8, buf2);
+            xglFontDebugPrintf(0xBA, i * 0x10 + 0x3C, "\263\316\316\250%s", buf2);
         }
     }
     if (PadData.btn & 0x1000) {
@@ -228,24 +213,6 @@ typedef struct UwamonoDebugUnit {
 extern UwamonoDebugUnit MapUnit[64];
 
 extern float xglRotTransPers(int *result, float matrix[4][4], void *position, int camera);
-extern char D_004CA818[];
-extern char D_004CA828[];
-extern char D_004DB7D0[];
-extern char D_004DB7D8[];
-extern char D_004CA838[];
-extern char D_004CA848[];
-extern char D_004CA858[];
-extern char D_004CA868[];
-extern char D_004CA878[];
-extern char D_004CA888[];
-extern char D_004CA898[];
-extern char D_004CA8A8[];
-extern char D_004CA8B8[];
-extern char D_004CA8C8[];
-extern char D_004CA8D8[];
-extern char D_004CA8E8[];
-extern char D_004CA8F8[];
-extern char D_004CA908[];
 
 void DispDebugUwamono(void)
 {
@@ -288,46 +255,46 @@ void DispDebugUwamono(void)
         y += 32;
         if (unit->serial < 0x1000) {
             x = screen_col - 32;
-            xglFontDebugPrintf(x, y, D_004CA818, unit->serial);
+            xglFontDebugPrintf(x, y, "\015\000\245\321\241\274\245\304%4d", unit->serial);
         } else {
             x = screen_col - 32;
-            xglFontDebugPrintf(x, y, D_004CA828, unit->serial);
+            xglFontDebugPrintf(x, y, "\015\000\245\342\245\307\245\3530x%4x", unit->serial);
         }
         switch (info->kind) {
         case 1:
-            xglFontDebugPrintf(x, y + 12, D_004DB7D0);
+            xglFontDebugPrintf(x, y + 12, "\015\000\245\311\245\242");
             break;
         case 2:
-            xglFontDebugPrintf(x, y + 12, D_004CA838);
+            xglFontDebugPrintf(x, y + 12, "\015\000\262\365\244\354\312\252");
             if (info->state_flags & 1)
-                xglFontDebugPrintf(x, y + 24, D_004CA848);
+                xglFontDebugPrintf(x, y + 24, "\015\000\274\253\262\365 \241\373");
             else
-                xglFontDebugPrintf(x, y + 24, D_004CA858);
+                xglFontDebugPrintf(x, y + 24, "\015\000\274\253\262\365 \241\337");
             if (info->state_flags & 2)
-                xglFontDebugPrintf(x, y + 36, D_004CA868);
+                xglFontDebugPrintf(x, y + 36, "\015\000\305\250\262\365 \241\373");
             else
-                xglFontDebugPrintf(x, y + 36, D_004CA878);
+                xglFontDebugPrintf(x, y + 36, "\015\000\305\250\262\365 \241\337");
             break;
         case 3:
             if (unit->serial == 0x7000) {
-                xglFontDebugPrintf(x, y + 12, D_004CA888);
+                xglFontDebugPrintf(x, y + 12, "\015\000\245\263\245\352\245\270\245\347\245\363");
             } else if (unit->serial == 0x7012) {
-                xglFontDebugPrintf(x, y + 12, D_004CA898, info->sound);
+                xglFontDebugPrintf(x, y + 12, "\015\000\262\273 0x%8x", info->sound);
                 break;
             } else {
-                xglFontDebugPrintf(x, y + 12, D_004CA8A8);
+                xglFontDebugPrintf(x, y + 12, "\015\000\245\310\245\351\245\303\245\327");
             }
             if (info->state_flags & 1)
-                xglFontDebugPrintf(x, y + 24, D_004CA848);
+                xglFontDebugPrintf(x, y + 24, "\015\000\274\253\262\365 \241\373");
             else
-                xglFontDebugPrintf(x, y + 24, D_004CA858);
+                xglFontDebugPrintf(x, y + 24, "\015\000\274\253\262\365 \241\337");
             if (info->state_flags & 2)
-                xglFontDebugPrintf(x, y + 36, D_004CA868);
+                xglFontDebugPrintf(x, y + 36, "\015\000\305\250\262\365 \241\373");
             else
-                xglFontDebugPrintf(x, y + 36, D_004CA878);
+                xglFontDebugPrintf(x, y + 36, "\015\000\305\250\262\365 \241\337");
             break;
         case 4:
-            xglFontDebugPrintf(x, y + 12, D_004DB7D8);
+            xglFontDebugPrintf(x, y + 12, "\015\000\312\365\310\242");
             {
                 int item = info->item;
 
@@ -337,13 +304,13 @@ void DispDebugUwamono(void)
                 category = ItemBoxTbl[item].kind;
             }
             if (money != 0)
-                xglFontDebugPrintf(x, y + 24, D_004CA8B8, money);
+                xglFontDebugPrintf(x, y + 24, "\015\000\244\252\266\342 %6d G", money);
             else
-                xglFontDebugPrintf(x, y + 24, D_004CA8C8,
+                xglFontDebugPrintf(x, y + 24, "\015\000%s %3d\270\304",
                                    GetItemName(category, index), count);
             break;
         case 5:
-            xglFontDebugPrintf(x, y + 12, D_004CA8D8);
+            xglFontDebugPrintf(x, y + 12, "\015\000\245\242\245\244\245\306\245\340");
             {
                 int item = info->item;
 
@@ -353,25 +320,23 @@ void DispDebugUwamono(void)
                 category = ItemBoxTbl[item].kind;
             }
             if (money != 0)
-                xglFontDebugPrintf(x, y + 24, D_004CA8E8, money);
+                xglFontDebugPrintf(x, y + 24, "\015\000\244\252\266\342 %6dG", money);
             else
-                xglFontDebugPrintf(x, y + 24, D_004CA8C8,
+                xglFontDebugPrintf(x, y + 24, "\015\000%s %3d\270\304",
                                    GetItemName(category, index), count);
             break;
         case 6:
-            xglFontDebugPrintf(x, y + 12, D_004CA8F8);
+            xglFontDebugPrintf(x, y + 12, "\015\000\245\273\241\274\245\326");
             break;
         case 7:
-            xglFontDebugPrintf(x, y + 12, D_004CA908);
+            xglFontDebugPrintf(x, y + 12, "\015\000\245\267\245\347\245\303\245\327");
             break;
         }
         if (unit->serial != 0x7012 && info->sound > 0)
-            xglFontDebugPrintf(x, y + 48, D_004CA898, info->sound);
+            xglFontDebugPrintf(x, y + 48, "\015\000\262\273 0x%8x", info->sound);
     }
 }
 
-extern float D_004D7F80;
-extern float D_004D7F84;
 
 void DispCollUwamono(void)
 {
@@ -392,8 +357,8 @@ void DispCollUwamono(void)
     colors[5] = 0;
     colors[6] = 0;
     colors[7] = 128;
-    position_w = D_004D7F80;
-    corner_w = D_004D7F84;
+    position_w = 0.3f;
+    corner_w = 0.1f;
     for (i = 0; i < 64; i++) {
         UwamonoInfo *info = &MapUnit[i].info;
         UwamonoDebugUnit *unit;
@@ -469,19 +434,20 @@ void DispPillar(Vector4 *base, Vector4 *step)
     } corners[4];
     int segment = 0;
     float angle;
-    float angle_increment;
+    float cos_angle;
 
     base->w = 1.0f;
     do {
         /* Compute four local corners for each angular segment. */
         corners[0].vector = *base;
         corners[1].vector = *base;
-        angle_increment = D_004D7F88;
-        angle = (float)segment * angle_increment;
+        angle = 0.39269909f;
+        angle = (float)segment * angle;
         corners[0].vector.x += xglSin(angle) * step->x;
-        angle_increment = D_004D7F8C;
-        corners[0].vector.z += xglCos(angle) * step->x;
-        angle = (float)(segment + 1) * angle_increment;
+        cos_angle = angle;
+        angle = 0.39269909f;
+        corners[0].vector.z += xglCos(cos_angle) * step->x;
+        angle = (float)(segment + 1) * angle;
         corners[1].vector.x += xglSin(angle) * step->x;
         corners[1].vector.z += xglCos(angle) * step->x;
         corners[2] = corners[0];

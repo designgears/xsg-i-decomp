@@ -50,7 +50,6 @@ struct MenuShopWorkData {
     short partyIds[6];
 };
 
-extern MenuShopWorkData *MenuShopWork;
 
 /* MenuShopSelect work (ported from upstream): two command panes and one
  * yes/no pane, each a 0x194-byte WindowDX followed by its panel. */
@@ -120,10 +119,6 @@ typedef struct MenuShopSelectWork {
     MenuShopChoicePane choices[1];
 } MenuShopSelectWork;
 
-extern const char *msg00_1_0036DB30[8];
-extern const char *msg01_2_0036DB50[4];
-extern const char D_004DB168[];
-extern const char D_004DB170[];
 extern int MenuSelectWindow();
 
 /* MenuShopCore (ported from upstream) declarations. */
@@ -138,10 +133,6 @@ typedef struct {
     u16 mappedRepeat;
 } MenuShopPadData;
 extern MenuShopPadData PadData;
-extern const char D_004C7A68[];
-extern const char D_004C7A78[];
-extern const char D_004C7A88[];
-extern const char D_004C7A98[];
 void xglSoundEffectNormalID(int, int);
 void MenuAgwsParaSet(int, int);
 int MenuSelectMove(int selection, int count, int wrap);

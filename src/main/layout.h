@@ -34,19 +34,6 @@ extern SceneClass *classJava_xeno_Chr;
 extern SceneClass *classJava_xeno_Effect;
 extern SceneClass *classJava_xeno_util_Layout;
 
-extern const char layout_peer[];
-extern const char layout_px[];
-extern const char layout_py[];
-extern const char layout_pz[];
-extern const char layout_ry[];
-extern const float layout_unit_pi;
-extern const float layout_chr_pi;
-/* Same role as layout_unit_pi/layout_chr_pi (div.s at 0x2f70c0, a scaled
- * conversion applied to the effect's stored rotation component) but not
- * present in config/symbols/main.txt under this address, so it keeps its
- * splat name. */
-extern float D_004D83A4;
-
 extern LayoutHeader *UnduDataGetHeader(int map_index, int unit_index);
 extern void *loadConstString(const char *bytes, int length);
 /* canon: config/header-canon.json, as src/main/toolkit.h and src/main/chr.h
@@ -84,10 +71,11 @@ typedef struct LayoutSetArgs {
     int unit_id;             /* +0x8 */
 } LayoutSetArgs;
 
-/* Java_xeno_util_Layout_getManager__I's own manager singleton (main VA
- * 0x004DC6B0). The word right after it (0x004DC6B4) has no entry in
- * config/symbols/main.txt and keeps its splat name. */
-extern int defaultLayout;
-extern int D_004DC6B4;
+/* Java_xeno_util_Layout_getManager__I's manager singleton (main VA
+ * 0x004DC6B0, local `b`, 8 bytes): the Layout class word and the id. */
+typedef struct LayoutManager {
+    int cls; /* +0x0 */
+    int id;  /* +0x4 */
+} LayoutManager;
 
 #endif

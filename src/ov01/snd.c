@@ -66,6 +66,85 @@ typedef struct SndStEdData {
     int condition[8];
 } SndStEdData;
 
+/* ov01:0x00a424b8.. sound file name tables (original .data order). */
+char *sndSeNameBase = "data\\yamamoto\\snd\\sed\\";
+char *sndSeNameExt = ".bin";
+char *sndMuNameBase = "data\\yamamoto\\snd\\smd\\";
+char *sndMuNameExt1 = ".SMD";
+char *sndMuNameExt2 = ".SWD";
+char *muName[3] = {
+    "BATTLE1", "BATTLE2", "BATTLE3",
+};
+char *mu2Name[4] = {
+    "JINGLE1", "JINGLE2", 0, 0,
+};
+char *plChaBaseSeName[16] = {
+    "CS", "KM", "SO", 0, "Z8", "MO", "JR", 0,
+    0, "BG", 0, 0, 0, 0, 0, 0,
+};
+char *plAgwsBaseSeName[16] = {
+    "VX_01", "VX_02", "VX_03", "VX_04", 0, "VX_06", 0, "AG_02",
+    0, "AG_04", "AG_05", 0, 0, 0, 0, 0,
+};
+char *enemyBaseSeName[161] = {
+    0, "GUNO001", "GUNO002", "GUNO003", "GUNO004", "GUNO005", "GUNO006", "GUNO007",
+    "GUNO008", "GUNO009", "GUNO010", "GUNO011", "GUNO012", "GUNO013", "GUNO014", "GUNO015",
+    "GUNO016", "GUNO017", "GUNO018", "GUNO019", "GUNO020", "GUNO021", "GUNO022", "GUNO023",
+    "GUNO024", "GUNO025", "GUNO101", "GUNO102", "GUNO103", "GUNO114", "FEMA001", "FEMA002",
+    0, 0, "FEMA005", 0, "FERE001", "FERE002", 0, "FERO001",
+    "FESO001", "FESO002", "FESO003", "FESO004", "UTMA001", "UTMA002", "UTMA003", "UTMA004",
+    "UTMA005", "UTMA006", "UTMA007", "UTMA008", "UTMA009", 0, "UTMA011", "UTMA012",
+    "UTMA013", 0, 0, "UTRE002", "UTRE003", "UTRE004", "UTRE005", 0,
+    "UTRO001", "UTRO002", "UTRO003", "UTRO004", "UTRO005", "UTRO006", "UTRO007", "UTSO001",
+    "UTSO002", "UTSO003", "UTSO004", "UTSO005", "UTSO006", "UTSO007", "MONS001", "MONS002",
+    "MONS003", "MONS004", "MONS005", "MONS006", "MONS007", 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, "BOSS001", "BOSS002",
+    "BOSS003", "BOSS004", "BOSS005", 0, "BOSS007", 0, "BOSS009", "BOSS010",
+    "BOSS011", "BOSS012", "BOSS013", "BOSS014", 0, "BOSS016", "BOSS017", "BOSS018",
+    "BOSS019", "BOSS020", "BOSS021", 0, 0, "BOSS024", "BOSS025", "BOSS026",
+    0, 0, "BOSS029", "BOSS030", 0, 0, "BOSS033", "BOSS103",
+    "BOSS104", 0, 0, 0, 0, 0, 0, 0,
+    0,
+};
+char *plChaMidSeName[24] = {
+    "", "_MV", "_DM", "_AT1", "_AT2", "_AT3_4", "_AT3_4", "_AT5_6",
+    "_AT5_6", "_SP1", "_SP2", "_SP3", "_SP4", "_SP5", "_SP6", "_SP7",
+    "_SP8", "_WP1", "_WP2", "_WP3", "_WP4", "_WP5", "_WP6", "_CV",
+};
+char *plAgwsMidSeName[3] = {
+    "", "M", "D",
+};
+char *enemyMidSeName[3] = {
+    "", "M", "D",
+};
+SndStEdData btst[7] = {
+    { 0x1, "cs_bst", { 0x1, 0x1, 0x1, 0x1, 0x9, 0, 0, 0 } },
+    { 0x2, "km_bst", { 0x1, 0x1, 0x3, 0x6, 0x9, 0, 0, 0 } },
+    { 0x3, "so_bst", { 0x1, 0x1, 0x1, 0x2, 0x6, 0xA, 0xC, 0x9 } },
+    { 0x5, "z8_bst", { 0x1, 0x1, 0x1, 0xB, 0x9, 0, 0, 0 } },
+    { 0x6, "mo_bst", { 0x1, 0x1, 0x1, 0x5, 0xB, 0x9, 0, 0 } },
+    { 0x7, "jr_bst", { 0x1, 0x1, 0x1, 0xC, 0xA, 0x9, 0, 0 } },
+    { 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 } },
+};
+SndStEdData bted[7] = {
+    { 0x1, "cs_bed", { 0x1, 0x1, 0x1, 0x7, 0, 0, 0, 0 } },
+    { 0x2, "km_bed", { 0x1, 0x1, 0x3, 0x7, 0x8, 0, 0, 0 } },
+    { 0x3, "so_bed", { 0x1, 0x1, 0x1, 0x7, 0x8, 0, 0, 0 } },
+    { 0x5, "z8_bed", { 0x1, 0x1, 0x1, 0x7, 0, 0, 0, 0 } },
+    { 0x6, "mo_bed", { 0x1, 0x1, 0x1, 0x4, 0x7, 0, 0, 0 } },
+    { 0x7, "jr_bed", { 0x1, 0x1, 0x1, 0x7, 0, 0, 0, 0 } },
+    { 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 } },
+};
+SndSeRegDat sndSeRegDat[6] = { { 0 } };
+unsigned char sndSeDat[0x68] = { 0 };
+SndMuData sndMuDat = { 0 };
+int ctrlId = 0;
+int dmgBankOffs[3] = { 0 };
+int dmgBankStat[3] = { 0 };
+
 extern int dataSndStEdNumSub(ObjectTask *unit, int condition);
 extern int rnd(int maximum);
 
@@ -254,7 +333,6 @@ extern char *strcat(char *destination, const char *source);
 extern char *strlwr(char *s);
 extern char *sefGetEffectName(int effectNo);
 extern unsigned char *dataWpnGet(int index);
-extern char *D_00A424EC[];
 extern char *plChaMidSeName[];
 extern char *plAgwsMidSeName[];
 extern char *enemyMidSeName[];
@@ -274,14 +352,14 @@ int dataSndSeNameGet(char *name, ObjectTask *unit, int seType)
             if ((unsigned int)(seType - 0x18) < 2) {
                 dataSndStEdNameGet(name, unit, seType);
             } else {
-                base = D_00A424EC[charaId];
+                base = plChaBaseSeName[charaId - 1];
                 if (base != 0) {
                     strcpy(name, base);
                     strcat(name, plChaMidSeName[seType]);
                 }
             }
         } else if (calcUPGet(unit)->flags & 0x40) {
-            base = D_00A424EC[charaId];
+            base = plChaBaseSeName[charaId - 1];
             if (base != 0) {
                 if (seType < 3) {
                     strcpy(name, base);
@@ -294,7 +372,7 @@ int dataSndSeNameGet(char *name, ObjectTask *unit, int seType)
                 }
             }
         } else {
-            base = D_00A424EC[charaId];
+            base = plChaBaseSeName[charaId - 1];
             if (base != 0) {
                 if (seType < 3) {
                     strcpy(name, base);
@@ -443,11 +521,9 @@ extern char *strcpy(char *destination, const char *source);
 extern char *strcat(char *destination, const char *source);
 extern int xglCdGetFileSize(const char *name);
 extern int printf(const char *format, ...);
-extern char fileName[];
+static char fileName[0x100];
 extern char *sndSeNameBase;
 extern char *sndSeNameExt;
-extern const char D_00A4E6A8[];
-extern const char D_00A4E6D0[];
 
 int dataSndSeLoadSub(ObjectTask *unit, int seType, SndSeLoadWork *work)
 {
@@ -459,7 +535,7 @@ int dataSndSeLoadSub(ObjectTask *unit, int seType, SndSeLoadWork *work)
 
     dataSndSeNameGet(&name, unit, seType);
     if (name == 0) {
-        printf(D_00A4E6A8, calcUPGet(unit)->charaId, seType);
+        printf("** dataSndSeLoadSub: err -> (%d) %d\n", calcUPGet(unit)->charaId, seType);
         work->seType = 0;
         return 0;
     }
@@ -474,12 +550,11 @@ int dataSndSeLoadSub(ObjectTask *unit, int seType, SndSeLoadWork *work)
     clamped = (withSlack < 0) ? (fileSize + 0xFFE) : withSlack;
     roundedSize = (clamped >> 0xB) << 0xB;
     work->size = roundedSize;
-    printf(D_00A4E6D0, roundedSize);
+    printf("** SND read Size = %d\n", roundedSize);
     work->seType = seType;
     return 1;
 }
 
-extern const char D_00A4E6E8[];
 typedef struct {
     int seType;
     int pad4[2];
@@ -501,7 +576,7 @@ int dataSndSeLoad(ObjectTask *unit, int seType)
     dat = ((SndSeLoadDat *(*)(int))sndSeAdrGet)(charaId);
     w = &dat->work;
     if (dat->id == charaId && w->seType == seType) {
-        printf(D_00A4E6E8, charaId, seType);
+        printf("** dataSndSeLoad: skip %d %d\n", charaId, seType);
         return 1;
     }
     w->b = 0;
@@ -531,7 +606,6 @@ void dataSndSeLoad2(ObjectTask *unit)
     }
 }
 
-extern const char D_00A4E708[];
 
 /*
  * ov01:0x00a2d6a0. Claims a unit sound registration, loads its base bank,
@@ -547,7 +621,7 @@ int dataSndSeRegLoad(ObjectTask *unit)
 
     charaId = calcUPGet(unit)->charaId;
     if (sndSeRegAdrChk(charaId) != 0) {
-        printf(D_00A4E708, charaId);
+        printf("** dataSndSeRegLoad: skip %d\n", charaId);
         return 1;
     }
     record = sndSeRegAdrGet(charaId);
@@ -615,12 +689,6 @@ void dataSndSeRegLoad2(ObjectTask *unit)
 extern int sndConvRegNo(int id);
 extern int xglSoundSendSed(void *sed, int bank);
 extern void SsdCheckSpuMemory(int mode);
-extern const char D_00A4E728[];
-extern const char D_00A4E740[];
-extern const char D_00A4E768[];
-extern const char D_00A4E788[];
-extern const char D_00A4E7B0[];
-extern const char D_00A4E7C8[];
 
 int sndSeTrans(int seId, int volume)
 {
@@ -644,32 +712,32 @@ int sndSeTrans(int seId, int volume)
     if (bank->work.seType != 0) {
         b = sndBankGet(seId, volume);
         if (volume == 2 && dmgBankOffs[b] != 0) {
-            printf(D_00A4E728);
+            printf(">>>> SetTrans err\n");
             return 0;
         }
         sed = *(int **)&bank->unmodeled_0c[0];
         if (sed[0] != 0x73646573) {
-            printf(D_00A4E740, sed[0], sed);
+            printf("** sndSeTrans: err! sedType %X %X\n", sed[0], sed);
             return 0;
         }
         if (sed[2] > 0x10000) {
-            printf(D_00A4E768, sed[2]);
+            printf("** sndSeTrans: err! sedSize %d\n", sed[2]);
             return 0;
         }
         swd = *(int **)&bank->unmodeled_0c[4];
         if (swd[0] != 0x6D647773) {
-            printf(D_00A4E788, swd[0], swd);
+            printf("** sndSeTrans: err! swdType %X %X\n", swd[0], swd);
             return 0;
         }
         r1 = xglSoundSendSed(sed, b);
         r2 = xglSoundSendSwd(*(int **)&bank->unmodeled_0c[4], b);
-        printf(D_00A4E7B0, r1, r2);
+        printf("** sndSeTrans: %d %d\n", r1, r2);
         if (r1 < 0 || r2 < 0) {
             SsdCheckSpuMemory(1);
         }
         return 1;
     }
-    printf(D_00A4E7C8, charaId, volume);
+    printf("** sndSeTrans: err -> (%d) %d\n", charaId, volume);
     return 0;
 }
 
@@ -689,7 +757,6 @@ int sndSysSePlay(int soundId)
 extern int ctrlId;
 extern int dmgBankOffs[3];
 extern void xglSoundEffectNormalID(int soundId, int ctrlId);
-extern const char D_00A4E7E8[];
 
 /*
  * ov01:0x00a2dab0. Starts sound-effect id on the unit's bank. sndBankGet
@@ -716,7 +783,7 @@ int sndSePlay(int unit, int id, int no)
         dmgBankOffs[bank] = 1;
     }
     xglSoundEffectNormalID((bank << 16) | no, ctrlId);
-    printf(D_00A4E7E8, bank, id, no, ctrlId);
+    printf("<< SE Play bank=%d id=%d no=%d %d >>\n", bank, id, no, ctrlId);
     if (id != 2) {
         ctrlId++;
     }
@@ -725,7 +792,6 @@ int sndSePlay(int unit, int id, int no)
 
 extern int sndBankGet();
 extern void xglSoundEffectStopID(int sound_id, int flags);
-extern const char D_00A4E810[];
 
 int sndSeStop(int unused, int pack)
 {
@@ -733,7 +799,7 @@ int sndSeStop(int unused, int pack)
 
     if (pack != 0) {
         xglSoundEffectStopID(sndBankGet() << 0x10, 0);
-        printf(D_00A4E810, pack);
+        printf("<< SE Stop pack=%d >>\n", pack);
         stopped = 1;
     }
     return stopped;
@@ -746,7 +812,6 @@ typedef struct {
 typedef struct {
     SndConvRegPair pair[7];
 } SndConvRegTable;
-extern const SndConvRegTable D_00A4E828;
 
 /*
  * ov01:0x00a2dbc8. Searches a sentinel-terminated sound conversion pair
@@ -754,10 +819,9 @@ extern const SndConvRegTable D_00A4E828;
  */
 int sndConvRegNo(int id)
 {
-    SndConvRegTable table;
+    SndConvRegTable table = { { { 1, 0 }, { 2, 1 }, { 3, 2 }, { 4, 3 }, { 5, 4 }, { 0x17, 4 }, { 0, 0 } } };
     int i;
 
-    table = D_00A4E828;
     for (i = 0; table.pair[i].key != 0; i++) {
         if (table.pair[i].key == id) {
             return table.pair[i].value;
@@ -947,7 +1011,7 @@ extern char *sndMuNameBase;
 extern char *sndMuNameExt1;
 extern char *sndMuNameExt2;
 extern char *muName[3];
-extern char *mu2Name[3];
+extern char *mu2Name[4];
 
 /*
  * ov01:0x00a2e160. Loads the three sound files of music set mode into
@@ -1046,13 +1110,12 @@ void sndMuFadeIn(void)
     xglSoundSequenceNormal3(0, SND_MU_VOLUME_MAX, SND_MU_FADE_TIME);
 }
 
-extern const char D_00A4E860[];
 void sndMuTransPlayObj(ObjectTask *task);
 
 void sndMuTransPlay(int mode)
 {
     if (sndMuTrans(mode) != 0) {
-        printf(D_00A4E860, mode);
+        printf("<< MU Play no=%d >>\n", mode);
         objEntryPure(sndMuTransPlayObj);
     }
 }

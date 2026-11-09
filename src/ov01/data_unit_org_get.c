@@ -35,6 +35,317 @@ typedef struct DefaultEquipmentRecord { unsigned char opaque[0x20]; } DefaultEqu
 typedef struct SpecialTableRecord { unsigned char opaque[0x20]; } SpecialTableRecord;
 
 
+typedef struct XtxFileEntry {
+    const char *name;
+    unsigned int address;
+} XtxFileEntry;
+
+typedef struct PosTblEntry {
+    float position[4];
+    short line; /* +0x10 */
+    unsigned char unmodeled_12[0x20 - 0x12];
+} PosTblEntry;
+
+typedef struct SpecTable {
+    int specialBase[0x3C / sizeof(int)];
+    int bakpBase[1]; /* +0x3C, indexed dynamically */
+} SpecTable;
+
+/* ---- initialized data (original order) ---- */
+const char D_00A44880[] = "data\\yamamoto\\mot\\";
+const char D_00A44898[] = ".bin";
+const char D_00A448A0[] = "data\\yamamoto\\map\\";
+const char D_00A448B8[] = "map";
+const char D_00A448C0[] = "data\\yamamoto\\think\\";
+const char D_00A448D8[] = "think";
+const char D_00A448E0[] = "data\\yamamoto\\stat\\cur.xtx";
+const char D_00A44900[] = "data\\yamamoto\\stat\\manu.xtx";
+const char D_00A44920[] = "data\\yamamoto\\stat\\stat.xtx";
+const char D_00A44940[] = "def0";
+const char D_00A44948[] = "sol0";
+const char D_00A44950[] = "wir0";
+const char D_00A44958[] = "smp1";
+const char D_00A44960[] = "ecm2";
+const char D_00A44968[] = "ecm1";
+const char D_00A44970[] = "ead0";
+const char D_00A44978[] = "bbc0";
+const char D_00A44980[] = "vsd0";
+const char D_00A44988[] = "fsd0";
+const char D_00A44990[] = "shb0";
+const char D_00A44998[] = "amp2";
+const char D_00A449A0[] = "lgc0";
+const char D_00A449A8[] = "bp0";
+const char D_00A449B0[] = "eac0";
+const char D_00A449B8[] = "cb0";
+const char D_00A449C0[] = "bl0";
+const char D_00A449C8[] = "msp2";
+const char D_00A449D0[] = "msp0";
+const char D_00A449D8[] = "hb0";
+const char D_00A449E0[] = "glg0";
+const char D_00A449E8[] = "gnd0";
+const char D_00A449F0[] = "fl0";
+const char D_00A449F8[] = "pbk0";
+const char D_00A44A00[] = "lsr0";
+const char D_00A44A08[] = "bs0";
+const char D_00A44A10[] = "bam0";
+const char D_00A44A18[] = "rf2";
+const char D_00A44A20[] = "rf1";
+const char D_00A44A28[] = "rf0";
+const char D_00A44A30[] = "mg1";
+const char D_00A44A38[] = "mg0";
+const char D_00A44A40[] = "hmr2";
+const char D_00A44A48[] = "hmr1";
+const char D_00A44A50[] = "hmr0";
+const char D_00A44A58[] = "hg1";
+const char D_00A44A60[] = "hg0";
+const char D_00A44A68[] = "bdf0";
+const char D_00A44A70[] = "bd1";
+const char D_00A44A78[] = "bd0";
+const char D_00A44A80[] = "ax0";
+const char D_00A44A88[] = "sut0";
+const char D_00A44A90[] = "zigg_wp4";
+const char D_00A44AA0[] = "zigg_wp3";
+const char D_00A44AB0[] = "zigg_wp2";
+const char D_00A44AC0[] = "zigg_wp1";
+const char D_00A44AD0[] = "kosm_wp6";
+const char D_00A44AE0[] = "kosm_wp5";
+const char D_00A44AF0[] = "kosm_wp4";
+const char D_00A44B00[] = "kosm_wp3";
+const char D_00A44B10[] = "kosm_wp2";
+const char D_00A44B20[] = "kosm_wp1";
+const char D_00A44B30[] = "jr_sp8";
+const char D_00A44B38[] = "jr_sp7";
+const char D_00A44B40[] = "jr_sp6";
+const char D_00A44B48[] = "jr_sp5";
+const char D_00A44B50[] = "jr_sp4";
+const char D_00A44B58[] = "jr_sp3";
+const char D_00A44B60[] = "jr_sp2";
+const char D_00A44B68[] = "jr_sp1";
+const char D_00A44B70[] = "momo_sp8";
+const char D_00A44B80[] = "momo_sp7";
+const char D_00A44B90[] = "momo_sp6";
+const char D_00A44BA0[] = "momo_sp5";
+const char D_00A44BB0[] = "momo_sp4";
+const char D_00A44BC0[] = "momo_sp3";
+const char D_00A44BD0[] = "momo_sp2";
+const char D_00A44BE0[] = "momo_sp1";
+const char D_00A44BF0[] = "zigg_sp7";
+const char D_00A44C00[] = "zigg_sp6";
+const char D_00A44C10[] = "zigg_sp5";
+const char D_00A44C20[] = "zigg_sp4";
+const char D_00A44C30[] = "zigg_sp3";
+const char D_00A44C40[] = "zigg_sp2";
+const char D_00A44C50[] = "zigg_sp1";
+const char D_00A44C60[] = "shit_sp8";
+const char D_00A44C70[] = "shit_sp7";
+const char D_00A44C80[] = "shit_sp6";
+const char D_00A44C90[] = "shit_sp5";
+const char D_00A44CA0[] = "shit_sp4";
+const char D_00A44CB0[] = "shit_sp3";
+const char D_00A44CC0[] = "shit_sp2";
+const char D_00A44CD0[] = "shit_sp1";
+const char D_00A44CE0[] = "shio_sp8";
+const char D_00A44CF0[] = "shio_sp7";
+const char D_00A44D00[] = "shio_sp6";
+const char D_00A44D10[] = "shio_sp5";
+const char D_00A44D20[] = "shio_sp4";
+const char D_00A44D30[] = "shio_sp3";
+const char D_00A44D40[] = "shio_sp2";
+const char D_00A44D50[] = "shio_sp1";
+const char D_00A44D60[] = "kosm_sp7";
+const char D_00A44D70[] = "kosm_sp6";
+const char D_00A44D80[] = "kosm_sp5";
+const char D_00A44D90[] = "kosm_sp4";
+const char D_00A44DA0[] = "kosm_sp3";
+const char D_00A44DB0[] = "kosm_sp2";
+const char D_00A44DC0[] = "kosm_sp1";
+const char D_00A44DD0[] = "chao_sp8";
+const char D_00A44DE0[] = "chao_sp7";
+const char D_00A44DF0[] = "chao_sp6";
+const char D_00A44E00[] = "chao_sp5";
+const char D_00A44E10[] = "chao_sp4";
+const char D_00A44E20[] = "chao_sp3";
+const char D_00A44E30[] = "chao_sp2";
+const char D_00A44E40[] = "chao_sp1";
+const char D_00A44E50[] = "skj_kosmos1";
+const char D_00A44E60[] = "skj_shion4";
+const char D_00A44E70[] = "skj_shion3";
+const char D_00A44E80[] = "skj_shion2";
+const char D_00A44E90[] = "skj_shion1";
+const char D_00A44EA0[] = "skj_momo1";
+const char D_00A44EB0[] = "skj_jr2";
+const char D_00A44EB8[] = "skj_jr1";
+const char D_00A44EC0[] = "boss_033";
+const char D_00A44ED0[] = "boss_032";
+const char D_00A44EE0[] = "boss_031";
+const char D_00A44EF0[] = "boss_030";
+const char D_00A44F00[] = "boss_029";
+const char D_00A44F10[] = "boss_028";
+const char D_00A44F20[] = "boss_027";
+const char D_00A44F30[] = "boss_026";
+const char D_00A44F40[] = "boss_025";
+const char D_00A44F50[] = "boss_024";
+const char D_00A44F60[] = "boss_023";
+const char D_00A44F70[] = "boss_022";
+const char D_00A44F80[] = "boss_021";
+const char D_00A44F90[] = "boss_020";
+const char D_00A44FA0[] = "boss_019";
+const char D_00A44FB0[] = "boss_018";
+const char D_00A44FC0[] = "boss_017";
+const char D_00A44FD0[] = "boss_016";
+const char D_00A44FE0[] = "boss_015";
+const char D_00A44FF0[] = "boss_014";
+const char D_00A45000[] = "boss_013";
+const char D_00A45010[] = "boss_012";
+const char D_00A45020[] = "boss_011";
+const char D_00A45030[] = "boss_010";
+const char D_00A45040[] = "boss_009";
+const char D_00A45050[] = "boss_008";
+const char D_00A45060[] = "boss_007";
+const char D_00A45070[] = "boss_006";
+const char D_00A45080[] = "boss_005";
+const char D_00A45090[] = "boss_004";
+const char D_00A450A0[] = "boss_003";
+const char D_00A450B0[] = "boss_002";
+const char D_00A450C0[] = "boss_001";
+const char D_00A450D0[] = "utso_007";
+const char D_00A450E0[] = "utso_006";
+const char D_00A450F0[] = "utso_005";
+const char D_00A45100[] = "utso_004";
+const char D_00A45110[] = "utso_003";
+const char D_00A45120[] = "utso_002";
+const char D_00A45130[] = "utso_001";
+const char D_00A45140[] = "utro_007";
+const char D_00A45150[] = "utro_006";
+const char D_00A45160[] = "utro_005";
+const char D_00A45170[] = "utro_004";
+const char D_00A45180[] = "utro_003";
+const char D_00A45190[] = "utro_002";
+const char D_00A451A0[] = "utro_001";
+const char D_00A451B0[] = "utre_006";
+const char D_00A451C0[] = "utre_005";
+const char D_00A451D0[] = "utre_004";
+const char D_00A451E0[] = "utre_003";
+const char D_00A451F0[] = "utre_002";
+const char D_00A45200[] = "utre_001";
+const char D_00A45210[] = "utma_014";
+const char D_00A45220[] = "utma_013";
+const char D_00A45230[] = "utma_012";
+const char D_00A45240[] = "utma_011";
+const char D_00A45250[] = "utma_010";
+const char D_00A45260[] = "utma_009";
+const char D_00A45270[] = "utma_008";
+const char D_00A45280[] = "utma_007";
+const char D_00A45290[] = "utma_006";
+const char D_00A452A0[] = "utma_005";
+const char D_00A452B0[] = "utma_004";
+const char D_00A452C0[] = "utma_003";
+const char D_00A452D0[] = "utma_002";
+const char D_00A452E0[] = "utma_001";
+const char D_00A452F0[] = "feso_004";
+const char D_00A45300[] = "feso_003";
+const char D_00A45310[] = "feso_002";
+const char D_00A45320[] = "feso_001";
+const char D_00A45330[] = "fero_001";
+const char D_00A45340[] = "fere_003";
+const char D_00A45350[] = "fere_002";
+const char D_00A45360[] = "fere_001";
+const char D_00A45370[] = "fema_006";
+const char D_00A45380[] = "fema_005";
+const char D_00A45390[] = "fema_004";
+const char D_00A453A0[] = "fema_003";
+const char D_00A453B0[] = "fema_002";
+const char D_00A453C0[] = "fema_001";
+const char D_00A453D0[] = "guno_114";
+const char D_00A453E0[] = "guno_025";
+const char D_00A453F0[] = "guno_024";
+const char D_00A45400[] = "guno_023";
+const char D_00A45410[] = "guno_022";
+const char D_00A45420[] = "guno_021";
+const char D_00A45430[] = "guno_020";
+const char D_00A45440[] = "guno_019";
+const char D_00A45450[] = "guno_018";
+const char D_00A45460[] = "guno_017";
+const char D_00A45470[] = "guno_016";
+const char D_00A45480[] = "guno_015";
+const char D_00A45490[] = "guno_014";
+const char D_00A454A0[] = "guno_013";
+const char D_00A454B0[] = "guno_012";
+const char D_00A454C0[] = "guno_011";
+const char D_00A454D0[] = "guno_010";
+const char D_00A454E0[] = "guno_009";
+const char D_00A454F0[] = "guno_008";
+const char D_00A45500[] = "guno_007";
+const char D_00A45510[] = "guno_006";
+const char D_00A45520[] = "guno_005";
+const char D_00A45530[] = "guno_004";
+const char D_00A45540[] = "guno_003";
+const char D_00A45550[] = "guno_002";
+const char D_00A45560[] = "guno_001";
+const char D_00A45570[] = "sld";
+const char D_00A45578[] = "ukn";
+const char D_00A45580[] = "ag05";
+const char D_00A45588[] = "ag04";
+const char D_00A45590[] = "ag03";
+const char D_00A45598[] = "ag02";
+const char D_00A455A0[] = "ag01";
+const char D_00A455A8[] = "vx06";
+const char D_00A455B0[] = "vx05";
+const char D_00A455B8[] = "vx04";
+const char D_00A455C0[] = "vx03";
+const char D_00A455C8[] = "vx02";
+const char D_00A455D0[] = "vx01";
+const char D_00A455D8[] = "virg";
+const char D_00A455E0[] = "cath";
+const char D_00A455E8[] = "ceci";
+const char D_00A455F0[] = "jr";
+const char D_00A455F8[] = "momo";
+const char D_00A45600[] = "zigg";
+const char D_00A45608[] = "shit";
+const char D_00A45610[] = "shio";
+const char D_00A45618[] = "kosm";
+const char D_00A45620[] = "chao";
+const char D_00A45628[] = "uk_";
+const char D_00A45630[] = "a6_";
+const char D_00A45638[] = "a5_";
+const char D_00A45640[] = "a4_";
+const char D_00A45648[] = "a3_";
+const char D_00A45650[] = "a2_";
+const char D_00A45658[] = "a1_";
+const char D_00A45660[] = "v6_";
+const char D_00A45668[] = "v5_";
+const char D_00A45670[] = "v4_";
+const char D_00A45678[] = "v3_";
+const char D_00A45680[] = "v2_";
+const char D_00A45688[] = "v1_";
+const char D_00A45690[] = "d";
+const char D_00A45698[] = "l";
+const char D_00A456A0[] = "r";
+char mdlFileName[256] = { 0 };
+char mdlFileName2[256] = { 0 };
+char motFileName[256] = { 0 };
+char *motNameBase = D_00A44880;
+char *motNameExt = D_00A44898;
+char *mapNameBase = D_00A448A0;
+char *mapNameExt = D_00A44898;
+char *mapName = D_00A448B8;
+char *thinkNameBase = D_00A448C0;
+char *thinkNameExt = D_00A44898;
+char *thinkName = D_00A448D8;
+XtxFileEntry xtxFile[4] = { D_00A44920, 0x1B13800, D_00A44900, 0x1B09800, D_00A448E0, 0x1B04000, 0, 0 };
+unsigned short xtxAdr[0x13] = { 0x3800, 0x3AE0, 0x3908, 0x3AE4, 0x38C0, 0x3AF4, 0x38D0, 0x3AE4, 0x3840, 0x3AF0, 0x3AD4, 0x3880, 0x3AD0, 0x3800, 0x3840, 0x3800, 0x3820, 0x3840, 0x3828 };
+PosTblEntry posTbl[36] __attribute__((aligned(16))) = { 0.0f, 0.0f, 0.0f, 1.0f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2.0f, 0.0f, 2.0f, 1.0f, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2.0f, 0.0f, 0.0f, 1.0f, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2.0f, 0.0f, -2.0f, 1.0f, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4.0f, 0.0f, 2.0f, 1.0f, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4.0f, 0.0f, 0.0f, 1.0f, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4.0f, 0.0f, -2.0f, 1.0f, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.0f, 0.0f, -4.0f, 1.0f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6.0f, 0.0f, 0.0f, 1.0f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.0f, 0.0f, 4.0f, 1.0f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2.0f, 0.0f, -3.0f, 1.0f, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2.0f, 0.0f, -2.0f, 1.0f, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2.0f, 0.0f, -1.0f, 1.0f, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2.0f, 0.0f, 0.0f, 1.0f, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2.0f, 0.0f, 1.0f, 1.0f, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2.0f, 0.0f, 2.0f, 1.0f, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2.0f, 0.0f, 3.0f, 1.0f, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3.0f, 0.0f, -4.0f, 1.0f, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3.0f, 0.0f, 4.0f, 1.0f, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4.0f, 0.0f, -2.0f, 1.0f, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4.0f, 0.0f, 0.0f, 1.0f, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4.0f, 0.0f, 2.0f, 1.0f, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.0f, 0.0f, -5.0f, 1.0f, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.0f, 0.0f, 5.0f, 1.0f, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6.0f, 0.0f, 0.0f, 1.0f, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8.0f, 0.0f, -3.0f, 1.0f, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8.0f, 0.0f, 0.0f, 1.0f, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8.0f, 0.0f, 3.0f, 1.0f, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14.0f, 0.0f, 0.0f, 1.0f, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7.0f, 0.0f, -5.0f, 1.0f, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7.0f, 0.0f, 5.0f, 1.0f, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13.0f, 0.0f, -9.0f, 1.0f, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13.0f, 0.0f, 9.0f, 1.0f, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9.0f, 0.0f, -9.0f, 1.0f, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9.0f, 0.0f, 9.0f, 1.0f, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18.0f, 0.0f, 0.0f, 1.0f, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+short widChgTbl[116] = { 0x3000, 0x3000, 0x3000, 0x3000, 0x3000, 0x3000, 0x3000, 0x3000, 0x3000, 0x3000, 0x3000, 0x3801, 0x3001, 0x3002, 0x3003, 0x3004, 0x3005, 0x3006, 0x3007, 0x3000, 0x3008, 0x3009, 0x300A, 0x3000, 0x3101, 0x3102, 0x3103, 0x3104, 0x3105, 0x3106, 0x3107, 0x3108, 0x3109, 0x310A, 0x310B, 0x310C, 0x310D, 0x310E, 0x310F, 0x3110, 0x3111, 0x3201, 0x3202, 0x3203, 0x3204, 0x3205, 0x3301, 0x3302, 0x3303, 0x3304, 0x3305, 0x3306, 0x3307, 0x3308, 0x3000, 0x3000, 0x3000, 0x3401, 0x3402, 0x3403, 0x3404, 0x3405, 0x3000, 0x3000, 0x3000, 0x3000, 0x3000, 0x3000, 0x3000, 0x3501, 0x3000, 0x3601, 0x3602, 0x3603, 0x3608, 0x3605, 0x3606, 0x3607, 0x3604, 0x3609, 0x360A, 0x360B, 0x360C, 0x360D, 0x360E, 0x360F, 0x3610, 0x3613, 0x3614, 0x3615, 0x3616, 0x3617, 0x3618, 0x3619, 0x361A, 0x361B, 0x361C, 0x361D, 0x361E, 0x361F, 0x3620, 0x3623, 0x3624, 0x3625, 0x3626, 0x3628, 0x3629, 0x362A, 0x362B, 0x362C, 0x362D, 0x362E, 0x362F, 0x3630, 0x3631, 0x3701 };
+short cidChgTbl[196] = { 0, 3, 2, 1, 7, 6, 4, 5, 0, 0, 0x110, 0, 0, 0, 0, 0, 0, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2101, 0x2102, 0x2103, 0x2104, 0x2105, 0, 0x2201, 0, 0, 0, 0x20E, 0x4001, 0x4002, 0x4003, 0x4004, 0x4005, 0x4006, 0x4007, 0x4008, 0x4009, 0x400A, 0x400B, 0x400C, 0x400D, 0x400E, 0x400F, 0x4010, 0x4011, 0x4012, 0x4013, 0x4014, 0x4015, 0x4016, 0x4017, 0x4018, 0x4019, 0x4001, 0x4002, 0x4003, 0x4037, 0x4501, 0x4502, 0x4503, 0x4504, 0x4505, 0x4506, 0x4801, 0x4802, 0x4803, 0x4601, 0x4701, 0x4702, 0x4703, 0x4704, 0x4101, 0x4102, 0x4103, 0x4104, 0x4105, 0x4106, 0x4107, 0x4108, 0x4109, 0x410A, 0x410B, 0x410C, 0x410D, 0x410E, 0x4201, 0x4202, 0x4203, 0x4204, 0x4205, 0x4206, 0x4401, 0x4402, 0x4403, 0x4404, 0x4405, 0x4406, 0x4407, 0x4301, 0x4302, 0x4303, 0x4304, 0x4305, 0x4306, 0x4307, 0x4102, 0x4102, 0x4106, 0x4006, 0x4501, 0x4701, 0x4702, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x4701, 0x4701, 0x4701, 0x4701, 0x4701, 0x4F01, 0x4F02, 0x4F03, 0x4F04, 0x4F05, 0x4F06, 0x4F07, 0x4F08, 0x4F09, 0x4F0A, 0x4F0B, 0x4F0C, 0x4F0D, 0x4F0E, 0x4F0F, 0x4F10, 0x4F11, 0x4F12, 0x4F13, 0x4F14, 0x4F15, 0x4F16, 0x4F17, 0x4F18, 0x4F19, 0x4F1A, 0x4F1B, 0x4F1C, 0x4F1D, 0x4F1E, 0x4F1F, 0x4F20, 0x4F21, 0x4F03, 0x4F04, 0x4F14, 0x4F22, 0x4F23, 0x4F24, 0x4F25, 0x4F26, 0x4F27, 0x4F28, 0x4F29, 0 };
+char *motFile[303] = { D_00A45620, D_00A45618, D_00A45610, D_00A45608, D_00A45600, D_00A455F8, D_00A455F0, D_00A455E8, D_00A455E0, D_00A455D8, D_00A45620, D_00A45620, 0, 0, 0, 0, D_00A455D0, D_00A455C8, D_00A455C0, D_00A455B8, D_00A455B0, D_00A455A8, D_00A455A0, D_00A45598, D_00A45590, D_00A45588, D_00A45580, D_00A45580, D_00A45578, 0, 0, 0, D_00A45570, D_00A45560, D_00A45550, D_00A45540, D_00A45530, D_00A45520, D_00A45510, D_00A45500, D_00A454F0, D_00A454E0, D_00A454D0, D_00A454C0, D_00A454B0, D_00A454A0, D_00A45490, D_00A45480, D_00A45470, D_00A45460, D_00A45450, D_00A45440, D_00A45430, D_00A45420, D_00A45410, D_00A45400, D_00A453F0, D_00A453E0, D_00A45560, D_00A45550, D_00A45540, D_00A453D0, D_00A453C0, D_00A453B0, D_00A453A0, D_00A45390, D_00A45380, D_00A45370, D_00A45360, D_00A45350, D_00A45340, D_00A45330, D_00A45320, D_00A45310, D_00A45300, D_00A452F0, D_00A452E0, D_00A452D0, D_00A452C0, D_00A452B0, D_00A452A0, D_00A45290, D_00A45280, D_00A45270, D_00A45260, D_00A45250, D_00A45240, D_00A45230, D_00A45220, D_00A45210, D_00A45200, D_00A451F0, D_00A451E0, D_00A451D0, D_00A451C0, D_00A451B0, D_00A451A0, D_00A45190, D_00A45180, D_00A45170, D_00A45160, D_00A45150, D_00A45140, D_00A45130, D_00A45120, D_00A45110, D_00A45100, D_00A450F0, D_00A450E0, D_00A450D0, D_00A452D0, D_00A452D0, D_00A45290, D_00A45510, D_00A453C0, D_00A45320, D_00A45310, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, D_00A45320, D_00A45320, D_00A45320, D_00A45320, D_00A45320, D_00A450C0, D_00A450B0, D_00A450A0, D_00A45090, D_00A45080, D_00A45070, D_00A45060, D_00A45050, D_00A45040, D_00A45030, D_00A45020, D_00A45010, D_00A45000, D_00A44FF0, D_00A44FE0, D_00A44FD0, D_00A44FC0, D_00A44FB0, D_00A44FA0, D_00A44F90, D_00A44F80, D_00A44F70, D_00A44F60, D_00A44F50, D_00A44F40, D_00A44F30, D_00A44F20, D_00A44F10, D_00A44F00, D_00A44EF0, D_00A44EE0, D_00A44ED0, D_00A44EC0, D_00A450A0, D_00A45090, D_00A44F90, D_00A44EB8, D_00A44EB0, D_00A44EA0, D_00A44E90, D_00A44E80, D_00A44E70, D_00A44E60, D_00A44E50, D_00A44E40, D_00A44E30, D_00A44E20, D_00A44E10, D_00A44E00, D_00A44DF0, D_00A44DE0, D_00A44DD0, D_00A44DC0, D_00A44DB0, D_00A44DA0, D_00A44D90, D_00A44D80, D_00A44D70, D_00A44D60, D_00A44D50, D_00A44D40, D_00A44D30, D_00A44D20, D_00A44D10, D_00A44D00, D_00A44CF0, D_00A44CE0, D_00A44CD0, D_00A44CC0, D_00A44CB0, D_00A44CA0, D_00A44C90, D_00A44C80, D_00A44C70, D_00A44C60, D_00A44C50, D_00A44C40, D_00A44C30, D_00A44C20, D_00A44C10, D_00A44C00, D_00A44BF0, D_00A44BE0, D_00A44BD0, D_00A44BC0, D_00A44BB0, D_00A44BA0, D_00A44B90, D_00A44B80, D_00A44B70, D_00A44B68, D_00A44B60, D_00A44B58, D_00A44B50, D_00A44B48, D_00A44B40, D_00A44B38, D_00A44B30, D_00A44B20, D_00A44B10, D_00A44B00, D_00A44AF0, D_00A44AE0, D_00A44AD0, D_00A44AC0, D_00A44AB0, D_00A44AA0, D_00A44A90, D_00A44A88, D_00A44A80, D_00A44A78, D_00A44A70, D_00A44A68, D_00A44A60, D_00A44A58, D_00A44A50, D_00A44A48, D_00A44A40, D_00A44A38, D_00A44A30, D_00A44A28, D_00A44A20, D_00A44A18, D_00A44A10, D_00A44A08, D_00A44A00, D_00A449F8, D_00A449F0, D_00A449E8, D_00A449E0, D_00A449D8, D_00A449D0, D_00A449C8, D_00A449C0, D_00A449B8, D_00A449B0, D_00A449A8, D_00A449A0, D_00A44998, D_00A44990, D_00A44988, D_00A44980, D_00A44978, D_00A44970, D_00A44968, D_00A44960, D_00A44958, D_00A44950, D_00A44948, D_00A44940, D_00A449E0, D_00A449D8, D_00A449C8 };
+char *agwsName[13] = { D_00A45688, D_00A45680, D_00A45678, D_00A45670, D_00A45668, D_00A45660, D_00A45658, D_00A45650, D_00A45648, D_00A45640, D_00A45638, D_00A45630, D_00A45628 };
+char *agwsLRName[3] = { D_00A456A0, D_00A45698, D_00A45690 };
+int thinkMapTbl[100] = { 0, 0x24, 0x26, 0x27, 0x28, 0x29, 0x2F, 0x30, 0x32, 0x36, 0x39, 0x44C, 0x44D, 0x44F, 0x450, 0x451, 0x75, 0x76, 0x77, 0x7A, 0x7B, 0x5DE, 0x5DF, 0x5E0, 0x5E1, 0x5E4, 0x6A4, 0x6A5, 0x6A6, 0x6A7, 0x6A8, 0x6A9, 0x6AA, 0x6AB, 0x6AD, 0x6AE, 0x6AF, 0x4B2, 0x4B3, 0x4B7, 0x4BB, 0x4BC, 0x4BD, 0x4BE, 0x4BF, 0x4C0, 0x4C2, 0x4C3, 0x4CE, 0x523, 0x524, 0x525, 0x526, 0x527, 0x528, 0x529, 0x52A, 0x384, 0x385, 0x386, 0x387, 0x388, 0x389, 0x38A, 0x38B, 0x38C, 0x38D, 0x390, 0x324, 0x329, 0x32B, 0x32C, 0x32D, 0x32E, 0x32F, 0x579, 0x57B, 0x580, 0x581, 0x582, 0x583, 0x584, 0x585, 0x589, 0x58A, 0x58B, 0x58D, 0x58F, 0x331, 0x517, 0x37, 0x327, 0, 0, 0, 0, 0, 0, 0, 0 };
+SpecTable specTbl = { 0x2D, 0x35, 0x3C, 0x44, 0x4C, 0x53, 0x5B, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+int bakpTbl[16] = { 0, 0x2ED, 0, 0, 0x305, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+unsigned char *mdlAdrTbl[7] = { (void *)0x1000000, (void *)0x1180000, (void *)0x1300000, (void *)0x1480000, (void *)0x1580000, (void *)0x1680000, (void *)0x1780000 };
+void *motAdrTbl[7] = { (void *)0x179E000, (void *)0x17DE000, (void *)0x181E000, (void *)0x185E000, (void *)0x1890000, (void *)0x18C2000, (void *)0x18F4000 };
+
 /*
  * orgData is a 33-entry table of 0x180-byte unit-origin records; callers
  * pass a one-based index, so dataUnitOrgGet returns orgData[id - 1].
@@ -43,7 +354,7 @@ typedef struct UnitOrgRecord {
     unsigned char unmodeled_0[0x180];
 } UnitOrgRecord;
 
-extern const char D_00A456A8[];
+const char D_00A456A8[] = "** dataUnitOrgGet: err %d\n";
 extern UnitOrgRecord orgData[];
 
 void *dataUnitOrgGet(int unitOrgId)
@@ -55,7 +366,7 @@ void *dataUnitOrgGet(int unitOrgId)
     return &orgData[unitOrgId - 1];
 }
 
-extern const char D_00A456C8[];
+const char D_00A456C8[] = "** dataPlChaGet: err %d\n";
 extern unsigned char plChaData[];
 
 PlCharacter *dataPlChaGet(int cid)
@@ -176,7 +487,7 @@ void *dataSpecTblGet(int id)
 }
 
 extern void dataEtherLearnSet(int etherType, int techniqueId, int selector);
-extern const char D_00A456E8[];
+const char D_00A456E8[] = "dataEtherTecSet: err %d\n";
 extern CalcUnitParam *calcUPGet(ObjectTask *unit);
 extern void *dataUnitFileGet(ObjectTask *unit, int charaId);
 extern int dataUnitFileLoadMot(ObjectTask *unit, int motionId, int slot, void *fileInfo);
@@ -238,7 +549,7 @@ void dataEtherTecSet(int selector)
     }
 }
 
-extern const char D_00A45730[];
+const char D_00A45730[] = "** dataEtherLearnSet: err %d\n";
 
 void dataEtherLearnSet(int cid, int id, int selector)
 {
@@ -256,7 +567,7 @@ void dataEtherLearnSet(int cid, int id, int selector)
     }
 }
 
-extern const char D_00A45750[];
+const char D_00A45750[] = "** dataEtherLearnGet: err %d\n";
 
 int dataEtherLearnGet(int cid, int id)
 {
@@ -272,7 +583,7 @@ int dataEtherLearnGet(int cid, int id)
     return *(signed char *)((b / 8) + (int)pl + 0x28) & (1 << (b % 8));
 }
 
-extern const char D_00A45770[];
+const char D_00A45770[] = "** dataSkillLearnSet: err %d\n";
 
 void dataSkillLearnSet(int cid, int id)
 {
@@ -290,7 +601,8 @@ void dataSkillLearnSet(int cid, int id)
     }
 }
 
-extern const char D_00A45790[];
+const char D_00A45790[] = "** dataSkillLearnGet: err %d\n";
+const char D_00A457B0[] = "** dataSpecLearnSet: err %d\n";
 extern PlCharacter *dataPlChaGet(int cid);
 
 int dataSkillLearnGet(int cid, int id)
@@ -312,21 +624,18 @@ typedef struct ThinkMapTable {
     int specBase[0x11]; /* +0x18C */
 } ThinkMapTable;
 
-extern ThinkMapTable thinkMapTbl;
+extern ThinkMapTable thinkMapView __asm__("thinkMapTbl"); /* +0x18C runs on into specTbl */
 
 int dataSpecBaseGet(int cid)
 {
-    return thinkMapTbl.specBase[cid];
+    return thinkMapView.specBase[cid];
 }
 
 /*
  * specTbl's tail is the character-id-indexed backup special-technique base
  * table dataBakpBaseGet reads.
  */
-typedef struct SpecTable {
-    int specialBase[0x3C / sizeof(int)];
-    int bakpBase[1]; /* +0x3C, indexed dynamically */
-} SpecTable;
+
 
 extern SpecTable specTbl;
 
@@ -355,7 +664,7 @@ void dataSpecLearnSet(int cid, int specialId)
  * id before indexing PlCharacter.special, the same subtraction
  * dataSpecLearnSet performs through dataSpecBaseGet (still asm).
  */
-extern const char D_00A457D0[];
+const char D_00A457D0[] = "** dataSpecLearnGet: err %d\n";
 
 short dataSpecLearnGet(int cid, int specialId)
 {
@@ -367,7 +676,7 @@ short dataSpecLearnGet(int cid, int specialId)
     }
     learned = 0;
     if (specialId != 0) {
-        learned = dataPlChaGet(cid)->special[specialId - thinkMapTbl.specBase[cid]].id;
+        learned = dataPlChaGet(cid)->special[specialId - thinkMapView.specBase[cid]].id;
     }
     return learned;
 }
@@ -591,8 +900,14 @@ typedef struct BattleUnitInfo {
 } BattleUnitInfo;
 
 extern void dataFileInfoInit(void);
-extern BattleUnitInfo playerData[7];
-extern BattleUnitInfo enemyData[5];
+static BattleUnitInfo playerData[7];
+static BattleUnitInfo enemyData[5];
+static UnitFileInfo unitFileInfo[6];
+static int cdReqNum;
+static int leaderCid;
+static int leaderId;
+static int padMode;
+static short padData;
 
 void dataBattleInit(void)
 {
@@ -673,10 +988,10 @@ typedef struct CmdEntry {
 } CmdEntry;
 
 extern BattleUnitInfo playerData2[7] __asm__("playerData");
-extern const char D_00A457F0[];
-extern const char D_00A45810[];
-extern const char D_00A45830[];
-extern const char D_00A45850[];
+const char D_00A457F0[] = "** dataUnitInitSet: err %d\n";
+const char D_00A45810[] = "** dataUnitInitSet: err PL\n";
+const char D_00A45830[] = "** dataUnitInitSet: err EN\n";
+const char D_00A45850[] = "** dataUnitInitSet: err SKJ\n";
 typedef struct UnitInitWork { unsigned char unmodeled_00[0x84]; BattleUnitInfo *info; } UnitInitWork;
 typedef struct BattleUnitCopy { unsigned char b[0x180]; } BattleUnitCopy;
 extern void calcCopyParaMake();
@@ -789,11 +1104,7 @@ void dataUnitInitSet(ObjectTask *unit, int cid)
  * position id (negative ids alias the same record as their positive
  * counterpart). dataPosLineGet reads the halfword at +0x10 of the record.
  */
-typedef struct PosTblEntry {
-    float position[4];
-    short line; /* +0x10 */
-    unsigned char unmodeled_12[0x20 - 0x12];
-} PosTblEntry;
+
 
 extern PosTblEntry posTbl[];
 
@@ -813,7 +1124,7 @@ short dataPosLineGet(int id)
     return posTbl[id].line;
 }
 
-extern unsigned char D_00A45890[]; /* "** dataCidGet: err %d\n" */
+const char D_00A45890[] = "** dataCidGet: err %d\n";
 extern short cidChgTbl[];
 
 short dataCidGet(unsigned int cid)
@@ -825,7 +1136,7 @@ short dataCidGet(unsigned int cid)
     return cidChgTbl[cid];
 }
 
-extern unsigned char D_00A458A8[]; /* "** dataWidGet: err %d" */
+const char D_00A458A8[] = "** dataWidGet: err %d";
 extern short widChgTbl[];
 
 short dataWidGet(unsigned int wid)
@@ -838,7 +1149,7 @@ short dataWidGet(unsigned int wid)
 }
 
 extern int D_426F4C;
-extern const char D_00A458C0[];
+const char D_00A458C0[] = "** dataTecGet: err %d\n";
 
 unsigned char *dataTecGet(int index)
 {
@@ -852,7 +1163,7 @@ unsigned char *dataTecGet(int index)
     return base + D_426F4C + ((index * 3) << 3) - 0x18;
 }
 
-extern const char D_00A458D8[];
+const char D_00A458D8[] = "** dataWpnGet: err %d\n";
 extern int D_426F5C;
 
 unsigned char *dataWpnGet(int index)
@@ -867,7 +1178,7 @@ unsigned char *dataWpnGet(int index)
     return base + D_426F5C + (index << 5) - 0x20;
 }
 
-extern const char D_00A458F0[];
+const char D_00A458F0[] = "** dataAttGet: err %d\n";
 extern int D_426F68;
 
 unsigned char *dataAttGet(int index)
@@ -882,7 +1193,7 @@ unsigned char *dataAttGet(int index)
     return base + D_426F68 + index * 14 - 0xE;
 }
 
-extern const char D_00A45908[];
+const char D_00A45908[] = "** dataEthGet: err %d\n";
 extern int D_426F60;
 
 unsigned char *dataEthGet(int index)
@@ -897,7 +1208,7 @@ unsigned char *dataEthGet(int index)
     return base + D_426F60 + index * 12 - 0xC;
 }
 
-extern const char D_00A45920[];
+const char D_00A45920[] = "** dataItmGet: err %d\n";
 extern int D_426F64;
 
 unsigned char *dataItmGet(int index)
@@ -913,7 +1224,7 @@ unsigned char *dataItmGet(int index)
 }
 
 extern int D_426F6C;
-extern const char D_00A45938[];
+const char D_00A45938[] = "** dataAccGet: err %d\n";
 
 unsigned char *dataAccGet(int index)
 {
@@ -927,7 +1238,7 @@ unsigned char *dataAccGet(int index)
     return base + D_426F6C + (index << 4) - 0x10;
 }
 
-extern const char D_00A45950[];
+const char D_00A45950[] = "** dataFrmGet: err %d\n";
 extern int D_426F88;
 
 unsigned char *dataFrmGet(int index)
@@ -942,7 +1253,7 @@ unsigned char *dataFrmGet(int index)
     return base + D_426F88 + (index << 4) - 0x10;
 }
 
-extern char D_00A45968[];
+const char D_00A45968[] = "** dataEngGet: err %d\n";
 extern int D_426F8C;
 
 unsigned char *dataEngGet(int index)
@@ -957,7 +1268,7 @@ unsigned char *dataEngGet(int index)
     return base + D_426F8C + index * 12 - 0xC;
 }
 
-extern const char D_00A45980[];
+const char D_00A45980[] = "** dataSklGet: err %d\n";
 extern int D_426F70;
 
 unsigned char *dataSklGet(int index)
@@ -972,7 +1283,7 @@ unsigned char *dataSklGet(int index)
     return base + D_426F70 + (index << 3) - 0x8;
 }
 
-extern const char D_00A45998[];
+const char D_00A45998[] = "** dataGainGet: err %d\n";
 extern int D_426F74;
 
 unsigned char *dataGainGet(int index)
@@ -988,8 +1299,8 @@ unsigned char *dataGainGet(int index)
 }
 
 extern int xglCdReadFile(const char *name, void *buffer, int mode, int flags);
-extern char D_00A459B0[];
-extern char D_00A459C8[];
+const char D_00A459B0[] = "** read: err %s\n";
+const char D_00A459C8[] = "** read: %s / %d\n";
 
 int dataFileLoad(const char *name, void *dst)
 {
@@ -1013,8 +1324,8 @@ void dataCdSyncClear(void)
 }
 
 extern int printf(const char *format, ...);
-extern const char D_00A459E0[];
-extern const char D_00A459F8[];
+const char D_00A459E0[] = "** NBread: err %d\n";
+const char D_00A459F8[] = "** NBread: end %d *\n";
 
 void dataNBreadCB(int result) {
     if (result < 0) {
@@ -1028,8 +1339,8 @@ void dataNBreadCB(int result) {
     }
 }
 
-extern const char D_00A45A10[];
-extern const char D_00A45A28[];
+const char D_00A45A10[] = "** NBread: err %s\n";
+const char D_00A45A28[] = "** NBread: (%d) %s = %X\n";
 
 int dataFileLoadNB(const char *name, void *dst)
 {
@@ -1097,7 +1408,7 @@ void dataFileInfoInit(void)
     }
 }
 
-extern const char D_00A45A48[];
+const char D_00A45A48[] = "** dataFileInfoInitChg: err\n";
 
 void dataFileInfoInitChg(ObjectTask *unit, int charaId)
 {
@@ -1140,9 +1451,9 @@ typedef struct EnemyMdlRes {
     int pad[2];
 } EnemyMdlRes;
 extern EnemyMdlRes GameResource[];
-extern const char D_00A45A68[];
-extern const char D_00A45A80[];
-extern const char D_00A45A98[];
+const char D_00A45A68[] = "** src %X,%X,%X %d\n";
+const char D_00A45A80[] = "** dst %X,%X,%X\n";
+const char D_00A45A98[] = "** enemy Mdl found %d\n";
 extern int GameResourceSearch(int type, int id);
 extern void xglMemCopy16(unsigned int dst, unsigned int src, int n);
 extern void xglMemCopy16b(unsigned int dst, unsigned int src, int n);
@@ -1160,7 +1471,6 @@ typedef struct EnemyMdlFile {
     unsigned char *end;
     unsigned char pad24[0x130 - 0x24];
 } EnemyMdlFile;
-extern EnemyMdlFile D_00A59420[];
 
 void dataEnemyMdlChk(EnemyMdlEnt *tbl)
 {
@@ -1186,7 +1496,7 @@ void dataEnemyMdlChk(EnemyMdlEnt *tbl)
       if (((((h->top != 0) && (h->mid != 0)) && (h->end != 0)) && (h->top < ((unsigned int) h->mid))) && (h->mid < h->end))
       {
         id = tbl[i].id;
-        dst = &D_00A59420[i];
+        dst = &((EnemyMdlFile *)&unitFileInfo[3])[i];
         do
         {
           n = dst->base;
@@ -1276,7 +1586,7 @@ void dataLeaderCidReset(void) {
 }
 
 extern unsigned char *PartyDataGet(void);
-extern const char D_00A45AB0[];
+const char D_00A45AB0[] = "dataLeaderReload\n";
 
 void dataLeaderReload(void)
 {
@@ -1423,7 +1733,7 @@ int dataUnitFileLoad(ObjectTask *unit, int mode)
   return 1;
 }
 
-extern const char D_00A45AC8[];
+const char D_00A45AC8[] = "** dataUnitFileLoad: err\n";
 
 void *dataUnitFileGet(ObjectTask *unit, int charaId)
 {
@@ -1463,6 +1773,15 @@ void *dataUnitFileGet(ObjectTask *unit, int charaId)
 }
 
 typedef struct { int id; char *name; } PackMdlEnt;
+const char D_00A45AE8[] = "data\\yamamoto\\pc\\";
+const char D_00A45B00[] = "skj_jr";
+const char D_00A45B08[] = "virgil";
+const char D_00A45B10[] = "ziggy";
+const char D_00A45B18[] = "shion";
+const char D_00A45B20[] = "kosmos";
+const char D_00A45B28[] = "chaos";
+char *pcNameBase = D_00A45AE8;
+PackMdlEnt pcPack_0[15] = { 1, D_00A45B28, 2, D_00A45B20, 3, D_00A45B18, 5, D_00A45B10, 6, D_00A455F8, 7, D_00A455F0, 0xA, D_00A45B08, 0xBB, D_00A45B00, 0xBC, D_00A45B00, 0xBD, D_00A44EA0, 0xBE, D_00A44E90, 0xBF, D_00A44E80, 0xC0, D_00A44E70, 0xC2, D_00A44E50, 0, 0 };
 extern PackMdlEnt pcPack_0[];
 extern int calcAccEquChk(ObjectTask *unit, int id);
 extern int calcStatGet(ObjectTask *unit, int a, int b);
@@ -1526,6 +1845,46 @@ block_16:
 }
 
 typedef struct { int id; char *name; } PackWpnEnt;
+const char D_00A45B68[] = "data\\yamamoto\\wpn\\";
+const char D_00A45B80[] = "son_mbox";
+const char D_00A45B90[] = "jr_gun08";
+const char D_00A45BA0[] = "jr_gun07";
+const char D_00A45BB0[] = "jr_gun06";
+const char D_00A45BC0[] = "jr_gun05";
+const char D_00A45BD0[] = "jr_gun04";
+const char D_00A45BE0[] = "jr_gun03";
+const char D_00A45BF0[] = "jr_gun02";
+const char D_00A45C00[] = "jr_gun01";
+const char D_00A45C10[] = "zig_bw02";
+const char D_00A45C20[] = "zig_bw01";
+const char D_00A45C30[] = "zig_sw01";
+const char D_00A45C40[] = "mmo_rd17";
+const char D_00A45C50[] = "mmo_rd16";
+const char D_00A45C60[] = "mmo_rd15";
+const char D_00A45C70[] = "mmo_rd14";
+const char D_00A45C80[] = "mmo_rd13";
+const char D_00A45C90[] = "mmo_rd09";
+const char D_00A45CA0[] = "mmo_rd08";
+const char D_00A45CB0[] = "mmo_rd07";
+const char D_00A45CC0[] = "mmo_rd06";
+const char D_00A45CD0[] = "mmo_rd05";
+const char D_00A45CE0[] = "mmo_rd04";
+const char D_00A45CF0[] = "mmo_rd03";
+const char D_00A45D00[] = "mmo_rd02";
+const char D_00A45D10[] = "mmo_rd01";
+const char D_00A45D20[] = "kos_bw04";
+const char D_00A45D30[] = "kos_bw03";
+const char D_00A45D40[] = "kos_bw02";
+const char D_00A45D50[] = "kos_bw01";
+const char D_00A45D60[] = "kos_hw06";
+const char D_00A45D70[] = "kos_hw05";
+const char D_00A45D80[] = "kos_hw04";
+const char D_00A45D90[] = "kos_hw03";
+const char D_00A45DA0[] = "kos_hw02";
+const char D_00A45DB0[] = "kos_hw01";
+const char D_00A45DC0[] = "cho_wing";
+char *wpnNameBase = D_00A45B68;
+PackWpnEnt pcPack_1[38] = { 0xB, D_00A45DC0, 0xC, D_00A45DB0, 0xD, D_00A45DA0, 0xE, D_00A45D90, 0xF, D_00A45D80, 0x10, D_00A45D70, 0x11, D_00A45D60, 0x12, D_00A45D50, 0x13, D_00A45D40, 0x14, D_00A45D30, 0x15, D_00A45D20, 0x18, D_00A45D10, 0x19, D_00A45D00, 0x1A, D_00A45CF0, 0x1B, D_00A45CE0, 0x1C, D_00A45CD0, 0x1D, D_00A45CC0, 0x1E, D_00A45CB0, 0x1F, D_00A45CA0, 0x20, D_00A45C90, 0x24, D_00A45C80, 0x25, D_00A45C70, 0x26, D_00A45C60, 0x27, D_00A45C50, 0x28, D_00A45C40, 0x29, D_00A45C30, 0x2A, D_00A45C20, 0x2B, D_00A45C10, 0x2E, D_00A45C00, 0x2F, D_00A45BF0, 0x30, D_00A45BE0, 0x31, D_00A45BD0, 0x32, D_00A45BC0, 0x33, D_00A45BB0, 0x34, D_00A45BA0, 0x35, D_00A45B90, 0x45, D_00A45B80, 0, 0 };
 extern PackWpnEnt pcPack_1[];
 
 char *dataPackWpnMdlNameGet(int id)
@@ -1572,13 +1931,13 @@ typedef struct MdlLoadUnit {
 extern char mdlFileName[];
 extern char mdlFileName2[];
 extern char *pcNameBase;
-extern char D_00A44898[];
-extern const char D_00A45DD0[];
-extern const char D_00A45DF8[];
-extern const char D_00A45E00[];
-extern const char D_00A45E08[];
-extern const char D_00A45E10[];
-extern const char D_00A45E38[];
+extern const char D_00A44898[];
+const char D_00A45DD0[] = "** dataUnitFileLoadMdl: Leader %d\n";
+const char D_00A45DF8[] = ".lex";
+const char D_00A45E00[] = ".xtx";
+const char D_00A45E08[] = ".jnt";
+const char D_00A45E10[] = "** dataUnitFileLoadMdl: hit %d / %X\n";
+const char D_00A45E38[] = "** MDL read Size = %d\n";
 extern char *dataPackPcMdlNameGet(ObjectTask *unit);
 extern void RES_GetMdlFileName(char *name, int charaId);
 extern int xglCdGetFileSize(const char *name);
@@ -1649,7 +2008,7 @@ int dataUnitFileLoadMdl(MdlLoadUnit *unit, int charaId, MdlLoadFile *file)
     return 1;
 }
 
-extern const char D_00A45E50[];
+const char D_00A45E50[] = "** dataUnitFileLoadFaceMdl: hit %d / %X\n";
 
 int dataUnitFileLoadFaceMdl(void *task, int cid, void *info) {
     char *p = (char *)info;
@@ -1673,9 +2032,9 @@ int dataUnitFileLoadFaceMdl(void *task, int cid, void *info) {
 }
 
 extern char motFileName[];
-extern const char D_00A45E80[];
-extern const char D_00A45E98[];
-extern const char D_00A45EC0[];
+const char D_00A45E80[] = "** FPK data nothing!\n";
+const char D_00A45E98[] = "** dataUnitFileLoadMot: hit %d / %X\n";
+const char D_00A45EC0[] = "** MOT read Size = %d %d\n";
 typedef struct ActorWordsC {
     unsigned char unmodeled_0[0x100];
     int packEntry[4];
@@ -1733,9 +2092,9 @@ int dataUnitFileLoadMot(ObjectTask *unit, int motionId, int slot, void *fileInfo
 
 extern void *dataChildActorCreate(int callerId);
 extern char *wpnNameBase;
-extern const char D_00A45EE0[];
-extern const char D_00A45F08[];
-extern const char D_00A45F20[];
+const char D_00A45EE0[] = "** dataUnitFileLoadWep: hit %d / %X\n";
+const char D_00A45F08[] = "** WEP read Size = %d\n";
+const char D_00A45F20[] = "** wpnActot=%X %d\n";
 struct WpnFileInfo;
 extern int dataWpnLRChk(ObjectTask *unit, int weaponId, int slot, struct WpnFileInfo *fileInfo);
 typedef struct WepFileEnt {
@@ -1914,7 +2273,7 @@ typedef struct ChildActor {
 
 extern ChildActor *ACT_create(int parent, int callerId);
 extern void ACT_initMotion(ChildActor *actor);
-extern const char D_00A45F38[];
+const char D_00A45F38[] = "** dataChildActorCreate: err\n";
 
 void *dataChildActorCreate(int callerId)
 {
@@ -1960,7 +2319,7 @@ int dataUnitFileLoadMotSp2(UnitEquipInfo *unit, int motionId, int slot, int p3, 
     return 1;
 }
 
-extern char D_00A45F58[];
+const char D_00A45F58[] = "** dataUnitFileLoad2 %X\n";
 extern void dataUnitFileLoad2Sub(void *unit);
 extern int rnd(int max);
 extern void unitCmdSet(void *unit, int *cmd);
@@ -1986,8 +2345,8 @@ extern void unitFaceMotSet(void *unit, int motionId);
 extern void unitWpnMotSet(void *unit, int slot, int a, int b);
 extern void *sefCreateEffect2(void *param);
 extern void dataSndSeRegLoad2(void *unit);
-extern char D_00A45F78[];
-extern char D_00A45FA0[];
+const char D_00A45F78[] = "** dataUnitFileLoad2Sub: Mdl Pack\n";
+const char D_00A45FA0[] = "** dataUnitFileLoad2Sub: Wpn Pack\n";
 void dataPackWpnMdl2(EquipActor *actor);
 void ACT_setArms(void *actor, void *other, int acc_id, int flags);
 void ACT_allocMatrix(void *actor, int count);
@@ -2334,7 +2693,7 @@ int dataDefWpnGet(void *unit)
     return 0;
 }
 
-extern const char D_00A45FC8[];
+const char D_00A45FC8[] = "** MTD id=%d frame=%d **\n";
 
 int dataMtdRead(void *unit, short trigger)
 {
@@ -2406,10 +2765,7 @@ int dataMtdRead(void *unit, short trigger)
     return 0;
 }
 
-typedef struct XtxFileEntry {
-    const char *name;
-    unsigned int address;
-} XtxFileEntry;
+
 
 extern XtxFileEntry xtxFile[];
 
@@ -2418,7 +2774,7 @@ void *dataXtxFileGet(int index)
     return &xtxFile[index];
 }
 
-extern const char D_00A45FE8[];
+const char D_00A45FE8[] = "** dataXtxAdrGet: err %d\n";
 extern unsigned short xtxAdr[0x13];
 
 unsigned short dataXtxAdrGet(int index)
@@ -2455,7 +2811,7 @@ void dataXtxLoad(void)
 
 extern int dataFileLoad(const char *name, void *dst);
 
-extern const char D_00A46008[];
+const char D_00A46008[] = "data\\yamamoto\\batdat.bin";
 extern unsigned char batDatBuf[0x10000];
 
 void dataBatDatLoad(void)
@@ -2488,7 +2844,7 @@ extern int sprintf(char *buffer, const char *format, ...);
 extern char *thinkName;
 extern char *thinkNameBase;
 extern char *thinkNameExt;
-extern const char D_00A46028[];
+const char D_00A46028[] = "%03d";
 
 int dataThinkNameGet(char *name, int thinkNo)
 {
@@ -2578,7 +2934,7 @@ extern char *mapNameBase;
 extern char *mapName;
 extern char *mapNameExt;
 extern const char D_00A46028[];
-extern const char D_00A46030[];
+const char D_00A46030[] = "** dataMapLoad: err -> %d\n";
 void dataMapLoad(int mapNo)
 {
     char path[256];
@@ -2626,7 +2982,7 @@ typedef struct WpnLRFileInfo {
     unsigned char unmodeled_00[0xA0];
     int wpnId; /* +0xA0 */
 } WpnLRFileInfo;
-extern char D_00A45F58[];
+extern const char D_00A45F58[];
 extern void dataUnitFileLoad2Sub(void *unit);
 extern int rnd(int max);
 extern void unitCmdSet(void *unit, int *cmd);
@@ -2647,3 +3003,6 @@ unsigned short dataPadRead(int arg0) {
     }
     return r;
 }
+
+WepSpEntry wepSpTbl[16] = { 0x30, 0xB, 0x1B, 0x35, 0xD, 0, 0x36, 0xE, 0, 0x37, 0xF, 0, 0x3A, 0x10, 0, 0x3B, 0x11, 0x20, 0x53, 0x24, 0x20, 0x54, 0x25, 0x20, 0x56, 0x26, 0x20, 0x57, 0x25, 0x20, 0x58, 0x27, 0x20, 0x5A, 0x28, 0x20, 0x5C, 0x33, 0x20, 0x5F, 0x33, 0x20, 0x61, 0x34, 0x20, 0, 0, 0 };
+u16 padConvTbl[14] = { 0x1000, 0x4000, 0x8000, 0x2000, 0x10, 0x40, 0x80, 0x20, 4, 1, 8, 2, 0x800, 0x100 };

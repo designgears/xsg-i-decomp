@@ -5,14 +5,22 @@
 #include "shared.h"
 #include "res.h"
 #include "mini_g.h"
+
+/* .bss file-scope statics (original order) */
+static int Gwork[148];
+static XglPacket *Pkt;
+static short BoxRGBA[4];
+static unsigned long BoxPOS[4];
+static CasinoResourcePrefix *ResData;
+static int shpmenu_work[51];
+static int MenuNum;
 extern unsigned short PadData[];
 extern unsigned short PadData[];
 extern unsigned short PadData[];
 extern unsigned short PadData[];
 extern unsigned char BG_Rect[0x10];
-extern int D_00A0DD14;
 extern char ViewSamTex[];
-extern int D_00A0DEE8[];
+#define D_00A0DEE8 (((int *)((char *)Gwork + 0x1C8)))
 extern const char D_00A0C4A0[];
 extern const char D_00A0C4B0[];
 extern const char D_00A0C638[];
@@ -48,7 +56,7 @@ extern unsigned char PoCurTex[8][28];
 
 extern short selpos_94[5][2];
 
-extern short D_00A0DEB8[5];
+#define D_00A0DEB8 (((short *)((char *)Gwork + 0x198)))
 
 extern unsigned char point_rect_20[9][16];
 
@@ -99,11 +107,10 @@ extern void sceVif1PkCloseGifTag(XglPacket *packet);
 
 extern void sceVif1PkCloseDirectCode(XglPacket *packet);
 
-extern XglPacket *Pkt;
 
 extern void sceVif1PkAddGsData(XglPacket *packet, u64 data);
-extern const SetRegADTag D_00A0BB30;
-extern const SetRegADTag D_00A0BB40;
+const SetRegADTag D_00A0BB30 = { { 0x1400000000008000LL, 0x6LL } };
+const SetRegADTag D_00A0BB40 = { { 0x9400000000008000LL, 0x434343430LL } };
 
 static void MakeSprite(void *sprite, void *rect)
 {
@@ -158,7 +165,7 @@ static void MakeSprite(void *sprite, void *rect)
 
 extern void sceVif1PkAddGsAD(XglPacket *packet, int reg, u64 value);
 
-extern const SetRegADTag D_00A0BB50;
+const SetRegADTag D_00A0BB50 = { { 0x1000000000008000LL, 0xELL } };
 
 static void SetDrawStatus(int mode, int enable)
 {
@@ -201,7 +208,7 @@ static void SetDrawStatus(int mode, int enable)
     sceVif1PkCloseDirectCode(Pkt);
 }
 
-extern const SetRegADTag D_00A0BB80;
+const SetRegADTag D_00A0BB80 = { { 0x1000000000008000LL, 0xELL } };
 
 static void SetTest(int value)
 {
@@ -216,7 +223,7 @@ static void SetTest(int value)
     sceVif1PkCloseDirectCode(Pkt);
 }
 
-extern const SetRegADTag D_00A0BB90;
+const SetRegADTag D_00A0BB90 = { { 0x1000000000008000LL, 0xELL } };
 static void SetRegAD(XglPacket *packet, int reg, int value)
 {
     SetRegADTag tag;
@@ -230,7 +237,6 @@ static void SetRegAD(XglPacket *packet, int reg, int value)
     sceVif1PkCloseDirectCode(packet);
 }
 
-extern short BoxRGBA[4];
 
 static void ResetRGBA(void)
 {
@@ -246,7 +252,6 @@ static void ResetRGBA(void)
 /* ov11:0x00a007e0. Stores the four caller-supplied components in the
  * shared untextured box color state (original LOCAL data symbol
  * BoxRGBA, ov11:0x00a0df78). */
-extern short BoxRGBA[4];
 
 static void SetRGBA(short red, short green, short blue, short alpha)
 {
@@ -256,7 +261,6 @@ static void SetRGBA(short red, short green, short blue, short alpha)
     BoxRGBA[3] = alpha;
 }
 
-extern unsigned long BoxPOS[4];
 
 static void MakeBoxPos(int x, int y, int w, int h)
 {
@@ -266,7 +270,7 @@ static void MakeBoxPos(int x, int y, int w, int h)
     BoxPOS[3] = (unsigned long)(((x + w) << 4) + 0x7000) | ((unsigned long)(((y + h) << 4) + 0x7200) << 16) | (1UL << 32);
 }
 
-extern const SetRegADTag D_00A0BBA0;
+const SetRegADTag D_00A0BBA0 = { { 0x9400000000008000LL, 0x414141410LL } };
 
 static void DrawNonTextureBox(XglPacket *packet, int x, int y, int w, int h)
 {
@@ -347,7 +351,7 @@ static char *RES_Coin_Info(int offer_index)
 #define CASINO_SOUND_ID_TABLE_OFFSET 0x193C
 
 extern void xglSoundEffectNormalID(int soundEffectId, int variant);
-extern const char D_00A0BBB0[]; /* "Sound Req = SE_%.3d:Sound num = %x\n" */
+const char D_00A0BBB0[] = "Sound Req = SE_%.3d:Sound num = %x\n";
 
 static void RES_SoundEffect(int soundId)
 {
@@ -358,7 +362,7 @@ static void RES_SoundEffect(int soundId)
 }
 
 extern void xglSoundEffectStopDirect(int soundEffectId);
-extern const char D_00A0BBD8[]; /* "Sound Req = SE_%.3d:Sound Stop num = %x\n" */
+const char D_00A0BBD8[] = "Sound Req = SE_%.3d:Sound Stop num = %x\n";
 
 static void RES_SoundEffectStop(int soundId)
 {
@@ -371,7 +375,7 @@ static void RES_SoundEffectStop(int soundId)
 /* ov11:0x00a00af0. Loads the casino resource table (CASINO.res) into the
  * fixed asset staging address and records it as ResData, the same
  * (void *)FIXED_ADDRESS pattern PokerInit and the other loaders below use. */
-extern const char D_00A0BC08[]; /* "data\\tanaka\\CASINO.res" */
+const char D_00A0BC08[] = "data\\tanaka\\CASINO.res";
 
 #define CASINO_RES_BUFFER 0x01000000
 
@@ -407,7 +411,7 @@ static int AddCoin(int amount)
 }
 
 extern short *realpt[18];
-extern int D_00A0DD34[];
+#define D_00A0DD34 (((int *)((char *)Gwork + 0x14)))
 
 static short SlGetPic(int reel, int positionOffset, int row)
 {
@@ -499,7 +503,7 @@ static void decprint(int value, int digits, int x, int y)
 }
 
 static void decprint(int value, int digits, int x, int y);
-extern int D_00A0DDC8;
+#define D_00A0DDC8 (*(int *)((char *)Gwork + 0xA8))
 
 static void SlCashPrint(void)
 {
@@ -509,7 +513,7 @@ static void SlCashPrint(void)
 
 typedef struct { short x, y; } PayPos;
 typedef struct { PayPos p[5]; } PayPrintPos;
-extern const PayPrintPos D_00A0BC20;
+const PayPrintPos D_00A0BC20 = { 0x34, 0x25, 0x34, 0x56, 0x34, 0x87, 0x34, 0xB8, 0x34, 0xE9 };
 
 static void pay_print(XglPacket *pkt)
 {
@@ -527,7 +531,7 @@ static void pay_print(XglPacket *pkt)
 /* ov11:0x00a01060. Draws the three-digit slot total stake at its fixed
  * screen position through decprint (ov11:0x00a00de0, LOCAL asm sibling). */
 static void decprint(int value, int digits, int x, int y);
-extern short D_00A0DD74;
+#define D_00A0DD74 (*(short *)((char *)Gwork + 0x54))
 
 static void total_pay_print(XglPacket *pkt)
 {
@@ -676,12 +680,12 @@ loop:
 }
 
 typedef struct { int w[4]; } SlRateRect;
-extern const SlRateRect D_00A0BC38;
-extern const SlRateRect D_00A0BC48;
-extern const SlRateRect D_00A0BC58;
-extern const SlRateRect D_00A0BC68;
-extern const SlRateRect D_00A0BC78;
-extern const SlRateRect D_00A0BC88;
+const SlRateRect D_00A0BC38 = { 0xC5, 0x139, 0x60, 0x10 };
+const SlRateRect D_00A0BC48 = { 0xC5, 0x14D, 0x60, 0x10 };
+const SlRateRect D_00A0BC58 = { 0xC5, 0x161, 0x60, 0x10 };
+const SlRateRect D_00A0BC68 = { 0xC5, 0x189, 0x68, 0x10 };
+const SlRateRect D_00A0BC78 = { 0xC5, 0x19D, 0x30, 0x10 };
+const SlRateRect D_00A0BC88 = { 0x7F, 0x19D, 0x40, 0x10 };
 extern int pos_10[7][2];
 extern unsigned char PicTable[][0x1C];
 extern unsigned char OptionText[][0x1C];
@@ -736,7 +740,7 @@ typedef struct {
     short flag;
 } SlPrize;
 
-extern SlPrize D_00A0DD8A[];
+#define D_00A0DD8A (((SlLineGwork *)Gwork)->line)
 
 typedef struct {
     char pad0[0x48];
@@ -752,7 +756,7 @@ typedef struct {
 } SlLineGwork;
 
 typedef struct { int w[4]; } SlResultRect;
-extern const SlResultRect D_00A0BC98;
+const SlResultRect D_00A0BC98 = { 0x81, 0x19E, 0x28, 0x10 };
 extern unsigned char Pic_13[][0x1C];
 extern unsigned char Total_14[0x1C];
 extern unsigned char linetex_15[0x1C];
@@ -845,10 +849,10 @@ static void SlResultDraw(void)
 }
 
 typedef struct { int w[4]; } SlModeRect;
-extern const SlModeRect D_00A0BCA8;
-extern const SlModeRect D_00A0BCB8;
-extern const SlModeRect D_00A0BCC8;
-extern const SlModeRect D_00A0BCD8;
+const SlModeRect D_00A0BCA8 = { 0x4E, 0x1C, 0x60, 0x10 };
+const SlModeRect D_00A0BCB8 = { 0x4E, 0x1C, 0x38, 0x10 };
+const SlModeRect D_00A0BCC8 = { 0xB4, 0x15, 0x100, 0x20 };
+const SlModeRect D_00A0BCD8 = { 0xBD, 0x21, 0, 8 };
 extern unsigned char Text_17[3][0x1C];
 extern unsigned char Bar_18[0x1C];
 extern unsigned char TimeBar_19[0x1C];
@@ -903,7 +907,7 @@ static void SlGuidPrint(int index)
     seq_21 %= 10;
 }
 
-extern int D_00A0DD5C;
+#define D_00A0DD5C (*(int *)((char *)Gwork + 0x3C))
 
 static void point_control(XglPacket *pkt)
 {
@@ -957,7 +961,7 @@ static void SlBgDraw(XglPacket *pkt)
 }
 
 typedef struct { short v[4]; } SlCoinTbl;
-extern const SlCoinTbl D_00A0BCE8;
+const SlCoinTbl D_00A0BCE8 = { 1, 5, 0xA, 0x1E };
 typedef struct {
     char pad[0x2A];
     unsigned short trg;
@@ -1034,7 +1038,7 @@ static void SlCoinEntry(void)
     }
 }
 
-extern short D_00A0DD6A;
+#define D_00A0DD6A (*(short *)((char *)Gwork + 0x4A))
 
 static void SlPrizeCheck(int line)
 {
@@ -1115,9 +1119,9 @@ typedef struct {
     short pos;
 } SlPat;
 extern SlPat pat_22[15];
-extern const char D_00A0BD10[];
-extern const char D_00A0BD28[];
-extern const char D_00A0BD40[];
+const char D_00A0BD10[] = "line %d [%d,%d,%d]\n";
+const char D_00A0BD28[] = "prize = %d [%d]\n";
+const char D_00A0BD40[] = "paid = %d\n";
 static void SlLineCheck(void)
 {
     int i;
@@ -1141,10 +1145,9 @@ static void SlLineCheck(void)
             p1->reel[r] = SlGetPic(r, pat_22[i * 3 + j].pos, ((SlLineGwork *)Gwork)->row);
         }
     }
-    p2 = D_00A0DD8A;
     for (i = 0; i < 5; i++) {
+        p2 = &((SlLineGwork *)Gwork)->line[i];
         dprintf(D_00A0BD10, i, p2->reel[0], p2->reel[1], p2->reel[2]);
-        p2++;
     }
     best = 0;
     for (i = 0; i < 5; i++) {
@@ -1180,7 +1183,6 @@ static void SlLineCheck(void)
  * whether the resulting payout is nonzero. SlLineCheck is a LOCAL asm
  * sibling. */
 static void SlLineCheck(void);
-extern int D_00A0DDC8;
 
 static int check_real(void)
 {
@@ -1343,16 +1345,16 @@ typedef struct {
     int f[4];
 } SlPrizeRct;
 extern int mode_24;
-extern int D_00A0DC28;
-extern int D_00A0DC2C;
-extern int D_00A0DC30;
-extern const SlPrizeTex D_00A0BD68;
-extern SlPrizeTex D_00A0DC38;
-extern const SlPrizeRct D_00A0BD88;
-extern SlPrizeRct D_00A0DC58;
+const SlPrizeTex D_00A0BD68 = { 0, 0, 0x100, 0x40, 0, 0x40, 0 };
+const SlPrizeRct D_00A0BD88 = { 0x80, 0x70, 0x400, 0 };
 
 static int SlPrizeEffect(int arg0)
 {
+    static int D_00A0DC28 __asm__("D_00A0DC28");
+    static int D_00A0DC2C __asm__("D_00A0DC2C");
+    static int D_00A0DC30 __asm__("D_00A0DC30");
+    static SlPrizeTex D_00A0DC38 __asm__("D_00A0DC38");
+    static SlPrizeRct D_00A0DC58 __asm__("D_00A0DC58");
     switch (mode_24) {
     case 0:
         D_00A0DC38 = D_00A0BD68;
@@ -1452,10 +1454,7 @@ static int SlPrizeEffect(int arg0)
 }
 
 typedef struct { int on; int wait; int h; } SlRealEff;
-extern SlRealEff D_00A0DC68[3];
-extern SlRealEff *D_00A0DC8C;
-extern int D_00A0DC90;
-extern short D_00A0DD68;
+#define D_00A0DD68 (*(short *)((char *)Gwork + 0x48))
 typedef struct { int a; int y; int b; int h; int c[3]; } SlEffTex;
 extern SlEffTex tex_30;
 extern int mode_33;
@@ -1463,6 +1462,9 @@ typedef struct { int x, y, w, h; } SlCrRect;
 
 static int SlChangeRealEffect(int arg0)
 {
+    static SlRealEff D_00A0DC68[3] __asm__("D_00A0DC68");
+    static SlRealEff *D_00A0DC8C __asm__("D_00A0DC8C");
+    static int D_00A0DC90 __asm__("D_00A0DC90");
     SlCrRect rect;
     int i;
     int cnt;
@@ -1571,7 +1573,7 @@ static int SlChangeRealEffect(int arg0)
 }
 
 extern int busy_35;
-extern int D_00A0DDD0;
+#define D_00A0DDD0 (*(int *)((char *)Gwork + 0xB0))
 int SlChangeRealEffect(int arg0);
 typedef struct {
     char pad0[0x4A];
@@ -1645,8 +1647,8 @@ static int SlEvent(int arg0)
 extern void xglPacketTextureTrans(void *buffer);
 typedef struct { int w[7]; } SlHelpSprite;
 typedef struct { int r[4]; } SlHelpRect;
-extern const SlHelpSprite D_00A0BDE0;
-extern const SlHelpRect D_00A0BE00;
+const SlHelpSprite D_00A0BDE0 = { 0, 0, 0x1E0, 0x100, 0, 0x1FC, 0 };
+const SlHelpRect D_00A0BE00 = { 0x10, 0x20, 0x1E0, 0x100 };
 
 static void SlHelpMode(void)
 {
@@ -1694,11 +1696,11 @@ static void slot_main(void) {
 
 /* ov11:0x00a034d8. Loads the five slot-machine texture resources into their
  * fixed rendering buffers through the resource loader. */
-extern const char D_00A0BE10[]; /* "data\\tanaka\\slot_1.xtx" */
-extern const char D_00A0BE28[]; /* "data\\tanaka\\slot_2.xtx" */
-extern const char D_00A0BE40[]; /* "data\\tanaka\\base.xtx" */
-extern const char D_00A0BE58[]; /* "data\\tanaka\\w1.xtx" */
-extern const char D_00A0BE70[]; /* "data\\tanaka\\help_all.xtx" */
+const char D_00A0BE10[] = "data\\tanaka\\slot_1.xtx";
+const char D_00A0BE28[] = "data\\tanaka\\slot_2.xtx";
+const char D_00A0BE40[] = "data\\tanaka\\base.xtx";
+const char D_00A0BE58[] = "data\\tanaka\\w1.xtx";
+const char D_00A0BE70[] = "data\\tanaka\\help_all.xtx";
 
 #define SLOT_1_TEX_BUFFER 0x01008000
 #define SLOT_2_TEX_BUFFER 0x01048800
@@ -1928,7 +1930,7 @@ static void NgStopBtnPrint(void)
     }
 }
 
-extern short D_00A0DDE2[];
+#define D_00A0DDE2 (((short *)((char *)Gwork + 0xC2)))
 
 static void NgAllStop(void)
 {
@@ -2196,10 +2198,10 @@ static void NgGame_Paid(void)
     }
 }
 
-extern const SlHelpSprite D_00A0BEA0;
-extern const SlHelpSprite D_00A0BEC0;
-extern const SlHelpRect D_00A0BEE0;
-extern const SlHelpRect D_00A0BEF0;
+const SlHelpSprite D_00A0BEA0 = { 0, 0x100, 0x100, 0x100, 0, 0x1FC, 0 };
+const SlHelpSprite D_00A0BEC0 = { 0x100, 0x100, 0x100, 0x80, 0, 0x1FC, 0 };
+const SlHelpRect D_00A0BEE0 = { 0x90, 0x30, 0x100, 0x100 };
+const SlHelpRect D_00A0BEF0 = { 0x90, 0x130, 0x100, 0x80 };
 
 static void NgHelpMode(void)
 {
@@ -2299,8 +2301,8 @@ static void init_ninegame(void)
 }
 
 typedef struct { int w[4]; } PoMoneyRect;
-extern const PoMoneyRect D_00A0BF00;
-extern const PoMoneyRect D_00A0BF10;
+const PoMoneyRect D_00A0BF00 = { 0x1D8, 0x18F, 0x10, 0x18 };
+const PoMoneyRect D_00A0BF10 = { 0x16E, 0x173, 0x81, 0x38 };
 extern unsigned char fontlist_52[10][0x1C];
 static void PoMoneyPrint(int type, int value)
 {
@@ -2332,10 +2334,10 @@ static void PoMoneyPrint(int type, int value)
 }
 
 extern int cnt_54;
-extern int D_00A0DC98[4];
 
 static void PoCurDraw(short *pos)
 {
+    static int D_00A0DC98[4] __asm__("D_00A0DC98");
     xglPacketTextureTrans((void *)0x013CF800);
     SetRegAD(Pkt, 0x3F, 0);
     D_00A0DC98[2] = D_00A0DC98[3] = 0x18;
@@ -2347,9 +2349,9 @@ static void PoCurDraw(short *pos)
 
 extern void xglFontPrint(int x, int y, int color, const char *text);
 typedef struct { int x, y, w, h; } PoWinRect;
-extern const PoWinRect D_00A0BF20;
-extern const char D_00A0BF30[];
-extern const char D_00A0BF38[];
+const PoWinRect D_00A0BF20 = { 0, 0xCF, 0x200, 0x30 };
+const char D_00A0BF30[] = "\015\002";
+const char D_00A0BF38[] = "\031\003";
 extern unsigned char Ltex_56[0x1C];
 extern unsigned char Rtex_57[0x1C];
 extern unsigned char tex_58[0x1C];
@@ -2488,12 +2490,12 @@ static void PoCardDraw(void)
 extern int status_73;
 extern unsigned char tex_72[];
 typedef struct { int x, y, w, h; } PoCardRectS;
-extern PoCardRectS D_00A0DCA8[5];
-extern int D_00A0DCF8;
 typedef struct { int w[4]; } __attribute__((packed)) PoCardAnimeRect;
 
 static int PoCardDrawAnime(void)
 {
+    static PoCardRectS D_00A0DCA8[5] __asm__("D_00A0DCA8");
+    static int D_00A0DCF8 __asm__("D_00A0DCF8");
     int i;
     int done;
 
@@ -2539,13 +2541,13 @@ static int PoCardDrawAnime(void)
 
 extern int status_77;
 extern unsigned char tex_76[];
-extern PoCardRectS D_00A0DD00;
-extern int D_00A0DD10;
 typedef struct { char pad[0x176]; short hand[17]; short flag[5]; } PoBonusWork;
 typedef struct { PoCardRectS r[5]; } CardPosWork;
 
 static int PoBonusCardAnime(void)
 {
+    static PoCardRectS D_00A0DD00 __asm__("D_00A0DD00");
+    static int D_00A0DD10 __asm__("D_00A0DD10");
     int i;
 
     xglPacketTextureTrans((void *)0x0128D000);
@@ -2924,8 +2926,8 @@ static short PoGetBase(int cardValue)
 }
 
 extern void dprintf(const char *fmt, ...);
-extern const char D_00A0C030[];
-extern const char D_00A0C038[];
+const char D_00A0C030[] = "%d ";
+const char D_00A0C038[] = "\n";
 typedef struct {
     char pad[0x176];
     short card[22];
@@ -2956,10 +2958,10 @@ static void PoSortCard(void)
     dprintf(D_00A0C038);
 }
 
-extern const char D_00A0C040[];
-extern const char D_00A0C048[];
-extern const char D_00A0C050[];
-extern const char D_00A0C058[];
+const char D_00A0C040[] = "1";
+const char D_00A0C048[] = "2";
+const char D_00A0C050[] = "3";
+const char D_00A0C058[] = "/";
 
 static int PoMultiChk(void)
 {
@@ -3040,7 +3042,7 @@ extern void dprintf(const char *fmt, ...);
 
 /* ov11:0x00a05de0. Reports category 1, printing D_00A0C078 through
  * dprintf, when PoMultiChk's multiplicity equals 1. */
-extern const char D_00A0C078[];
+const char D_00A0C078[] = "\245\357\245\363\245\332\245\242\n";
 
 static int PoChk1(void)
 {
@@ -3053,7 +3055,7 @@ static int PoChk1(void)
 
 /* ov11:0x00a05e20. Reports category 2, printing D_00A0C088 through
  * dprintf, when PoMultiChk's multiplicity equals 2. */
-extern const char D_00A0C088[];
+const char D_00A0C088[] = "\245\304\241\274\245\332\245\242\n";
 
 static int PoChk2(void)
 {
@@ -3066,7 +3068,7 @@ static int PoChk2(void)
 
 /* ov11:0x00a05e60. Reports category 3, printing D_00A0C098 through
  * dprintf, when PoMultiChk's multiplicity equals 3. */
-extern const char D_00A0C098[];
+const char D_00A0C098[] = "\245\271\245\352\241\274\245\253\241\274\245\311\n";
 
 static int PoChk3(void)
 {
@@ -3077,7 +3079,7 @@ static int PoChk3(void)
     return 0;
 }
 
-extern const char D_00A0C0A8[];
+const char D_00A0C0A8[] = "\245\271\245\310\245\354\241\274\245\310\n";
 
 static int PoChk4(void)
 {
@@ -3111,7 +3113,7 @@ static int PoChk4(void)
 /* ov11:0x00a05fb0. Substitutes category 5 and prints D_00A0C0B8 through
  * dprintf whenever PoFlushChk returns nonzero; PoFlushChk's own nonzero
  * value is discarded rather than reused as the category. */
-extern const char D_00A0C0B8[];
+const char D_00A0C0B8[] = "\245\325\245\351\245\303\245\267\245\345\n";
 
 static int PoChk5(void)
 {
@@ -3126,7 +3128,7 @@ static int PoChk5(void)
 
 /* ov11:0x00a05fe8. Reports category 6, printing D_00A0C0C8 through
  * dprintf, when PoMultiChk's multiplicity equals 4. */
-extern const char D_00A0C0C8[];
+const char D_00A0C0C8[] = "\245\325\245\353\245\317\245\246\245\271\n";
 
 static int PoChk6(void)
 {
@@ -3139,7 +3141,7 @@ static int PoChk6(void)
 
 /* ov11:0x00a06028. Reports category 7, printing D_00A0C0D8 through
  * dprintf, when PoMultiChk's multiplicity equals 5. */
-extern const char D_00A0C0D8[];
+const char D_00A0C0D8[] = "\245\325\245\251\241\274\245\253\241\274\245\311\n";
 
 static int PoChk7(void)
 {
@@ -3150,7 +3152,7 @@ static int PoChk7(void)
     return 0;
 }
 
-extern const char D_00A0C0E8[];
+const char D_00A0C0E8[] = "\245\271\245\310\245\354\241\274\245\310\245\325\245\351\245\303\245\267\245\345\n";
 
 static int PoChk8(void)
 {
@@ -3183,7 +3185,7 @@ static int PoChk8(void)
  * this run, reports 0. */
 #define POKER_HAND_RANK_INDEX 0xD1 /* short index; 0x1A2 / sizeof(short) */
 
-extern const char D_00A0C100[];
+const char D_00A0C100[] = "\245\355\245\244\245\344\245\353\245\271\245\310\245\354\241\274\245\310\245\325\245\351\245\303\245\267\245\345\n";
 
 static int PoChk9(void)
 {
@@ -3227,7 +3229,11 @@ static int PoChk4(void);
 static int PoChk8(void);
 static int PoChk9(void);
 static void RES_SoundEffect(int soundId);
-extern const char D_00A0C120[];
+const char D_00A0C120[] = "result = %d\n";
+const char D_00A0C130[] = "Play 5 coins per round poker\241\251";
+const char D_00A0C150[] = "Play 10 coins per round poker\241\251";
+const char D_00A0C170[] = "Play 30 coins per round poker\241\251";
+const char D_00A0C190[] = "Play 100 coins per round poker\241\251";
 
 static int PoCardCheck(void)
 {
@@ -3293,7 +3299,7 @@ static void PoResultLamp(int category)
 
 /* ov11:0x00a06308. Stores the caller-supplied poker sequence state in the
  * global sequence word. */
-extern int D_00A0DEA8;
+#define D_00A0DEA8 (*(int *)((char *)Gwork + 0x188))
 
 static void PoSeqChange(int sequenceState)
 {
@@ -3318,9 +3324,9 @@ typedef struct {
 } PokerReadyWidthTable;
 
 static void PoWindowMessage(const char *message, int width);
-extern int D_00A0DD2C;
-extern const PokerReadyMessageTable D_00A0C1B8; /* "Play 5/10/30/100 coins" */
-extern const PokerReadyWidthTable D_00A0C1C8;
+#define D_00A0DD2C (*(int *)((char *)Gwork + 0xC))
+const PokerReadyMessageTable D_00A0C1B8 = { { D_00A0C130, D_00A0C150, D_00A0C170, D_00A0C190 } };
+const PokerReadyWidthTable D_00A0C1C8 = { 0x1D, 0x1E, 0x1E, 0x1F };
 
 static void PokerReadyMes(void)
 {
@@ -3405,15 +3411,15 @@ union CasinoWorkU {
     int words[148];
     struct PokerDealWorkU poker_deal;
 };
-extern union CasinoWorkU GworkU __asm__("Gwork");
+#define GworkU (*(union CasinoWorkU *)Gwork)
 extern int init_99;
 extern int PokerCoinRate[4];
 #define CASINO_MENU 0
 #define PAD_CIRCLE 0x0020
 extern int PokerRate[10];
-extern const char D_00A0C1D8[];
-extern const char D_00A0C1F8[];
-extern const char D_00A0C208[];
+const char D_00A0C1D8[] = "There are no more coins.";
+const char D_00A0C1F8[] = "Continue game?";
+const char D_00A0C208[] = "Double or nothing?";
 #define POKER_TABLE2_TEX_BUFFER 0x013CF800
 
 static void PokerMain(void)
@@ -3715,12 +3721,12 @@ static void PoInitWork(void)
  * D_00A0Cxxx strings themselves) into fixed EE main RAM staging addresses,
  * following the same (void *)FIXED_ADDRESS pattern as src/main/game_over.c's
  * IMAGE_LOAD_BUFFER. */
-extern const char D_00A0C270[]; /* "data\\tanaka\\spade.xtx" */
-extern const char D_00A0C288[]; /* "data\\tanaka\\clover.xtx" */
-extern const char D_00A0C2A0[]; /* "data\\tanaka\\heart.xtx" */
-extern const char D_00A0C2B8[]; /* "data\\tanaka\\dia.xtx" */
-extern const char D_00A0C2D0[]; /* "data\\tanaka\\poker_1.xtx" */
-extern const char D_00A0C2E8[]; /* "data\\tanaka\\poker_2.xtx" */
+const char D_00A0C270[] = "data\\tanaka\\spade.xtx";
+const char D_00A0C288[] = "data\\tanaka\\clover.xtx";
+const char D_00A0C2A0[] = "data\\tanaka\\heart.xtx";
+const char D_00A0C2B8[] = "data\\tanaka\\dia.xtx";
+const char D_00A0C2D0[] = "data\\tanaka\\poker_1.xtx";
+const char D_00A0C2E8[] = "data\\tanaka\\poker_2.xtx";
 
 #define POKER_SPADE_TEX_BUFFER  0x0128D000
 #define POKER_CLOVER_TEX_BUFFER 0x012CD800
@@ -3896,7 +3902,6 @@ static void sub_window(int windowId, int y, int x);
 static int submenu_select(int windowId, int y, int x, int iconCount,
                           void *icons, int *selected);
 extern unsigned char Level_Tex[];
-extern int D_00A0DD2C;
 
 static int level_select(int windowId, int y, int x)
 {
@@ -3909,7 +3914,7 @@ static int level_select(int windowId, int y, int x)
  * uses above; exchange_select's own tail call (`j submenu_select`) is why its
  * return value is submenu_select's. */
 extern unsigned char ExChange_Tex[];
-extern int D_00A0DD24;
+#define D_00A0DD24 (*(int *)((char *)Gwork + 0x4))
 
 static int exchange_select(int windowId, int y, int x)
 {
@@ -4013,8 +4018,8 @@ static int menu_mode(void)
 /* ov11:0x00a07410. Loads the menu background and window textures, then
  * resets the menu mode and game level selection in the Gwork work
  * block. */
-extern const char D_00A0C320[]; /* "data\\tanaka\\BG.xtx" */
-extern const char D_00A0C338[]; /* "data\\tanaka\\window.xtx" */
+const char D_00A0C320[] = "data\\tanaka\\BG.xtx";
+const char D_00A0C338[] = "data\\tanaka\\window.xtx";
 
 #define MENU_BG_TEX_BUFFER 0x0114A800
 #define MENU_WINDOW_TEX_BUFFER 0x0118B000
@@ -4117,13 +4122,13 @@ static void UtlCurPrint(int x, int y)
 extern int cur_108;
 extern short curpt_109[][2];
 extern unsigned char BG_Tex[0x1C];
-extern const char D_00A0C350[];
-extern const char D_00A0C358[];
-extern const char D_00A0C368[];
-extern const char D_00A0C370[];
-extern const char D_00A0C378[];
-extern const char D_00A0C380[];
-extern const char D_00A0C388[];
+const char D_00A0C350[] = "\015\002\014d\301{";
+const char D_00A0C358[] = "\031\003Buy Coins";
+const char D_00A0C368[] = "\015\002\014\377\200";
+const char D_00A0C370[] = "\025\002\004\001";
+const char D_00A0C378[] = "\015\002\014\377";
+const char D_00A0C380[] = "EXIT";
+const char D_00A0C388[] = "\025\002\004";
 extern int dataMoneyBoxDec(int amount);
 extern int dataMoneyBoxChk(void);
 
@@ -4260,7 +4265,7 @@ static void coin_main(void)
 /* ov11:0x00a07c38. Loads the casino coin-exchange minigame's background and
  * exchange textures (D_00A0BE40 is the same "base.xtx" path init_test_mode
  * uses, into a different fixed buffer address here). */
-extern const char D_00A0C390[]; /* "data\\tanaka\\exchange2.xtx" */
+const char D_00A0C390[] = "data\\tanaka\\exchange2.xtx";
 
 #define COIN_EXCHANGE_TEX_BUFFER 0x011CB800
 
@@ -4272,7 +4277,7 @@ static void init_coin(void)
 
 /* ov11:0x00a07c80. Loads the casino shop's exchange and background textures
  * (D_00A0BE40 "base.xtx" again, into the same fixed buffer init_coin uses). */
-extern const char D_00A0C3B0[]; /* "data\\tanaka\\exchange1.xtx" */
+const char D_00A0C3B0[] = "data\\tanaka\\exchange1.xtx";
 
 #define SHOP_EXCHANGE_TEX_BUFFER 0x0120C000
 
@@ -4283,8 +4288,6 @@ static void init_shop(void)
 }
 
 extern int xglFlagsGet1(int flag);
-extern int MenuNum;
-extern int shpmenu_work[];
 
 static void init_shpmenu(void)
 {
@@ -4350,7 +4353,9 @@ extern int dataEvtBoxInc(int id);
 extern int init_110;
 extern int cur_111;
 extern int top_112;
-extern const char D_00A0C4A8[];
+const char D_00A0C4A0[] = "\015\003";
+const char D_00A0C4A8[] = "\031\003\025\002\002\010";
+const char D_00A0C4B0[] = "\031\003\025\002\002\010\025\002\001\014\025\003\003\002";
 typedef union ShopPadView {
     struct { unsigned char u0[0x2A]; unsigned short half_2a; } canonical;
     struct { unsigned char u0[0x28]; u64 words; } dword;
@@ -4545,8 +4550,8 @@ static void shop_main(void)
 
 /* ov11:0x00a083f8. Loads the data-viewer minigame's dataviewer and sampler
  * textures. */
-extern const char D_00A0C590[]; /* "data\\tanaka\\dataviewer.xtx" */
-extern const char D_00A0C5B0[]; /* "data\\tanaka\\sam.xtx" */
+const char D_00A0C590[] = "data\\tanaka\\dataviewer.xtx";
+const char D_00A0C5B0[] = "data\\tanaka\\sam.xtx";
 
 #define VW_DATAVIEWER_TEX_BUFFER 0x0124C800
 #define VW_SAM_TEX_BUFFER        0x01410000
@@ -4589,13 +4594,17 @@ static int VW_SamlistInit(void)
 }
 
 extern int old_113;
-extern const char D_00A0C5C8[];
-extern const char D_00A0C5D8[];
-extern const char D_00A0C5E8[];
-extern const char D_00A0C5F8[];
-extern const char D_00A0C608[];
-extern const char D_00A0C618[];
-extern const char D_00A0C628[];
+const char D_00A0C5C8[] = "%s\\%.2d_Y1.xtx";
+const char D_00A0C5D8[] = "data\\tanaka";
+const char D_00A0C5E8[] = "%s\\%.2d_Y2.xtx";
+const char D_00A0C5F8[] = "%s\\%.2d_W1.xtx";
+const char D_00A0C608[] = "%s\\%.2d_W2.xtx";
+const char D_00A0C618[] = "%s\\%.2d_W3.xtx";
+const char D_00A0C628[] = "%s\\%.2d_W4.xtx";
+const char D_00A0C638[] = "\015\003\033\034";
+const char D_00A0C640[] = "\031\003\025\002\002\010\025\002\001\014\025\003\003";
+const char D_00A0C650[] = "\025\002\001\013";
+const char D_00A0C658[] = "Umnmode";
 
 static int VW_ViewModeInit(int no)
 {
@@ -4750,8 +4759,186 @@ static int VW_ViewMode(int arg)
 }
 
 
+/* ---- initialized .data up to VW_SamMode's statics (original order) ---- */
+char *SaveWork = (void *)0x4A6940;
+short real01array[21] = { 1, 3, 1, 0, 4, 4, 0, 1, 3, 1, 0, 2, 1, 0, 1, 2, 1, 0, 5, 5, 0 };
+short real02array[21] = { 3, 0, 1, 3, 0, 0, 0, 1, 2, 0, 4, 0, 1, 2, 0, 1, 0, 0, 3, 5, 1 };
+short real03array[21] = { 1, 0, 0, 0, 2, 1, 0, 2, 1, 4, 2, 0, 0, 1, 5, 3, 1, 0, 5, 5, 3 };
+short real11array[21] = { 1, 3, 1, 0, 4, 4, 0, 1, 3, 1, 0, 2, 1, 0, 1, 2, 1, 0, 7, 7, 0 };
+short real12array[21] = { 3, 0, 1, 3, 0, 0, 0, 1, 2, 0, 4, 0, 1, 2, 0, 1, 0, 0, 3, 7, 1 };
+short real13array[21] = { 1, 0, 0, 0, 2, 1, 0, 2, 1, 4, 2, 0, 0, 1, 7, 3, 1, 0, 7, 7, 3 };
+short real21array[21] = { 1, 3, 1, 6, 4, 6, 0, 1, 3, 1, 6, 2, 1, 0, 1, 2, 1, 0, 5, 5, 0 };
+short real22array[21] = { 3, 0, 1, 3, 6, 0, 0, 1, 2, 0, 4, 0, 1, 2, 0, 1, 0, 0, 3, 5, 1 };
+short real23array[21] = { 1, 0, 0, 6, 2, 1, 6, 2, 1, 4, 2, 0, 0, 1, 5, 3, 1, 0, 5, 5, 3 };
+short real31array[21] = { 6, 3, 1, 6, 4, 6, 6, 1, 3, 1, 0, 2, 1, 0, 6, 2, 1, 6, 5, 5, 6 };
+short real32array[21] = { 3, 0, 1, 3, 0, 0, 0, 1, 2, 0, 4, 0, 1, 2, 0, 1, 0, 0, 3, 5, 1 };
+short real33array[21] = { 1, 0, 0, 0, 2, 1, 0, 2, 1, 4, 2, 0, 0, 1, 5, 3, 1, 0, 5, 5, 3 };
+short real41array[21] = { 8, 7, 8, 7, 8, 7, 8, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 };
+short real42array[21] = { 8, 8, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 8, 8, 7, 8, 8, 8, 8 };
+short real43array[21] = { 8, 8, 8, 8, 7, 8, 8, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 };
+short real51array[21] = { 1, 3, 8, 0, 4, 4, 0, 8, 3, 1, 0, 2, 8, 0, 8, 2, 1, 0, 5, 5, 0 };
+short real52array[21] = { 3, 0, 1, 8, 0, 8, 8, 1, 2, 8, 4, 0, 1, 2, 0, 8, 0, 8, 3, 5, 1 };
+short real53array[21] = { 1, 0, 8, 8, 2, 1, 0, 2, 1, 8, 2, 8, 0, 8, 5, 3, 1, 0, 5, 5, 3 };
+short *realpt[18] = { real01array, real02array, real03array, real11array, real12array, real13array, real21array, real22array, real23array, real31array, real32array, real33array, real41array, real42array, real43array, real51array, real52array, real53array };
+unsigned char slot_window_0[0x1C] = { 0, 1, 0, 0, 0x30, 0, 0, 0, 0x70, 0, 0, 0, 0xC8, 0, 0, 0, 0, 0, 0, 0, 0x3C, 1, 0, 0, 0, 0, 0, 0 };
+unsigned char slot_window_rect_1[3][0x10] = { 0x50, 0, 0, 0, 0x32, 0, 0, 0, 0x70, 0, 0, 0, 0xC8, 0, 0, 0, 0xC8, 0, 0, 0, 0x32, 0, 0, 0, 0x70, 0, 0, 0, 0xC8, 0, 0, 0, 0x40, 1, 0, 0, 0x32, 0, 0, 0, 0x70, 0, 0, 0, 0xC8, 0, 0, 0 };
+unsigned char Real_2[9][0x1C] = { 0, 0, 0, 0, 0, 0, 0, 0, 0x70, 0, 0, 0, 0x40, 0, 0, 0, 0x80, 0, 0, 0, 0xBC, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x40, 0, 0, 0, 0x70, 0, 0, 0, 0x40, 0, 0, 0, 0x95, 0, 0, 0, 0xBC, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x80, 0, 0, 0, 0x70, 0, 0, 0, 0x40, 0, 0, 0, 0x80, 1, 0, 0, 0xBC, 0, 0, 0, 0, 0, 0, 0, 0x70, 0, 0, 0, 0, 0, 0, 0, 0x70, 0, 0, 0, 0x40, 0, 0, 0, 0x80, 1, 0, 0, 0xBC, 0, 0, 0, 0, 0, 0, 0, 0x70, 0, 0, 0, 0x40, 0, 0, 0, 0x70, 0, 0, 0, 0x40, 0, 0, 0, 0x80, 2, 0, 0, 0xBC, 0, 0, 0, 0, 0, 0, 0, 0x70, 0, 0, 0, 0xC0, 0, 0, 0, 0x70, 0, 0, 0, 0x40, 0, 0, 0, 0x95, 2, 0, 0, 0xBC, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xC0, 0, 0, 0, 0x70, 0, 0, 0, 0x40, 0, 0, 0, 0x95, 1, 0, 0, 0xBC, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0x70, 0, 0, 0, 0x40, 0, 0, 0, 0x80, 3, 0, 0, 0xBC, 0, 0, 0, 0, 0, 0, 0, 0x70, 0, 0, 0, 0x80, 0, 0, 0, 0x70, 0, 0, 0, 0x40, 0, 0, 0, 0x95, 3, 0, 0, 0xBC, 0, 0, 0, 0, 0, 0, 0 };
+int xpos_3[3] = { 0x50, 0xC8, 0x140 };
+unsigned char decfont[10][0x1C] = { 0xF0, 1, 0, 0, 0x30, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xB4, 2, 0, 0, 0, 0, 0, 0, 0xF0, 1, 0, 0, 0x48, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xB4, 2, 0, 0, 0, 0, 0, 0, 0xF0, 1, 0, 0, 0x60, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xB4, 2, 0, 0, 0, 0, 0, 0, 0xF0, 1, 0, 0, 0x78, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xB4, 2, 0, 0, 0, 0, 0, 0, 0xF0, 1, 0, 0, 0x90, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xB4, 2, 0, 0, 0, 0, 0, 0, 0xF0, 1, 0, 0, 0xA8, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xB4, 2, 0, 0, 0, 0, 0, 0, 0xD0, 1, 0, 0, 0xC0, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xB4, 2, 0, 0, 0, 0, 0, 0, 0xE0, 1, 0, 0, 0xC0, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xB4, 2, 0, 0, 0, 0, 0, 0, 0xF0, 1, 0, 0, 0xC0, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xB4, 2, 0, 0, 0, 0, 0, 0, 0xD0, 1, 0, 0, 0xD8, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xB4, 2, 0, 0, 0, 0, 0, 0 };
+unsigned char pay_window[2][28] = { 0xE0, 0, 0, 0, 0, 0, 0, 0, 0x20, 0, 0, 0, 0x20, 0, 0, 0, 0, 0, 0, 0, 0x3C, 2, 0, 0, 0, 0, 0, 0, 0xE0, 0, 0, 0, 0x20, 0, 0, 0, 0x20, 0, 0, 0, 0x20, 0, 0, 0, 0, 0, 0, 0, 0x3C, 2, 0, 0, 0, 0, 0, 0 };
+unsigned char pay_window_rect_4[5][16] = { 0x24, 0, 0, 0, 0x21, 0, 0, 0, 0x20, 0, 0, 0, 0x20, 0, 0, 0, 0x24, 0, 0, 0, 0x52, 0, 0, 0, 0x20, 0, 0, 0, 0x20, 0, 0, 0, 0x24, 0, 0, 0, 0x83, 0, 0, 0, 0x20, 0, 0, 0, 0x20, 0, 0, 0, 0x24, 0, 0, 0, 0xB4, 0, 0, 0, 0x20, 0, 0, 0, 0x20, 0, 0, 0, 0x24, 0, 0, 0, 0xE5, 0, 0, 0, 0x20, 0, 0, 0, 0x20, 0, 0, 0 };
+unsigned char spinbt[3][0x1C] = { 0x54, 1, 0, 0, 0, 1, 0, 0, 0x28, 0, 0, 0, 0x58, 0, 0, 0, 0, 0, 0, 0, 0xB4, 1, 0, 0, 0, 0, 0, 0, 0x7C, 1, 0, 0, 0, 1, 0, 0, 0x28, 0, 0, 0, 0x58, 0, 0, 0, 0, 0, 0, 0, 0xB4, 1, 0, 0, 0, 0, 0, 0, 0xA4, 1, 0, 0, 0, 1, 0, 0, 0x28, 0, 0, 0, 0x58, 0, 0, 0, 0, 0, 0, 0, 0xB4, 1, 0, 0, 0, 0, 0, 0 };
+int status_keep_5 = 0;
+unsigned char spinbt_rect_6[0x10] = { 0xB7, 1, 0, 0, 0x9B, 0, 0, 0, 0x28, 0, 0, 0, 0x58, 0, 0, 0 };
+int pushcnt_7 = -1;
+unsigned char stopbt[3][0x1C] = { 0xE0, 1, 0, 0, 0xD8, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 0, 0, 0, 0, 0xF0, 1, 0, 0, 0xD8, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 0, 0, 0, 0, 0xCC, 1, 0, 0, 0x20, 1, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 0, 0, 0, 0 };
+unsigned char stopbt_rect_8[3][0x10] = { 0xC7, 0, 0, 0, 2, 1, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0xF8, 0, 0, 0, 2, 1, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0x29, 1, 0, 0, 2, 1, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0 };
+unsigned char PicTable[7][0x1C] = { 0, 1, 0, 0, 0, 1, 0, 0, 0x54, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0x10, 1, 0, 0, 0x54, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0x20, 1, 0, 0, 0x54, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0x40, 1, 0, 0, 0x54, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0x50, 1, 0, 0, 0x54, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0x30, 1, 0, 0, 0x54, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0xCC, 1, 0, 0, 0x38, 1, 0, 0, 0x1C, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0 };
+unsigned char OptionText[5][0x1C] = { 0x68, 0, 0, 0, 0xD0, 1, 0, 0, 0x50, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0xA0, 0, 0, 0, 0xE0, 1, 0, 0, 0x60, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0x68, 0, 0, 0, 0xF0, 1, 0, 0, 0x68, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0xD0, 0, 0, 0, 0xF0, 1, 0, 0, 0x30, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0xC0, 0, 0, 0, 0xD0, 1, 0, 0, 0x40, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0 };
+unsigned char DeciList_9[10][0x1C] = { 0xD0, 1, 0, 0, 0xF0, 0, 0, 0, 0xC, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0xDC, 1, 0, 0, 0xF0, 0, 0, 0, 0xC, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0xE8, 1, 0, 0, 0xF0, 0, 0, 0, 0xC, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0xF4, 1, 0, 0, 0xF0, 0, 0, 0, 0xC, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0xD0, 1, 0, 0, 0, 1, 0, 0, 0xC, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0xDC, 1, 0, 0, 0, 1, 0, 0, 0xC, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0xE8, 1, 0, 0, 0, 1, 0, 0, 0xC, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0xF4, 1, 0, 0, 0, 1, 0, 0, 0xC, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0xD0, 1, 0, 0, 0x10, 1, 0, 0, 0xC, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0xDC, 1, 0, 0, 0x10, 1, 0, 0, 0xC, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0 };
+int pos_10[7][2] = { 0x21, 0x175, 0x21, 0x161, 0x21, 0x14D, 0x21, 0x139, 0x21, 0x189, 0x21, 0x125, 0x21, 0x19D };
+int rate_11[6] = { 0x1E, 0x14, 0x14, 0xA, 5, 1 };
+int double_rate_12[6] = { 0x3C, 0x28, 0x28, 0x14, 0xA, 2 };
+unsigned char Pic_13[9][0x1C] = { 0, 1, 0, 0, 0, 1, 0, 0, 0x1C, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0x10, 1, 0, 0, 0x1C, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0x20, 1, 0, 0, 0x1C, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0x40, 1, 0, 0, 0x1C, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0x50, 1, 0, 0, 0x1C, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0x30, 1, 0, 0, 0x1C, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0xCC, 1, 0, 0, 0x38, 1, 0, 0, 0x1C, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0x88, 1, 0, 0, 0x68, 1, 0, 0, 0x1C, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0xCC, 1, 0, 0, 0x48, 1, 0, 0, 0x1C, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0 };
+unsigned char Total_14[0x1C] = { 0x60, 1, 0, 0, 0x68, 1, 0, 0, 0x28, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0 };
+unsigned char linetex_15[0x1C] = { 0, 0, 0, 0, 0x40, 1, 0, 0, 0x70, 0, 0, 0, 0x40, 0, 0, 0, 0, 0, 0, 0, 0xB4, 0, 0, 0, 0, 0, 0, 0 };
+int linerect_16[9][4] = { 0x50, 0x32, 0x70, 0x40, 0x50, 0x72, 0x70, 0x40, 0x50, 0xB2, 0x70, 0x40, 0xC8, 0x32, 0x70, 0x40, 0xC8, 0x72, 0x70, 0x40, 0xC8, 0xB2, 0x70, 0x40, 0x140, 0x32, 0x70, 0x40, 0x140, 0x72, 0x70, 0x40, 0x140, 0xB2, 0x70, 0x40 };
+unsigned char Text_17[3][0x1C] = { 0x68, 0, 0, 0, 0xE0, 1, 0, 0, 0x38, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0x68, 0, 0, 0, 0xF0, 1, 0, 0, 0x68, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0, 0xA0, 0, 0, 0, 0xE0, 1, 0, 0, 0x60, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xBC, 1, 0, 0, 0, 0, 0, 0 };
+unsigned char Bar_18[0x1C] = { 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0x20, 0, 0, 0, 0, 0, 0, 0, 0xB4, 0, 0, 0, 0, 0, 0, 0 };
+unsigned char TimeBar_19[0x1C] = { 0, 1, 0, 0, 0x60, 1, 0, 0, 0x80, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 0, 0, 0, 0 };
+unsigned char GuidPtTex[10][28] = { 0, 1, 0, 0, 0xF8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 0, 0, 0, 0, 8, 1, 0, 0, 0xF8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 0, 0, 0, 0, 0x10, 1, 0, 0, 0xF8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 0, 0, 0, 0, 0x18, 1, 0, 0, 0xF8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 0, 0, 0, 0, 0x20, 1, 0, 0, 0xF8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 0, 0, 0, 0, 0x28, 1, 0, 0, 0xF8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 0, 0, 0, 0, 0x30, 1, 0, 0, 0xF8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 0, 0, 0, 0, 0x38, 1, 0, 0, 0xF8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 0, 0, 0, 0, 0x40, 1, 0, 0, 0xF8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 0, 0, 0, 0, 0x48, 1, 0, 0, 0xF8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 0, 0, 0, 0 };
+unsigned char point_rect_20[9][16] = { 0x3B, 0, 0, 0, 0x3E, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0x3B, 0, 0, 0, 0x6F, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0x3B, 0, 0, 0, 0xA0, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0x3B, 0, 0, 0, 0xD1, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0x3B, 0, 0, 0, 2, 1, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0xC0, 0, 0, 0, 0xF, 1, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0xF1, 0, 0, 0, 0xF, 1, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0x22, 1, 0, 0, 0xF, 1, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0xB7, 1, 0, 0, 0x90, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0 };
+int seq_21 = 0;
+unsigned char BoxSpr[0x1C] = { 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 1, 0, 0, 0xBF, 1, 0, 0, 0, 0, 0, 0, 0xFC, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char BoxRect[0x10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 1, 0, 0, 0xBF, 1, 0, 0 };
+SlPat pat_22[15] = { 0, 0, 1, 1, 2, 2, 0, 0, 1, 0, 2, 0, 0, 1, 1, 1, 2, 1, 0, 2, 1, 2, 2, 2, 0, 2, 1, 1, 2, 0 };
+int inter_23 = 0;
+int mode_24 = 0;
+SlEffTex tex_30 = { 0x70, 0x100, 0x70, 0xD0, 0, 0xB4, 0 };
+int mode_33 = 0;
+int busy_35 = 0;
+unsigned char tex_36[28] = { 0, 1, 0, 0, 0x60, 1, 0, 0, 0xC0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 0, 0, 0, 0 };
+unsigned char tex_37[3][0x1C] = { 0x70, 1, 0, 0, 0x30, 0, 0, 0, 0x80, 0, 0, 0, 0x30, 0, 0, 0, 0, 0, 0, 0, 0xB4, 1, 0, 0, 0, 0, 0, 0, 0x70, 1, 0, 0, 0x60, 0, 0, 0, 0x80, 0, 0, 0, 0x30, 0, 0, 0, 0, 0, 0, 0, 0xB4, 1, 0, 0, 0, 0, 0, 0, 0x70, 1, 0, 0, 0x90, 0, 0, 0, 0x80, 0, 0, 0, 0x30, 0, 0, 0, 0, 0, 0, 0, 0xB4, 1, 0, 0, 0, 0, 0, 0 };
+unsigned char rect_38[16] = { 0xC0, 0, 0, 0, 0x64, 1, 0, 0, 0x80, 0, 0, 0, 0x30, 0, 0, 0 };
+int count_39 = 0;
+unsigned char rect_40[16] = { 0xB7, 1, 0, 0, 0x1C, 0, 0, 0, 0x28, 0, 0, 0, 0x58, 0, 0, 0 };
+int count_41 = 0;
+unsigned char RateLamp_Rect[9][16] = { 0x24, 0, 0, 0, 0x49, 1, 0, 0, 0x20, 0, 0, 0, 0x20, 0, 0, 0, 0x24, 0, 0, 0, 0x24, 1, 0, 0, 0x20, 0, 0, 0, 0x20, 0, 0, 0, 0x24, 0, 0, 0, 0xFF, 0, 0, 0, 0x20, 0, 0, 0, 0x20, 0, 0, 0, 0x24, 0, 0, 0, 0xDA, 0, 0, 0, 0x20, 0, 0, 0, 0x20, 0, 0, 0, 0x24, 0, 0, 0, 0xB5, 0, 0, 0, 0x20, 0, 0, 0, 0x20, 0, 0, 0, 0x24, 0, 0, 0, 0x90, 0, 0, 0, 0x20, 0, 0, 0, 0x20, 0, 0, 0, 0x24, 0, 0, 0, 0x6B, 0, 0, 0, 0x20, 0, 0, 0, 0x20, 0, 0, 0, 0x24, 0, 0, 0, 0x46, 0, 0, 0, 0x20, 0, 0, 0, 0x20, 0, 0, 0, 0x24, 0, 0, 0, 0x21, 0, 0, 0, 0x20, 0, 0, 0, 0x20, 0, 0, 0 };
+int anm_42 = 0;
+unsigned char NineGameBG_Tex_43[0x1C] = { 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 1, 0, 0, 0xBF, 1, 0, 0, 0, 0, 0, 0, 0xFC, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char NineGameBG_Rect_44[0x10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0xC0, 1, 0, 0 };
+int seq_45 = 0;
+GuidPos GuidPt_46[11] = { 0xC0, 0x88, 0xF1, 0x88, 0x122, 0x88, 0xCC, 0xF0, 0xFD, 0xF0, 0x12E, 0xF0, 0xD8, 0x158, 0x109, 0x158, 0x13A, 0x158, 0x1CA, 0x1B, 0xB7, 0x16A };
+GuidPos stopbtn_pos_47[9] = { 0xC7, 0x7B, 0xF8, 0x7B, 0x129, 0x7B, 0xD3, 0xE3, 0x104, 0xE3, 0x135, 0xE3, 0xDF, 0x14B, 0x110, 0x14B, 0x141, 0x14B };
+short ng_real01array[21] = { 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1 };
+short ng_real02array[21] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+short ng_real03array[21] = { 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1 };
+short ng_real04array[21] = { 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1 };
+short ng_real05array[21] = { 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+short ng_real06array[21] = { 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1 };
+short ng_real07array[21] = { 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1 };
+short ng_real08array[21] = { 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1 };
+short ng_real09array[21] = { 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1 };
+short ng_real10array[21] = { 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1 };
+short ng_real11array[21] = { 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+short ng_real12array[21] = { 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1 };
+short ng_real13array[21] = { 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+short ng_real14array[21] = { 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+short ng_real15array[21] = { 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1 };
+short ng_real16array[21] = { 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+short ng_real17array[21] = { 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+short ng_real18array[21] = { 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1 };
+short ng_real19array[21] = { 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+short ng_real20array[21] = { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+short *ng_realtbl[20] = { ng_real01array, ng_real02array, ng_real03array, ng_real04array, ng_real05array, ng_real06array, ng_real07array, ng_real08array, ng_real09array, ng_real10array, ng_real11array, ng_real12array, ng_real13array, ng_real14array, ng_real15array, ng_real16array, ng_real17array, ng_real18array, ng_real19array, ng_real20array };
+NgRealShape NgReal_Tex_48[2] = { 0x170, 0xC0, 0x30, 0x40, 0, 0x134, 0, 0x1A0, 0xC0, 0x30, 0x40, 0, 0x134, 0 };
+NgPanelPos NgReal_49[9] = { 0x6D, 0x32, 0xE8, 0x32, 0x163, 0x32, 0x79, 0x9A, 0xF4, 0x9A, 0x16F, 0x9A, 0x85, 0x102, 0x100, 0x102, 0x17B, 0x102 };
+unsigned short ptmove_50[11][4] = { 2, 0xA, 1, 3, 0, 0xB, 2, 4, 1, 0xA, 0, 5, 5, 0, 4, 6, 3, 1, 5, 7, 4, 2, 3, 8, 8, 3, 7, 0xA, 6, 4, 8, 0xA, 7, 5, 6, 0xA, 2, 0xA, 9, 0xA, 0xA, 6, 0xA, 0xA };
+int se_51 = 0;
+unsigned char fontlist_52[10][0x1C] = { 0x90, 0, 0, 0, 0xC8, 1, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xC8, 1, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0x10, 0, 0, 0, 0xC8, 1, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0x20, 0, 0, 0, 0xC8, 1, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0x30, 0, 0, 0, 0xC8, 1, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0x40, 0, 0, 0, 0xC8, 1, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0x50, 0, 0, 0, 0xC8, 1, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0x60, 0, 0, 0, 0xC8, 1, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0x70, 0, 0, 0, 0xC8, 1, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0x80, 0, 0, 0, 0xC8, 1, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char waku_53[2][0x1C] = { 0x60, 1, 0, 0, 0x60, 1, 0, 0, 0x81, 0, 0, 0, 0x38, 0, 0, 0, 0, 0, 0, 0, 0x7C, 2, 0, 0, 0, 0, 0, 0, 0x60, 1, 0, 0, 0xA0, 1, 0, 0, 0x81, 0, 0, 0, 0x38, 0, 0, 0, 0, 0, 0, 0, 0x7C, 2, 0, 0, 0, 0, 0, 0 };
+unsigned char PoCurTex[8][28] = { 0, 0, 0, 0, 0xB0, 1, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xE8, 3, 0, 0, 0, 0, 0, 0, 0x18, 0, 0, 0, 0xB0, 1, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xE8, 3, 0, 0, 0, 0, 0, 0, 0x30, 0, 0, 0, 0xB0, 1, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xE8, 3, 0, 0, 0, 0, 0, 0, 0x48, 0, 0, 0, 0xB0, 1, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xE8, 3, 0, 0, 0, 0, 0, 0, 0x60, 0, 0, 0, 0xB0, 1, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xE8, 3, 0, 0, 0, 0, 0, 0, 0x78, 0, 0, 0, 0xB0, 1, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xE8, 3, 0, 0, 0, 0, 0, 0, 0x90, 0, 0, 0, 0xB0, 1, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xE8, 3, 0, 0, 0, 0, 0, 0, 0xA8, 0, 0, 0, 0xB0, 1, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xE8, 3, 0, 0, 0, 0, 0, 0 };
+int cnt_54 = 0;
+unsigned char Ltex_56[0x1C] = { 0x12, 0, 0, 0, 0xB0, 0, 0, 0, 8, 0, 0, 0, 0x30, 0, 0, 0, 0, 0, 0, 0, 0xFC, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char Rtex_57[0x1C] = { 0xE6, 1, 0, 0, 0xB0, 0, 0, 0, 8, 0, 0, 0, 0x30, 0, 0, 0, 0, 0, 0, 0, 0xFC, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char tex_58[0x1C] = { 0x16, 0, 0, 0, 0xB0, 0, 0, 0, 0xD0, 1, 0, 0, 0x30, 0, 0, 0, 0, 0, 0, 0, 0xFC, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char tex_59[0x1C] = { 0x60, 1, 0, 0, 0, 0, 0, 0, 0x90, 0, 0, 0, 0x70, 0, 0, 0, 0, 0, 0, 0, 0xFC, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char rect_60[2][0x10] = { 0x6A, 1, 0, 0, 0, 1, 0, 0, 0x90, 0, 0, 0, 0x58, 0, 0, 0, 0x6A, 1, 0, 0, 0, 1, 0, 0, 0x90, 0, 0, 0, 0x70, 0, 0, 0 };
+unsigned char type0_tex_61[0x1C] = { 0xC0, 0, 0, 0, 0xB0, 1, 0, 0, 0x40, 0, 0, 0, 0x40, 0, 0, 0, 0, 0, 0, 0, 0xDC, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char type0_rect_62[0x10] = { 0x96, 1, 0, 0, 0xD, 1, 0, 0, 0x40, 0, 0, 0, 0x40, 0, 0, 0 };
+unsigned char type1_tex_63[0x1C] = { 0x60, 1, 0, 0, 0, 1, 0, 0, 0x40, 0, 0, 0, 0x60, 0, 0, 0, 0, 0, 0, 0, 0xDC, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char type1_rect_64[0x10] = { 0x96, 1, 0, 0, 0xD, 1, 0, 0, 0x40, 0, 0, 0, 0x60, 0, 0, 0 };
+short type0_pos_65[2][2] = { 0x17B, 0x10E, 0x17B, 0x12E };
+short type1_pos_66[3][2] = { 0x17B, 0x10E, 0x17B, 0x12E, 0x17B, 0x14E };
+int dialog_cur_67 = 1;
+unsigned char tex_68[0x1C] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0xC0, 1, 0, 0, 0, 0, 0, 0, 0xFC, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char rect_69[0x10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0xC0, 1, 0, 0 };
+unsigned char CardTex[15][0x1C] = { 0, 0, 0, 0, 0, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0x50, 0, 0, 0, 0, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0xA0, 0, 0, 0, 0, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x78, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0xA0, 0, 0, 0, 0x78, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0x50, 0, 0, 0, 0, 1, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0xA0, 0, 0, 0, 0, 1, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x78, 1, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0xF8, 3, 0, 0, 0, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 1, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0xFC, 3, 0, 0, 0, 0, 0, 0, 0xA0, 0, 0, 0, 0x78, 1, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0xFC, 3, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0xFC, 3, 0, 0, 0, 0, 0, 0, 0x50, 1, 0, 0, 0, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0xFC, 3, 0, 0, 0, 0, 0, 0, 0xA0, 1, 0, 0, 0, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0xEC, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char CardPos[5][0x10] = { 0x20, 0, 0, 0, 0x25, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0x7C, 0, 0, 0, 0x25, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0xD8, 0, 0, 0, 0x25, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0x34, 1, 0, 0, 0x25, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0x90, 1, 0, 0, 0x25, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0 };
+void *CardBuf_70[4] = { (void *)0x128D000, (void *)0x12CD800, (void *)0x130E000, (void *)0x134E800 };
+PoCardRange range_71[4] = { 0, 0xC, 0xD, 0x19, 0x1A, 0x26, 0x27, 0x35 };
+unsigned char tex_72[28] = { 0xA0, 1, 0, 0, 0, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0xEC, 3, 0, 0, 0, 0, 0, 0 };
+int status_73 = 0;
+unsigned char tex_76[28] = { 0xA0, 1, 0, 0, 0, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0xEC, 3, 0, 0, 0, 0, 0, 0 };
+int status_77 = 0;
+unsigned char tex_80[0x1C] = { 0, 0, 0, 0, 0, 0, 0, 0, 0x60, 1, 0, 0, 0xB0, 0, 0, 0, 0, 0, 0, 0, 0xFC, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char rect_81[0x10] = { 0x10, 0, 0, 0, 0, 1, 0, 0, 0x60, 1, 0, 0, 0xB0, 0, 0, 0 };
+int cnt_82 = 0;
+int add_83 = 1;
+int rate_84 = 0;
+unsigned char tex_85[0x1C] = { 0, 0, 0, 0, 0, 1, 0, 0, 0x60, 1, 0, 0, 0xB0, 0, 0, 0, 0, 0, 0, 0, 0xFC, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char rect_86[0x10] = { 0x10, 0, 0, 0, 0, 1, 0, 0, 0x60, 1, 0, 0, 0xB0, 0, 0, 0 };
+unsigned char MarkerTex_87[0x1C] = { 0xA0, 1, 0, 0, 0, 1, 0, 0, 0x40, 0, 0, 0, 0x50, 0, 0, 0, 0, 0, 0, 0, 0xEC, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char MarkerPos_88[5][0x10] = { 0x14, 0, 0, 0, 0x30, 1, 0, 0, 0x40, 0, 0, 0, 0x50, 0, 0, 0, 0x58, 0, 0, 0, 0x30, 1, 0, 0, 0x40, 0, 0, 0, 0x50, 0, 0, 0, 0x9C, 0, 0, 0, 0x30, 1, 0, 0, 0x40, 0, 0, 0, 0x50, 0, 0, 0, 0xE0, 0, 0, 0, 0x30, 1, 0, 0, 0x40, 0, 0, 0, 0x50, 0, 0, 0, 0x24, 1, 0, 0, 0x30, 1, 0, 0, 0x40, 0, 0, 0, 0x50, 0, 0, 0 };
+unsigned char PtrTex_89[0x1C] = { 0xE0, 1, 0, 0, 0, 1, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0xEC, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char PtrPos_90[4][0x10] = { 0x4B, 0, 0, 0, 0x4B, 1, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0x8F, 0, 0, 0, 0x4B, 1, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0xCE, 0, 0, 0, 0x4B, 1, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0x17, 1, 0, 0, 0x4B, 1, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0 };
+int wait_91 = 8;
+unsigned char PoSelecterTex[2][0x1C] = { 0, 0, 0, 0, 0xE0, 0, 0, 0, 0x50, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xDC, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xF0, 0, 0, 0, 0x50, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0xDC, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char PoSelecterPos[6][0x10] = { 0x24, 0, 0, 0, 0xB0, 0, 0, 0, 0x50, 0, 0, 0, 0x10, 0, 0, 0, 0x80, 0, 0, 0, 0xB0, 0, 0, 0, 0x50, 0, 0, 0, 0x10, 0, 0, 0, 0xDC, 0, 0, 0, 0xB0, 0, 0, 0, 0x50, 0, 0, 0, 0x10, 0, 0, 0, 0x38, 1, 0, 0, 0xB0, 0, 0, 0, 0x50, 0, 0, 0, 0x10, 0, 0, 0, 0x94, 1, 0, 0, 0xB0, 0, 0, 0, 0x50, 0, 0, 0, 0x10, 0, 0, 0, 0xDC, 0, 0, 0, 0xD8, 0, 0, 0, 0x50, 0, 0, 0, 0x10, 0, 0, 0 };
+int cur_92 = 0;
+int mode_93 = 0;
+short selpos_94[5][2] = { 0x10, 0xAC, 0x6C, 0xAC, 0xC8, 0xAC, 0x124, 0xAC, 0x180, 0xAC };
+short chgpos_95[2] = { 0xC8, 0xD4 };
+int status_96 = 0;
+unsigned char result_rect_97[9][0x10] = { 0xCC, 0, 0, 0, 0x6A, 1, 0, 0, 0xA0, 0, 0, 0, 0x20, 0, 0, 0, 0xCC, 0, 0, 0, 0x4A, 1, 0, 0, 0xA0, 0, 0, 0, 0x20, 0, 0, 0, 0xCC, 0, 0, 0, 0x2A, 1, 0, 0, 0xA0, 0, 0, 0, 0x20, 0, 0, 0, 0xCC, 0, 0, 0, 0xA, 1, 0, 0, 0xA0, 0, 0, 0, 0x20, 0, 0, 0, 0, 0, 0, 0, 0x8A, 1, 0, 0, 0xF4, 0, 0, 0, 0x20, 0, 0, 0, 0, 0, 0, 0, 0x6A, 1, 0, 0, 0xF4, 0, 0, 0, 0x20, 0, 0, 0, 0, 0, 0, 0, 0x4A, 1, 0, 0, 0xF4, 0, 0, 0, 0x20, 0, 0, 0, 0, 0, 0, 0, 0x2A, 1, 0, 0, 0xF4, 0, 0, 0, 0x20, 0, 0, 0, 0, 0, 0, 0, 0xA, 1, 0, 0, 0xF4, 0, 0, 0, 0x20, 0, 0, 0 };
+unsigned char tex_98[0x1C] = { 0x60, 0, 0, 0, 0xE0, 0, 0, 0, 0xA0, 0, 0, 0, 0x20, 0, 0, 0, 0, 0, 0, 0, 0xF4, 2, 0, 0, 0, 0, 0, 0 };
+int PokerCoinRate[4] = { 5, 0xA, 0x1E, 0x64 };
+int PokerRate[10] = { 0, 1, 2, 3, 5, 7, 0xA, 0x14, 0x32, 0x64 };
+int init_99 = 0;
+unsigned char EntryBG_Tex[0x1C] = { 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 1, 0, 0, 0xBF, 1, 0, 0, 0, 0, 0, 0, 0xFC, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char EntryBG_Rect[0x10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0xC0, 1, 0, 0 };
+unsigned char SubWindow_Tex[0x1C] = { 0, 0, 0, 0, 0, 0, 0, 0, 0xB0, 0, 0, 0, 0x78, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0 };
+unsigned char Level_Tex[112] = { 0xB0, 0, 0, 0, 0, 0, 0, 0, 0x48, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0xB0, 0, 0, 0, 0x10, 0, 0, 0, 0x48, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0xB0, 0, 0, 0, 0x20, 0, 0, 0, 0x48, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0xB0, 0, 0, 0, 0x30, 0, 0, 0, 0x48, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0 };
+unsigned char ExChange_Tex[84] = { 0xB0, 0, 0, 0, 0x40, 0, 0, 0, 0x40, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0xB0, 0, 0, 0, 0x50, 0, 0, 0, 0x40, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0xB0, 0, 0, 0, 0x60, 0, 0, 0, 0x40, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0 };
+unsigned char Cursor_Tex[8][0x1C] = { 0, 0, 0, 0, 0x90, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x18, 0, 0, 0, 0x90, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x30, 0, 0, 0, 0x90, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x48, 0, 0, 0, 0x90, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x60, 0, 0, 0, 0x90, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x78, 0, 0, 0, 0x90, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x90, 0, 0, 0, 0x90, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0xA8, 0, 0, 0, 0x90, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0 };
+unsigned char Cursor_Rect[4][0x10] = { 0xA2, 0, 0, 0, 0x5C, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0x2C, 0, 0, 0, 0xDA, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0x50, 1, 0, 0, 0xDA, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0xF4, 0, 0, 0, 0x68, 1, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0 };
+int anm_100 = 0;
+int curpos_101 = 0;
+int cur_int_102 = 0;
+int menu_mode_103 = 0;
+unsigned char BGTEST_Tex[0x1C] = { 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 1, 0, 0, 0xBF, 1, 0, 0, 0, 0, 0, 0, 0x70, 4, 0, 0, 0, 0, 0, 0 };
+unsigned char BGTEST_Rect[0x10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0xC0, 1, 0, 0 };
+int flg_104 = 0;
+unsigned char BG_Tex[0x1C] = { 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 1, 0, 0, 0xBF, 1, 0, 0, 0, 0, 0, 0, 0xFC, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char BG_Rect[0x10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0xC0, 1, 0, 0 };
+unsigned char tex_105[11][0x1C] = { 0x90, 0, 0, 0, 0x78, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0x78, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x10, 0, 0, 0, 0x78, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x20, 0, 0, 0, 0x78, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x30, 0, 0, 0, 0x78, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x40, 0, 0, 0, 0x78, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x50, 0, 0, 0, 0x78, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x60, 0, 0, 0, 0x78, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x70, 0, 0, 0, 0x78, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x80, 0, 0, 0, 0x78, 0, 0, 0, 0x10, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0xA0, 0, 0, 0, 0x78, 0, 0, 0, 0x14, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0 };
+unsigned char Tex_106[8][0x1C] = { 0, 0, 0, 0, 0x90, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x18, 0, 0, 0, 0x90, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x30, 0, 0, 0, 0x90, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x48, 0, 0, 0, 0x90, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x60, 0, 0, 0, 0x90, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x78, 0, 0, 0, 0x90, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0x90, 0, 0, 0, 0x90, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0, 0xA8, 0, 0, 0, 0x90, 0, 0, 0, 0x18, 0, 0, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0x34, 2, 0, 0, 2, 0, 0, 0 };
+int anm_107 = 0;
+int cur_108 = 0;
+short curpt_109[5][2] = { 0xF0, 0x40, 0xF0, 0x58, 0xF0, 0x70, 0xF0, 0x88, 0x180, 0xD0 };
+int init_110 = 0;
+int cur_111 = 0;
+int top_112 = 0;
+char ViewSamTex[840] = { 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0x40, 0, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 1, 0, 0, 0x40, 0, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 2, 0, 0, 0x40, 0, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0x40, 0, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, -0x80, 0, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 1, 0, 0, -0x80, 0, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 2, 0, 0, -0x80, 0, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, -0x80, 0, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, -0x40, 0, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 1, 0, 0, -0x40, 0, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 2, 0, 0, -0x40, 0, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, -0x40, 0, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0x40, 1, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 1, 0, 0, 0x40, 1, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 2, 0, 0, 0x40, 1, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0x40, 1, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, -0x80, 1, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 1, 0, 0, -0x80, 1, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 2, 0, 0, -0x80, 1, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, -0x80, 1, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, -0x40, 1, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0, 0, 1, 0, 0, -0x40, 1, 0, 0, -1, 0, 0, 0, 0x7F, 0, 0, 0, 0, 0, 0, 0, -2, 7, 0, 0, 3, 0, 0, 0 };
+signed char fileinfo[30] = { 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0 };
+int old_113 = -1;
+unsigned char tex_114[0x1C] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0xC0, 1, 0, 0, 0, 0, 0, 0, 0x80, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char keytex_115[0x1C] = { 0, 0, 0, 0, 0xC0, 1, 0, 0, 0xE0, 1, 0, 0, 0x40, 0, 0, 0, 0, 0, 0, 0, 0xF4, 3, 0, 0, 0, 0, 0, 0 };
+unsigned char keyrect_116[0x10] = { 0x11, 0, 0, 0, 0x7D, 1, 0, 0, 0xE0, 1, 0, 0, 0x40, 0, 0, 0 };
+
 static int VW_SamMode(int enable)
 {
+    static int D_00A0DD14 __asm__("D_00A0DD14");
     int i;
     int *p;
     int *base;
@@ -4834,10 +5021,10 @@ static int VW_SamMode(int enable)
 static int VW_ViewMode(int index);
 static int VW_SamMode(int enable);
 extern int mode_123;
-extern int D_00A0DD18;
 
 static void VW_Main(void)
 {
+    static int D_00A0DD18 __asm__("D_00A0DD18");
     XglPacket **pkt = &Pkt;
 
     *pkt = xglPacketGetCurrent();
@@ -4866,11 +5053,11 @@ extern int xglSoundSendSwd(void *swd, int bank);
 extern void xglSoundSequenceNormal(int volume);
 extern int sprintf(char *buf, const char *fmt, ...);
 extern int oldreq_126;
-extern const char D_00A0C660[];
-extern const char D_00A0C680[];
-extern const char D_00A0C6A0[];
-extern const char D_00A0C6B0[];
-extern const char D_00A0C6C0[];
+const char D_00A0C660[] = "data\\sound\\sed\\Minislot.sed";
+const char D_00A0C680[] = "data\\sound\\sed\\Minislot.swd";
+const char D_00A0C6A0[] = "%s\\%s.SMD";
+const char D_00A0C6B0[] = "data\\sound\\smd";
+const char D_00A0C6C0[] = "%s\\%s.SWD";
 
 static void MUSIC_CALL(int musicId)
 {
@@ -4976,7 +5163,7 @@ static void InitWork(void)
 /* ov11:0x00a09020. Logs the configured heap address, then delegates all
  * casino state initialization to InitWork (LOCAL asm sibling). */
 static void InitWork(void);
-extern const char D_00A0C6D0[]; /* "work size = %x\n" */
+const char D_00A0C6D0[] = "work size = %x\n";
 
 void MiniG_Init(void)
 {
@@ -4985,8 +5172,8 @@ void MiniG_Init(void)
 }
 
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
-extern const char D_00A0C6E0[];
-extern const char D_00A0C6F0[];
+const char D_00A0C6E0[] = "\015\002 Ver %s";
+const char D_00A0C6F0[] = "Nov 24 2002";
 
 int MiniG_Main(void)
 {
@@ -5062,3 +5249,7 @@ typedef unsigned int CasinoSpriteWords[7];
 
 typedef unsigned int CasinoRectWords[4];
 
+/* ---- remaining initialized .data ---- */
+int mode_123 = 0;
+char *MUSICLIST_125[1] = { D_00A0C658 };
+int oldreq_126 = -1;

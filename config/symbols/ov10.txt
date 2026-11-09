@@ -6922,3 +6922,7 @@ classDB = 0x0099D430; // size:0x20
 VMRegister = 0x0099D450; // size:0x80
 primitiveClassTable = 0x0099D4D0; // size:0x40
 key_value = 0x0099D510; // size:0x400
+D_00A57798 = 0x00A57798; // size:0x8
+D_00A577B0 = 0x00A577B0; // size:0x8
+D_00A57808 = 0x00A57808; // size:0x8
+D_00A57818 = 0x00A57818; // size:0x8

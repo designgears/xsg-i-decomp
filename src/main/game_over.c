@@ -68,39 +68,54 @@ extern DrawImageRenderState sRender;
 
 extern void sceVif1PkCnt(XglPacket *packet, int count);
 extern void sceVif1PkAddDataN(XglPacket *packet, const void *data, int count);
-extern u64 TestEnv_0_00369CC0[12];
-extern unsigned char TransEnv_1_00369D20[];
-extern unsigned char FlushEnv_2_00369D40[];
-extern u64 TestEnv_3_00369D70[20];
 
 static void DrawImage(void *framebuffer)
 {
+    static u64 TestEnv[12] __attribute__((aligned(16))) = {
+        0x0000000000000000, 0x5100000500000000, 0x1000000000000004, 0x000000000000000E,
+        0x0000000000000000, 0x0000000000000050, 0x0000000000000000, 0x0000000000000051,
+        0x000001C000000200, 0x0000000000000052, 0x0000000000000000, 0x0000000000000053,
+    };
+    static u64 TransEnv[4] __attribute__((aligned(16))) = {
+        0x0000000000000000, 0x5100000100000000, 0x0800000000007000, 0x0000000000000000,
+    };
+    static u64 FlushEnv[6] __attribute__((aligned(16))) = {
+        0x0000000000000000, 0x5100000200000000, 0x1000000000008001, 0x000000000000000E,
+        0x0000000000000000, 0x000000000000003F,
+    };
     XglPacket *packet;
 
     packet = xglPacketGetCurrent();
-    TestEnv_0_00369CC0[4] = ((u64)sRender.buffer_select << 0x25) | ((u64)0x8000 << 0x24);
+    TestEnv[4] = ((u64)sRender.buffer_select << 0x25) | ((u64)0x8000 << 0x24);
     sceVif1PkCnt(packet, 0);
-    sceVif1PkAddDataN(packet, TestEnv_0_00369CC0, 0x18);
-    sceVif1PkRef(packet, TransEnv_1_00369D20, 2, 0, 0, 0);
+    sceVif1PkAddDataN(packet, TestEnv, 0x18);
+    sceVif1PkRef(packet, TransEnv, 2, 0, 0, 0);
     sceVif1PkRef(packet, framebuffer, 0x7000, 0, 0x51007000, 0);
-    sceVif1PkRef(packet, TransEnv_1_00369D20, 2, 0, 0, 0);
+    sceVif1PkRef(packet, TransEnv, 2, 0, 0, 0);
     sceVif1PkRef(packet, (u8 *)framebuffer + 0x70000, 0x7000, 0, 0x51007000, 0);
-    sceVif1PkRef(packet, FlushEnv_2_00369D40, 3, 0, 0, 0);
+    sceVif1PkRef(packet, FlushEnv, 3, 0, 0, 0);
 }
 
 static void DrawBack(int alpha)
 {
+    static u64 TestEnv[20] __attribute__((aligned(16))) = {
+        0x0000000000000000, 0x5000000900000000, 0x80AB400000008001, 0x0000000053531E6E,
+        0x0000000000030000, 0x0000000000000047, 0x0000000000000000, 0x0000000000000006,
+        0x0000000000000000, 0x0000000000000042, 0x0000008000000080, 0x0000008000000080,
+        0x0000000000000000, 0x0000000000000000, 0x000071F800006FF8, 0x0000000000000000,
+        0x00001C0000002000, 0x0000000000000000, 0x00008DF800008FF8, 0x0000000000000000,
+    };
     u64 nonnegative_alpha;
     u64 gs_frame_address_bits;
 
     nonnegative_alpha = alpha < 0 ? 0 : alpha;
     gs_frame_address_bits = 0xc800;
-    TestEnv_3_00369D70[6] =
+    TestEnv[6] =
         (0x24120000 | (sRender.framebuffer_page << 5)) |
         (gs_frame_address_bits << 0x13);
-    TestEnv_3_00369D70[8] = (nonnegative_alpha << 32) | 100;
+    TestEnv[8] = (nonnegative_alpha << 32) | 100;
     FlushCache(0);
-    sceVif1PkRef(xglPacketGetCurrent(), TestEnv_3_00369D70, 10, 0, 0, 0);
+    sceVif1PkRef(xglPacketGetCurrent(), TestEnv, 10, 0, 0, 0);
 }
 
 extern int sceVif1PkCloseDirectHLCode(XglPacket *packet);
@@ -164,6 +179,11 @@ static void redraw_frame(void *framebuffer) {
  * either run the save menu or (after a second confirmation) fade out. */
 static void GameEnd(void)
 {
+    static u64 TestEnv[12] __attribute__((aligned(16))) = {
+        0x0000000000000000, 0x5000000500000000, 0x4023400000008001, 0x000000000000551E,
+        0x0000000000000000, 0x0000000000000042, 0x0000008000000080, 0x0000008000000080,
+        0x000071F800006FF8, 0x0000000000000000, 0x00008DF800008FF8, 0x0000000000000000,
+    };
     JpegDecodeRequest jpeg;
     u32 framebuffer = IMAGE_FRAME_BUFFER;
     u32 jpeg_source = IMAGE_LOAD_BUFFER;
@@ -182,7 +202,7 @@ static void GameEnd(void)
 
     GameLoopState.frame_status = 10;
     copyframe();
-    xglCdReadFile(GameEndImagePath, (void *)jpeg_source, 0, 1);
+    xglCdReadFile("data\\yajima\\end.jpg", (void *)jpeg_source, 0, 1);
     memset(&jpeg, 0, sizeof(jpeg));
     jpeg.source = jpeg_source;
     jpeg.destination = framebuffer;
@@ -209,7 +229,7 @@ static void GameEnd(void)
 
     for (;;) {
         DrawImage((void *)framebuffer);
-        xglFontPrint(32, 32, -1, GameEndSaveQuestion);
+        xglFontPrint(32, 32, -1, "\x0B\x19\x03\x0D\x00Save clear data?\n\n\x0C\x80  \xA1\xFB\x0B\x19\x03\x0D\x00 Button: Yes\n\n\x0C  \x80\xA1\xDF\x0B\x19\x03\x0D\x00 Button: No");
         buttons = PadData.half_2a;
         if (buttons & PAD_DECIDE) {
             redraw_frame((void *)framebuffer);
@@ -223,7 +243,7 @@ static void GameEnd(void)
             do {
                 xglSleep();
                 DrawImage((void *)framebuffer);
-                xglFontPrint(32, 32, -1, GameEndQuestion);
+                xglFontPrint(32, 32, -1, "\x0B\x19\x03\x0D\x00" "Are you sure you want to exit without saving?\n\n\x0C\x80  \xA1\xFB\x0B\x19\x03\x0D\x00 Button: Yes\n\n\x0C  \x80\xA1\xDF\x0B\x19\x03\x0D\x00 Button: No");
             } while (!(PadData.half_2a & (PAD_DECIDE | PAD_CANCEL)));
             if (PadData.half_2a & PAD_DECIDE) {
                 xglSoundEffectNormalDirect(1);
@@ -241,7 +261,7 @@ static void GameEnd(void)
          * re-checks the outcome every frame (bne s0,s3 after xglSleep). */
         alpha = 4;
         for (;;) {
-            DRAW_FADE_FRAME(TestEnv4, alpha);
+            DRAW_FADE_FRAME(TestEnv, alpha);
             if (count != END_CHOICE_QUIT) {
                 break;
             }
@@ -263,6 +283,11 @@ static void GameEnd(void)
  * fade picture and stream volume out together. */
 void GameOver(void)
 {
+    static u64 TestEnv[12] __attribute__((aligned(16))) = {
+        0x0000000000000000, 0x5000000500000000, 0x4023400000008001, 0x000000000000551E,
+        0x0000000000000000, 0x0000000000000042, 0x0000008000000080, 0x0000008000000080,
+        0x000071F800006FF8, 0x0000000000000000, 0x00008DF800008FF8, 0x0000000000000000,
+    };
     JpegDecodeRequest jpeg;
     u32 framebuffer;
     int alpha;
@@ -275,14 +300,14 @@ void GameOver(void)
 
     copyframe();
     framebuffer = IMAGE_FRAME_BUFFER;
-    xglCdReadFile(GameOverImagePath, (void *)IMAGE_LOAD_BUFFER, 0, 1);
+    xglCdReadFile("data\\yajima\\gameov.jpg", (void *)IMAGE_LOAD_BUFFER, 0, 1);
     memset(&jpeg, 0, sizeof(jpeg));
     jpeg.source = IMAGE_LOAD_BUFFER;
     jpeg.destination = framebuffer;
     xglJpegDecode(&jpeg);
 
     if (GameLoopState.scene_id != GAME_END_SCENE_ID) {
-        xglSoundStreamOpenVagStereoParam(0, GameOverStreamPath, 3763, 127);
+        xglSoundStreamOpenVagStereoParam(0, "data\\yajima\\gameover.vds", 3763, 127);
     }
 
     alpha = 128;
@@ -315,9 +340,9 @@ void GameOver(void)
     alpha = 4;
     for (;;) {
         DrawImage((void *)framebuffer);
-        TestEnv5[4] = GS_ALPHA(2, 0, 2, 1, alpha);
+        TestEnv[4] = GS_ALPHA(2, 0, 2, 1, alpha);
         FlushCache(0);
-        sceVif1PkRef(xglPacketGetCurrent(), TestEnv5, 6, 0, 0, 0);
+        sceVif1PkRef(xglPacketGetCurrent(), TestEnv, 6, 0, 0, 0);
         SsdSetVagStreamVolume(-1, (255 - alpha) >> 1, 0);
         xglSoundStreamMain();
         xglSleep();
@@ -336,13 +361,12 @@ void GameOver(void)
     xglSleep();
 }
 
-extern char name_6[];
-extern const char D_004C0738[];
 extern u32 GameResourceGetFreeAddr(void);
 extern void GameResourceReset(int mode);
 
 void Intermission(int number)
 {
+    static char name[] = "data\\yajima\\im00.jpg";
     JpegDecodeRequest jpeg;
     u32 framebuffer;
     int alpha;
@@ -357,9 +381,9 @@ void Intermission(int number)
     copyframe();
     count = 0;
     framebuffer = GameResourceGetFreeAddr();
-    name_6[15] = number % 10 + '0';
-    name_6[14] = number / 10 % 10 + '0';
-    xglCdReadFile(name_6, (void *)(framebuffer + 0x100000), 0, 1);
+    name[15] = number % 10 + '0';
+    name[14] = number / 10 % 10 + '0';
+    xglCdReadFile(name, (void *)(framebuffer + 0x100000), 0, 1);
     memset(&jpeg, 0, sizeof(jpeg));
     jpeg.source = framebuffer + 0x100000;
     jpeg.destination = framebuffer;
@@ -383,7 +407,7 @@ void Intermission(int number)
 
     for (;;) {
         DrawImage((void *)framebuffer);
-        xglFontPrint(32, 32, -1, D_004C0738);
+        xglFontPrint(32, 32, -1, "\x0B\x0E\x01\x01\x00\x00\x00\x0D\x03\x19\x03Would you like to save?\n\n\x0C\x80  \xA1\xFB \x0C\x80\x80\x80\x19\x03" "Button: Yes\n\n\x0C  \x80\xA1\xDF \x0C\x80\x80\x80" "Button: No");
         buttons = PadData.half_2a;
         if (buttons & PAD_DECIDE) {
             redraw_frame((void *)framebuffer);

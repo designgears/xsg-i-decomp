@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Generate an unmodified native objdiff report after exact linked verification."""
 import argparse
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -35,6 +36,33 @@ def main():
                         '--project', str(project), '--output', str(temporary)],
                        env={**os.environ, 'RAYON_NUM_THREADS': '4'}, check=True)
         objdiff_inputs.validate(verification.read(temporary), expected)
+        # Completeness from the measurement itself: a unit is complete when
+        # objdiff measured every one of its sections and functions (data, BSS
+        # and code alike) at exactly 100%. A section objdiff did not measure
+        # (no percentage) keeps the unit incomplete, so the flag never stands
+        # in for a missing measurement.
+        config_path = project / 'objdiff.json'
+        config = verification.read(config_path)
+        complete = {u['name'] for u in verification.read(temporary)['units']
+                    if u.get('sections') and all(
+                        s.get('fuzzy_match_percent') == 100 for s in u['sections']
+                        if int(s.get('size', 0) or 0))
+                    and all(f.get('fuzzy_match_percent') == 100 for f in u.get('functions', []))
+                    and any(int(s.get('size', 0) or 0) for s in u['sections'])}
+        changed = False
+        for unit in config['units']:
+            want = unit['name'] in complete
+            if bool(unit.get('metadata', {}).get('complete')) != want:
+                unit.setdefault('metadata', {})['complete'] = want
+                expected[unit['name']]['complete'] = want
+                changed = True
+        if changed:
+            config_path.write_text(json.dumps(config, indent=1) + '\n')
+            temporary.unlink(missing_ok=True)
+            subprocess.run(['timeout', '-k', '5', '120', str(binary), 'report', 'generate',
+                            '--project', str(project), '--output', str(temporary)],
+                           env={**os.environ, 'RAYON_NUM_THREADS': '4'}, check=True)
+            objdiff_inputs.validate(verification.read(temporary), expected)
         verification.load_verified(root, root / 'build')
         # Preserve the native report without rewriting scores or counts.
         temporary.replace(output)

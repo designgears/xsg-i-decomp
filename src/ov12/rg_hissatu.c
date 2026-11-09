@@ -4,17 +4,6 @@
 #include "common.h"
 #include "rg_hissatu.h"
 
-extern const char D_00A52670[];
-extern const char D_00A52688[];
-extern const char D_00A52698[];
-extern const char D_00A526A0[];
-extern const char D_00A526A8[];
-extern const char D_00A526B0[];
-extern const char D_00A526B8[];
-extern const char D_00A526C0[];
-extern const char D_00A526C8[];
-extern const char D_00A526D0[];
-extern const char D_00A526D8[];
 
 extern void assert_prog(const char *expression, const char *sourceFile,
                         int sourceLine);
@@ -22,7 +11,18 @@ extern int RgWeaponIsNotBusy(RgWeapon *weapon);
 
 static int _IsSpecWep(RgWeapon *weapon, const char *weaponName);
 
-extern const char D_00A52660[];
+const char D_00A52660[] = "pszName != NIL";
+const char D_00A52670[] = "../rg_hissatu.euc.c";
+const char D_00A52688[] = "apWep != NIL";
+const char D_00A52698[] = "LM11VX";
+const char D_00A526A0[] = "SHD02AG";
+const char D_00A526A8[] = "SHD12VX";
+const char D_00A526B0[] = "HG75VX";
+const char D_00A526B8[] = "HG45VX";
+const char D_00A526C0[] = "ER-VX";
+const char D_00A526C8[] = "BSW13AG";
+const char D_00A526D0[] = "GRD20AG";
+const char D_00A526D8[] = "HMR55AG";
 extern int strcasecmp(const char *left, const char *right);
 extern char *RgWeaponGetEss(RgWeapon *weapon);
 extern float RgWeaponGetShotNum(RgWeapon *weapon);

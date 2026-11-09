@@ -47,8 +47,8 @@ typedef struct SceneClass SceneClass;
 
 /*
  * The full 0x40-byte layout of the same VM class record, with the member
- * types the class loader itself uses; its body is private to
- * main/tu227 (src/main/find_native_method.c).
+ * types the class loader itself uses; its body is in src/main/java_class.h
+ * (main/tu226 init_vm and main/tu227 find_native_method).
  */
 typedef struct JavaClass JavaClass;
 

@@ -61,8 +61,6 @@ extern void xglSoundEffectNormalID(int sound_id, int variant);
 
 extern int srsAnalyzeEftNo(int effectId, unsigned char *charId,
                             int *effectCategory);
-extern unsigned char charID_0;
-extern int eftCate_1;
 
 /*
  * One 12-byte channel of a camera schedule task: sdvScheduleCamera reads
@@ -95,7 +93,6 @@ extern void func_A31920(int kind, float *params);
 void sdvScheduleCamera(SdvCameraTask *task);
 
 extern void GameDefocusSet(int index, int, int);
-extern short _sdvSpecialBuf[8];
 
 void sdvClearSpecialWork(void);
 
@@ -119,7 +116,6 @@ typedef struct SdvAlter {
     unsigned char unmodeled_127e[2];
 } SdvAlter;
 
-extern SdvAlter _sdvAlter[16];
 extern void sdvInitAlter(SdvAlter *alter);
 extern void sdvDestroyAlter(SdvAlter *alter);
 extern void sdvExecAlter(SdvAlter *alter);

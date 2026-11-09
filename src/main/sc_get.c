@@ -3,7 +3,11 @@
 #include "sc_get.h"
 
 extern void *memset(void *dst, int val, unsigned int n);
-extern short _cmdPut;
+static short _cmdPut = 0;
+int _scMslCate = 0;
+extern int _nowScript;
+extern int _nowEvent;
+extern int _nowDataIdx;
 
 void scInitScript(void)
 {
@@ -54,7 +58,6 @@ static int scFindScriptData(int eftNo)
 
 extern int scCreateTask(int script_index, int task_index, int address, unsigned char *data);
 extern int **svGetScript(int eftNo);
-extern unsigned char D_004CC790[];
 
 int scCreateScript(unsigned char *data)
 {
@@ -72,7 +75,7 @@ int scCreateScript(unsigned char *data)
     idx = scFindScriptData(eftNo);
     if (idx < 0) {
         extern int tracePrint(unsigned char *fmt, unsigned int value);
-        tracePrint(D_004CC790, eftNo);
+        tracePrint("--- error no load effect data %d", eftNo);
         return idx;
     }
     i = 0;
@@ -148,8 +151,6 @@ void scDestroyScript(int script_index)
     }
 }
 
-extern unsigned char D_004CC7B8[];
-extern int _nowScript;
 
 /*
  * sefDestroyScriptScheduler2 (main:0x002e5320, defined in main/tu211/sef.c)
@@ -172,7 +173,7 @@ void scDestroyScript2(int script_index, int task_index)
     extern int tracePrint(unsigned char *fmt, int script_index, int task_index);
 
     if ((unsigned int)script_index >= 16u) {
-        tracePrint(D_004CC7B8, script_index, task_index);
+        tracePrint("\310\317\260\317\263\260\244\316\245\250\245\325\245\247\245\257\245\310\244\362\276\303\265\356\244\267\244\350\244\246\244\310\244\267\244\306\244\336\244\271 %d %d", script_index, task_index);
         return;
     }
     sefDestroyScriptScheduler2(script_index, task_index);
@@ -192,8 +193,6 @@ void scDestroyScriptAll(void)
         scDestroyScript(script_index);
 }
 
-extern int _nowEvent;
-extern int _nowDataIdx;
 static int scDispatchScript(ScriptTask *task);
 typedef struct ScriptTaskUp {
     ScriptTask t;
@@ -251,9 +250,7 @@ void scExecEffect(void)
     sefExecScheduler();
 }
 
-extern unsigned char D_004CC7E8[];
-extern unsigned char D_004CC800[];
-extern struct { long long a, b; } _zeroPos_0041E290;
+static struct { long long a, b; } _zeroPos = { 0, 0x3F80000000000000LL };
 typedef struct { unsigned char b[32]; int w; } ScTaskCopy36;
 
 static int scCreateTask(int script_index, int task_index, int address, unsigned char *data)
@@ -265,7 +262,7 @@ static int scCreateTask(int script_index, int task_index, int address, unsigned 
     int *src;
 
     if (task_index >= 8) {
-        tracePrint(D_004CC7E8, task_index);
+        tracePrint("\310\317\260\317\263\260\244\316Task(%d)\244\307\244\271", task_index);
         return -1;
     }
     if (task_index < 0) {
@@ -286,12 +283,12 @@ static int scCreateTask(int script_index, int task_index, int address, unsigned 
         __builtin_memcpy((int *)task + 12, src, 36);
         task->effect_scheduler = -1;
         *(short *)task->unmodeled_58 = task_index;
-        *(long long *)((char *)task + 0x20) = _zeroPos_0041E290.a;
+        *(long long *)((char *)task + 0x20) = _zeroPos.a;
         hdr[3] = task_index;
         hdr[4]++;
-        *(long long *)((char *)task + 0x28) = _zeroPos_0041E290.b;
+        *(long long *)((char *)task + 0x28) = _zeroPos.b;
     } else {
-        tracePrint(D_004CC800, script_index);
+        tracePrint("task work is empty : %d", script_index);
     }
     return task_index;
 }
@@ -353,7 +350,6 @@ static void scDeleteTaskAll(int event, int task_index)
 }
 
 extern int tracePrint(unsigned char *fmt, unsigned int value);
-extern unsigned char D_004CC818[];
 
 /*
  * scGetReg resolves a script-register selector the same way scGetRegAdr
@@ -371,7 +367,7 @@ int scGetReg(int reg)
         reg = scGetReg(reg & ~0x8000);
     }
     if ((unsigned int)reg >= 16u) {
-        tracePrint(D_004CC818, reg);
+        tracePrint("register overflow : %d", reg);
         address = (int *)0;
     } else {
         address = (int *)(_scriptWork + _nowScript * 1104 + 0x404 + reg * 4);
@@ -393,7 +389,7 @@ void scSetReg(int reg, int value)
         reg = scGetReg(reg & ~0x8000);
     }
     if ((unsigned int)reg >= 16u) {
-        tracePrint(D_004CC818, reg);
+        tracePrint("register overflow : %d", reg);
         address = (int *)0;
     } else {
         address = (int *)(_scriptWork + _nowScript * 1104 + 0x404 + reg * 4);
@@ -633,7 +629,6 @@ static int scGOScript(ScriptTask *task)
     return 1;
 }
 
-extern unsigned char D_004CC830[];
 
 static int scGOSUBScript(ScriptTask *task)
 {
@@ -645,13 +640,12 @@ static int scGOSUBScript(ScriptTask *task)
         task->branch_depth = depthU;
         task->script_pc[(short)depthU] = address;
     } else {
-        ((int (*)(unsigned char *))tracePrint)(D_004CC830);
+        ((int (*)(unsigned char *))tracePrint)("--- effect stack over flow");
     }
     return 1;
 }
 
 extern int tracePrint(unsigned char *fmt, unsigned int value);
-extern unsigned char D_004CC850[];
 
 /*
  * scRETURNScript is the script VM's RETURN opcode handler: it pops the
@@ -668,7 +662,7 @@ static int scRETURNScript(ScriptTask *task)
         task->branch_depth = depthU - 1;
         task->script_pc[depth] = 0;
     } else {
-        tracePrint(D_004CC850, depthU);
+        tracePrint("--- effect stack under flow", depthU);
     }
     return 1;
 }
@@ -678,7 +672,6 @@ static int scEXITScript(void)
     return 0;
 }
 
-extern const char D_004CC870[];
 
 static int scBRAScript(ScriptTask *task)
 {
@@ -713,7 +706,7 @@ static int scBRAScript(ScriptTask *task)
         if (a <= b) take = 1;
         break;
     default:
-        tracePrint((unsigned char *)D_004CC870, op);
+        tracePrint((unsigned char *)"--- bad exp(%d)", op);
         break;
     }
     if (take) {
@@ -886,7 +879,6 @@ static int scRPUTScript(ScriptTask *task)
     return 1;
 }
 
-extern const char D_004DBB38[];
 
 /*
  * scRDUMPScript dumps the 16 script registers through the trace logger, 8 per
@@ -903,7 +895,7 @@ static int scRDUMPScript(void)
     length = 0;
     for (i = 0; i < 2; i++) {
         for (j = 0; j < 8; j++) {
-            length += sprintf(line + length, D_004DBB38, scGetReg(i * 8 + j));
+            length += sprintf(line + length, " %04x", scGetReg(i * 8 + j));
         }
         line[0] = 0;
     }
@@ -1163,7 +1155,8 @@ typedef struct {
     int a;
     int b;
 } FreezeIds;
-extern int D_004DBB40[4];
+/* scFreezeCamera's initial camera ids (defined after it). */
+extern int D_004DBB40[];
 
 static void scFreezeCamera(int effect_no)
 {
@@ -1191,6 +1184,8 @@ static void scFreezeCamera(int effect_no)
         }
     }
 }
+
+int D_004DBB40[2] = { 0, 1 };
 
 extern void sdvSetAmbState(int state, int effect_no);
 extern void sdvSetAmbState2(int state, int effect_no);
@@ -1331,8 +1326,6 @@ static int scEFFECT3Script(ScriptTask *task)
     return 1;
 }
 
-extern const char D_004DBB48[];
-extern const char D_004CC898[];
 extern void func_A32FA8(char *);
 
 static int scMOVIEScript(ScriptTask *task)
@@ -1350,7 +1343,7 @@ static int scMOVIEScript(ScriptTask *task)
     length = (length & 1) ? length + 1 : length + 2;
     task->script_pc[task->branch_depth] += length / 2;
     if (_nowEvent == 0) {
-        sprintf(buf, D_004DBB48, D_004CC898, string);
+        sprintf(buf, "%s%s", "data\134simajiri\134movie\134", string);
         func_A32FA8(buf);
     }
     return 1;
@@ -1358,7 +1351,6 @@ static int scMOVIEScript(ScriptTask *task)
 
 extern int scGetAdrImmScript(ScriptTask *task);
 extern int srsAnalyzeEftNo(short effectId, unsigned char *charId, int *effectCategory);
-extern int _scMslCate;
 
 /*
  * scMISSILEScript is the script VM's MISSILE opcode handler: outside an
@@ -1428,7 +1420,29 @@ check_move:
     return 1;
 }
 
-extern int (*_scFuncHandler[0x49])();
+static int (*_scFuncHandler[0x49])() = {
+    scERRORScript, scGOScript, scGOSUBScript, scBRAScript,
+    scEXITScript, scRETURNScript, scONGOScript, scONGOSUBScript,
+    scERRORScript, scERRORScript, scPRINTScript, scRPUTScript,
+    scRDUMPScript, scCMDPUTONScript, scCMDPUTOFFScript, scFADEONScript,
+    scERRORScript, scERRORScript, scERRORScript, scERRORScript,
+    scRSETScript, scRINCScript, scRDECScript, scRADDScript,
+    scRSUBScript, scRMULScript, scRDIVScript, scRMODScript,
+    scR_ANDScript, scR_ORScript, scR_XORScript, scR_NOTScript,
+    scR_NEGScript, scRRNDScript, scREVEScript, scERRORScript,
+    scERRORScript, scERRORScript, scERRORScript, scERRORScript,
+    scOBJEVEScript, scABORTScript, scPAUSEScript, scERRORScript,
+    scERRORScript, scERRORScript, scERRORScript, scERRORScript,
+    scERRORScript, scERRORScript, scWAITCNTScript, scWAITEVEScript,
+    scWAITEFTScript, scWAITMOVIEScript, scWAITMISSILEScript, scERRORScript,
+    scERRORScript, scERRORScript, scERRORScript, scERRORScript,
+    scEFFECTScript, scEFFECT2Script, scEFFECT3Script, scERRORScript,
+    scERRORScript, scERRORScript, scERRORScript, scERRORScript,
+    scERRORScript, scERRORScript, scMOVIEScript, scMISSILEScript,
+    scMISSILE3Script
+};
+
+unsigned char _scriptWork[16 * 0x450] __attribute__((aligned(16))) = {0};
 
 static int scParseScript(ScriptTask *task)
 {
@@ -1459,7 +1473,6 @@ out:
 }
 
 extern int **svGetScript(int eftNo);
-extern unsigned char D_004CC790[];
 static inline unsigned short scCfNormAdr(unsigned short *table)
 {
     int value;
@@ -1494,7 +1507,7 @@ void *scAnalyzeScriptCf(int eftNo, int *out)
     idx = scFindScriptData(eftNo);
     *out = 0;
     if (idx < 0) {
-        tracePrint(D_004CC790, eftNo);
+        tracePrint("--- error no load effect data %d", eftNo);
         return 0;
     }
     slot = svGetScript(eftNo);
@@ -1532,7 +1545,6 @@ struct EventTask *scGetTaskAdr(int script_index, int task_index)
     return (struct EventTask *)&_scriptWork[script_index * 1104 + task_index * 128];
 }
 
-extern unsigned char D_004CC818[];
 
 /*
  * Resolves a script-register selector (0-15) to the address of its backing
@@ -1543,7 +1555,7 @@ extern unsigned char D_004CC818[];
 void *scGetRegAdr(unsigned int reg)
 {
     if (reg >= 16u) {
-        tracePrint(D_004CC818, reg);
+        tracePrint("register overflow : %d", reg);
         return (void *)0;
     }
     return _scriptWork + _nowScript * 1104 + 0x404 + reg * 4;
@@ -1595,3 +1607,12 @@ int scGetCmdAdrScript(ScriptTask *task)
     }
     return address;
 }
+
+int _nowScript = 0;
+int _nowEvent = 0;
+int _nowDataIdx = 0;
+
+/*
+ * Labels for the alignment fill after _cmdPut and _scFuncHandler (splat pad
+ * items), so the data carve owns the whole sections.
+ */

@@ -79,8 +79,26 @@ def resolve_original_object(root, profile, packet):
         require(len(matching) == 1, "hard IOP FDR filename/index differs from original ECOFF")
         hard[assignment["index"]] = assignment["filename"]
     functions = packet.get("functions")
-    require(isinstance(functions, list) and functions,
-            "IOP object selector has no original functions")
+    require(isinstance(functions, list), "IOP object selector has no function list")
+    if not functions:
+        # Data-only original object: select it by its exact ECOFF FDR identity,
+        # which must exist and contain no procedure symbols at all.
+        fdr = packet.get("fdr")
+        require(isinstance(fdr, dict) and set(fdr) == {"index", "filename"}
+                and type(fdr["index"]) is int and isinstance(fdr["filename"], str),
+                "IOP object selector has no original functions or FDR identity")
+        matching = [r for r in records if r["index"] == fdr["index"] and r["source"] == fdr["filename"]]
+        require(len(matching) == 1, "data-only IOP FDR identity differs from original ECOFF")
+        record = matching[0]
+        require(not any(s["kind"] in (6, 14) for s in record["symbols"]),
+                "data-only IOP FDR owns procedures")
+        return dict(schema="iop-original-object/1", unit=unit, binary_sha256=module["sha256"],
+                    fdr_index=record["index"], filename=record["source"],
+                    fdr_file_offset=record["fdr_offset"],
+                    float_mode="hard" if record["index"] in hard else "soft",
+                    mdebug_sha256=section["sha256"],
+                    policy_sha256=digest(json.dumps(policy, sort_keys=True, separators=(",", ":")).encode()),
+                    functions=[])
     resolved, seen = [], set()
     for function in functions:
         name = function.get("name")

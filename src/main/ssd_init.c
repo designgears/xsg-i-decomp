@@ -2,6 +2,8 @@
 #include "shared.h"
 #include "ssd_init.h"
 
+RssdWorkFlags RssdWork = { 0 };
+
 /*
  * libkernel syscall stub (main:0x00200550).
  */
@@ -40,10 +42,10 @@ typedef struct SsdThreadCreateInfo {
 #define RSSD_BUFFER_ALIGN 64
 #define RSSD_THREAD_STACK_BYTES 16384
 #define RSSD_THREAD_PRIORITY 6
-extern unsigned char MYclientPtr[];
-extern unsigned char MYserverPtr[];
-extern unsigned char MYthreadStack[];
-extern unsigned char MYwaveTransThStack[];
+static unsigned char MYclientPtr[0x10040];
+static unsigned char MYserverPtr[0x10020];
+static unsigned char MYthreadStack[0x4000];
+static unsigned char MYwaveTransThStack[0x4000];
 extern void *_gp;
 extern int CreateSema(SsdSemaCreateInfo *sema);
 extern int CreateThread(SsdThreadCreateInfo *thread);
@@ -171,7 +173,6 @@ extern void *sceSifSetRpcQueue(void *qd, int thread_id);
 extern void sceSifRegisterRpc(void *sd, unsigned int command, void *func, void *buff, void *cfunc, void *cbuff, void *qd);
 extern int GetThreadId(void);
 extern int printf(const char *format, ...);
-extern const char D_004D4A60[];
 extern void *RssdSifRpcServer();
 
 void RssdInitIop(void)
@@ -185,7 +186,7 @@ void RssdInitIop(void)
         ;
     w = &RssdWork;
     if (*(int *)&w->rpc_client_serve == 0) {
-        printf(D_004D4A60, 0x900);
+        printf("Rssd(%04x) bind error !\n", 0x900);
         return;
     }
     w->flags = 1;
@@ -366,8 +367,6 @@ void RssdBackNextWaveThread(void)
 extern int WaitSema(int sema_id);
 extern void FlushCache(int mode);
 extern int sceSifCallRpc(void *cd, unsigned int request, unsigned int mode, void *send, int ssize, void *receive, int rsize, void *end_func, void *end_param);
-extern const char D_004D4A80[];
-
 int RssdCallFunc(int command, RssdRequest *request, void *data, int size)
 {
     RssdRpcResponse *buf;
@@ -386,7 +385,7 @@ int RssdCallFunc(int command, RssdRequest *request, void *data, int size)
     buf->error_code = command;
     buf->data_size = size;
     if (total > 0x10020) {
-        printf(D_004D4A80);
+        printf("Rssd sif transfer size over !!\n");
         RssdWork.flags &= ~8;
         SignalSema(RssdWork.sema_id);
         return -1;

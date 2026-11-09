@@ -46,7 +46,7 @@ void PDB_getEntry(int class_id, void **groups, int *group_count)
     }
 }
 
-extern char D_004DC068[];
+
 static char *getStrIndex(char *string, unsigned int length, int ch);
 unsigned int strlen(const char *);
 char *strncpy(char *, const char *, unsigned int);
@@ -76,7 +76,7 @@ PDBEntryRecord *PDB_findFile(int class_id, char *path)
     } else {
         dir_len = 1;
         name_len = len;
-        strncpy(dir, D_004DC068, dir_len);
+        strncpy(dir, ".", dir_len);
         strncpy(name, path, name_len);
     }
     dir[dir_len] = 0;

@@ -4,15 +4,14 @@
 
 /* These cursors begin at the sentinel used before a resource table is found. */
 
-extern int infoIndex;
+static int infoIndex = -1;
 
 
-extern int infoLength;
+static int infoLength = -1;
 
 
 extern char D_004C23C0[];
 
-extern char *rsrcDefaultPath;
 
 
 typedef struct RsrcManager {
@@ -49,13 +48,15 @@ extern void *RSRC_loadFileSub(RsrcManager *manager, char *path, char *file_name)
 
 /* These cursors begin at the sentinel used before a resource table is found. */
 
-extern char *markedSTR[2][2];
+static char *markedSTR[2][2] = { { "*", "" }, { "*", "" } };
 
-extern char *selectedSTR[2][2];
+static char *selectedSTR[2][2] = { { "", "" }, { "\f\x80\x80\x80", "\f@@@" } };
 
-extern char *unselectedSTR[2][2];
+static char *unselectedSTR[2][2] = { { "", "" }, { "\f@@@", "\f@@@" } };
 
-extern char *normalSTR[2][2];
+static char *normalSTR[2][2] = { { " ", "" }, { " ", "" } };
+
+static char *rsrcDefaultPath = D_004C23C0;
 
 extern u32 strlen(const char *s);
 

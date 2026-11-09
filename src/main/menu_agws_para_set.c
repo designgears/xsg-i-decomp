@@ -69,6 +69,26 @@ void MenuAgwsParaSet(int chrNo, int state)
  * command tab under the cursor and the sub-tab it opens, pushing the ones
  * before them out to the left by their own width.
  */
+static const char * msg00_0_0036D940[17] __asm__("msg00.0") = {
+    "A.G.W.S.",
+    "/Equip",
+    "/Unequip",
+    "/Pilot",
+    "/List",
+    "/R. Arm",
+    "/L. Arm",
+    "/R. Shoulder",
+    "/L. Shoulder",
+    "/R. Alt",
+    "/L. Alt",
+    "/Ammo",
+    "/Accessory",
+    "/Assign",
+    "/Remove",
+    "/Engine Unit",
+    "/Assign Pilot",
+};
+
 void AgwsPasMain(void)
 {
     AgwsPasWork *pas = AgwsPas;
@@ -216,15 +236,43 @@ typedef struct AgwsInfoText {
     char *name;
 } AgwsInfoText;
 extern AgwsInfoWork *AgwsInfo;
-extern char *msg00_1_0036D988[];
-extern char *msg01_2_0036D990[];
-extern char *msg02_3_0036D9A0[];
-extern char *msg03_4_0036D9B8[];
-extern char *msg04_5[];
-extern char *msg05_6[];
-extern char D_004DAF28[];
-extern char D_004DAF40[];
-extern unsigned char D_004DAF48[];
+static char * msg00_1_0036D988[1] __asm__("msg00.1") __attribute__((section(".data"))) = {
+    "Select an A.G.W.S.",
+};
+static char * msg01_2_0036D990[4] __asm__("msg01.2") = {
+    "Equip weapons and accessories.",
+    "Unequip current weapons and accessories.",
+    "Assign pilots to A.G.W.S.",
+    "View weapons and accessories for A.G.W.S.",
+};
+static char * msg02_3_0036D9A0[6] __asm__("msg02.3") = {
+    "R. Arm",
+    "L. Arm",
+    "R. Shoulder",
+    "L. Shoulder",
+    "R. Alt",
+    "L. Alt",
+};
+static char * msg03_4_0036D9B8[5] __asm__("msg03.4") = {
+    ": ",
+    "Available for weapon equip.",
+    "Nothing equipped.",
+    "Ammo alone cannot be removed.",
+    "Available for accessory equip.",
+};
+static char * msg04_5[4] __asm__("msg04.5") = {
+    " and equip another weapon.",
+    "Remove weapon from ",
+    " and equip on ",
+    "Equip weapon on ",
+};
+static char * msg05_6[5] __asm__("msg05.6") = {
+    "Assign ",
+    "Remove ",
+    " is assigned to ",
+    ".",
+    " as the pilot of this A.G.W.S.",
+};
 void MenuInfoWindow(void);
 void eMessageCpy(char *dst, char *src);
 void eMessageCat(char *src);
@@ -332,31 +380,31 @@ void AgwsInfoMain(void)
         if (a < 0) {
             eMessageCpy(buf, msg04_5[3]);
             eMessageCat(msg02_3_0036D9A0[b]);
-            eMessageCat(D_004DAF28);
+            eMessageCat(".");
         } else if (a == b) {
             eMessageCpy(buf, msg04_5[1]);
             eMessageCat(msg02_3_0036D9A0[b]);
-            eMessageCat(D_004DAF40);
+            eMessageCat(",");
             eMessageCat(msg04_5[0]);
         } else {
             eMessageCpy(buf, msg04_5[1]);
             eMessageCat(msg02_3_0036D9A0[a]);
             eMessageCat(msg04_5[2]);
             eMessageCat(msg02_3_0036D9A0[b]);
-            eMessageCat(D_004DAF28);
+            eMessageCat(".");
         }
         break;
     case 0x44:
         if ((signed char)MenuWork.selectedWeapon >= 0)
             eMessageCpy(buf, MenuTextGet(MenuSortGet(0, (signed char)MenuWork.selectedWeapon))->name);
         else
-            eMessageCpy(buf, (char *)D_004DAF48);
+            eMessageCpy(buf, (char *)"");
         break;
     case 0x46:
         if ((signed char)MenuWork.selectedAmmo >= 0)
             eMessageCpy(buf, MenuTextGet(MenuSortGet(0, (signed char)MenuWork.selectedAmmo))->name);
         else
-            eMessageCpy(buf, (char *)D_004DAF48);
+            eMessageCpy(buf, (char *)"");
         break;
     case 0x60:
         if (MenuWork.weaponHand != 2) {
@@ -370,7 +418,7 @@ void AgwsInfoMain(void)
         if ((signed char)MenuWork.selectedAccessory >= 0)
             eMessageCpy(buf, MenuTextGet(MenuSortGet(0, (signed char)MenuWork.selectedAccessory))->name);
         else
-            eMessageCpy(buf, (char *)D_004DAF48);
+            eMessageCpy(buf, (char *)"");
         break;
     case 0xC2:
         if (MenuWork.listSelect >= 0) {
@@ -390,7 +438,7 @@ void AgwsInfoMain(void)
             eMessageCat(msg05_6[4]);
         }
         } else {
-            eMessageCpy(buf, (char *)D_004DAF48);
+            eMessageCpy(buf, (char *)"");
         }
         break;
     default:
@@ -434,14 +482,34 @@ typedef struct AgwsSelectWork {
     AgwsSelList list[4];
 } AgwsSelectWork;
 extern AgwsSelectWork *AgwsSelect;
-extern const char D_004DAF80[];
-extern const char D_004DAF88[];
-extern const char D_004DAF90[];
-extern char mmsg_9[];
-extern const char *msg_7_0036D9F8[];
-extern const char *msg01_8_0036DA40[];
+static const char * msg_7_0036D9F8[17] __asm__("msg.7") = {
+    0,
+    "Equip\nUnequip\nPilot",
+    "Equip\nUnequip\nCancel",
+    "Equip\nUnequip\nCancel",
+    "Assign pilot\nRemove pilot",
+    " Is this okay?",
+    "Yes\nNo",
+    "\014\200\200\200R. Arm\n\014\200\200\200L. Arm\n\014\200\200\200R. Shoulder\n\014\200\200\200L. Shoulder\n\014\200\200\200R. Alt\n\014\200\200\200L. Alt",
+    "R. Arm\nLft. Arm",
+    "R. Shoulder\nL. Shoulder",
+    "R. Alt\nLft. Alt",
+    "R. Arm\n",
+    "L. Arm\n",
+    "R. Shoulder\n",
+    "L. Shoulder\n",
+    "R. Alt\n",
+    "L. Alt\n",
+};
+static const char * msg01_8_0036DA40[3] __asm__("msg01.8") = {
+    "Assign\nRemove\nCancel",
+    "Okay?",
+    "Yes\nNo",
+};
 void MenuSelectWindow(void);
 char *strcat(char *dst, const char *src);
+
+extern const char D_004DAF90[];
 
 void AgwsSelectMain(void)
 {
@@ -449,6 +517,7 @@ void AgwsSelectMain(void)
     short x[8];
     short y[8];
     int i;
+    static char mmsg_9[0x80] __asm__("mmsg.9");
     signed char *p;
     int c;
 
@@ -458,7 +527,7 @@ void AgwsSelectMain(void)
         for (i = 0; i < 4; i++) {
             WindowDXSet(&work->window[i]);
             work->window[i].color = work->color;
-            work->window[i].title = D_004DAF80;
+            work->window[i].title = "Menu";
             work->list[i].cursor = 0;
             work->list[i].items = msg_7_0036D9F8[1];
             work->list[i].hasPrompt = 0;
@@ -466,7 +535,7 @@ void AgwsSelectMain(void)
             work->window[i].selectArg = &work->list[i];
         }
         work->list[2].items = msg01_8_0036DA40[0];
-        work->window[3].title = D_004DAF88;
+        work->window[3].title = "Select";
         work->list[3].items = msg01_8_0036DA40[2];
         work->window[0].x = 0x220;
         work->window[0].y = 0xA0;
@@ -666,7 +735,7 @@ void MenuAgwsListMake_Pilot(void)
     window->columns = 1;
     window->rows = 5;
     window->rowCount = 3;
-    window->flags = (int) D_004C6F38;
+    window->flags = (int) "Menu         Party";
     window->items = MenuListGet(0);
     WindowSPItemChange(window);
     WindowSPSetSelect(window, &MenuKeepSelect[40]);
@@ -707,7 +776,6 @@ typedef struct AgwsListView {
     AgwsSprite sprite;
     AgwsListWin window;
 } AgwsListView;
-extern unsigned char D_004DAF48[];
 void WindowSPSet(void *window);
 void WindowSPMain(void *window);
 int PartyAttackerCheck(int party_id);
@@ -729,7 +797,7 @@ void AgwsListMain(void)
         work->window.x = 0x210;
         work->color = 0xFFF000;
         work->window.color = 0xFFF000;
-        work->window.flags = (int)D_004DAF48;
+        work->window.flags = (int)"";
         work->window.y = 0x40;
         work->window.rowCount = 7;
         work->window.rows = 0xB;
@@ -889,6 +957,19 @@ void AgwsListMain(void)
         }
     }
 }
+
+/* AgwsSelectMain's empty-text template; its first byte clears mmsg.9 */
+static const char D_004DAF90[8] = { 0 };
+
+static const char * msg_10[7] __asm__("msg.10") = {
+    "\001FHP",
+    "\001DPOW",
+    "\001PARM",
+    "\001EARM",
+    "\001AGL",
+    "\001WAGL",
+    "\001Weight",
+};
 
 void AgwsStatusMain(void)
 {
@@ -1129,7 +1210,6 @@ typedef struct AgwsWeapon2MountRow {
 typedef struct AgwsWeapon2MountSide {
     unsigned short icon[2];
 } AgwsWeapon2MountSide;
-extern const AgwsWeapon2MountRow D_004DAFD8[];
 typedef struct AgwsUnitOrgFull {
     unsigned char unmodeled_00[0x5A];
     signed char hand[3];          /* +0x5a */
@@ -1143,12 +1223,15 @@ void eCursolMain(void *cursor);
 int MenuIdChange(short id, int kind);
 #define MENU_TEXT_WEAPON 0x30000
 #define MENU_TEXT_BULLET 0x40000
-extern const AgwsWeapon2MountSide D_004DAFE0[];
 #define AGWS_WEAPON2_SETUP 0
 #define AGWS_WEAPON2_MAIN  2
 typedef struct AgwsTextEntryView {
     char *name;
 } AgwsTextEntryView;
+
+
+extern const AgwsWeapon2MountRow D_004DAFD8[];
+extern const AgwsWeapon2MountSide D_004DAFE0[];
 
 void AgwsWeapon2Main(void)
 {
@@ -1314,6 +1397,9 @@ void AgwsWeapon2Main(void)
     }
 }
 
+static const AgwsWeapon2MountRow D_004DAFD8[1] = { { { 0x31C, 0x31E, 0x31D } } };
+static const AgwsWeapon2MountSide D_004DAFE0[1] = { { { 0x31F, 0x320 } } };
+
 typedef struct AgwsWeapon2Cursol {
     unsigned char state;                    /* +0x00 */
     unsigned char unmodeled_01[3];
@@ -1322,7 +1408,7 @@ typedef struct AgwsWeapon2Cursol {
     int color;                              /* +0x08 */
     unsigned char unmodeled_0c[0x24 - 0x0C];
 } AgwsWeapon2Cursol;
-extern unsigned short AgwsNo[];
+static unsigned short AgwsNo[16];
 typedef struct AgwsNamePoint {
     short x, y;
     int depth;
@@ -1772,6 +1858,9 @@ void AgwsFaceMain(void)
 
 /* The L1/R1 page hints of the AGWS screens: both sprites sit just off screen
  * unless the screen is on the page that lets the pad page through. */
+
+extern const AgwsSwitchSlideStep D_004DAFE8[];
+
 void AgwsSwitchMain(void)
 {
     AgwsSwitchWork *self = AgwsSwitch;
@@ -1831,7 +1920,14 @@ void AgwsSwitchMain(void)
     }
 }
 
+static const AgwsSwitchSlideStep D_004DAFE8[1] = { { { 1, -1 } } };
+
 /* Places the AGWS model camera at its preset position and rotation. */
+static const AgwsCameraPreset D_004C7190 __attribute__((aligned(16))) = { {
+    { 0.5f, 2.8f, 4.5f, 1.0f },
+    { 0.0f, 0.0f, 0.0f, 1.0f }
+} };
+
 void MenuAgwsCameraSet(void)
 {
     AgwsCameraPreset preset = D_004C7190;
@@ -1845,6 +1941,11 @@ void MenuAgwsCameraSet(void)
 }
 
 /* Eases the menu camera towards the position the AGWS screen state asks for. */
+static const AgwsCameraTargets D_004C71B0 __attribute__((aligned(16))) = { {
+    { 0.5f, 2.8f, 4.5f, 1.0f },
+    { -1.5f, 2.0f, 8.0f, 1.0f }
+} };
+
 void MenuAgwsCameraMove(void)
 {
     Vector4 *position = &xglStudioGetCamera2(0)->position;
@@ -1868,6 +1969,17 @@ void MenuAgwsCameraMove(void)
 
 /* The AGWS model task: it eases the model into the pose the screen state asks
  * for and drives the open, weapon-preview and close states of its unit. */
+static const AgwsModelPositions D_004C71D0 __attribute__((aligned(16))) = { {
+    { 0.0f, 0.0f, 0.0f, 0.0f },
+    { 0.0f, 1.0471976f, 0.0f, 0.0f },
+    { 0.0f, -1.0471976f, 0.0f, 0.0f },
+    { 0.7853982f, 0.7853982f, 0.0f, 0.0f },
+    { 0.7853982f, -0.7853982f, 0.0f, 0.0f },
+    { 0.3926991f, 2.0943952f, 0.0f, 0.0f },
+    { 0.3926991f, -2.0943952f, 0.0f, 0.0f }
+} };
+static const AgwsModelVector D_004C7240 __attribute__((aligned(16))) = { { 1.0f, 1.0f, 1.0f, 1.0f } };
+
 void MenuAgwsModelMain(AgwsModelUnit *self)
 {
     AgwsModelActor *actor = self->actor;
@@ -1982,10 +2094,7 @@ void dataWpnBoxDec(int);
 void dataWpnBoxInc(int);
 void xglFontDebugHex(int x, int y, int value, int digits);
 extern unsigned char *MainMenuWorkEnd;
-extern AgwsListSPWindow *AgwsWinSP[4];
-extern unsigned char D_004C72D0[];
-extern unsigned char D_004DAFF0[];
-extern unsigned char D_004DAFF8[];
+static AgwsListSPWindow *AgwsWinSP[4];
 extern int MenuModelOut[4];
 extern int MenuSelectMove(int selection, int count, int wrap);
 extern int MenuCursorKeepCheck(void);
@@ -2749,7 +2858,7 @@ void MenuAgws(void) {
     AgwsSwitchMain();
     AgwsFaceMain();
     AgwsNameMain();
-    xglFontDebugPrintf(0, 0x38, (s8 *) D_004DAFF0);
+    xglFontDebugPrintf(0, 0x38, (s8 *) "\013AGWS");
     xglFontDebugHex(0, 0x48, MenuWorkUp.state, 2);
     xglFontDebugHex(0, 0x60, MenuWorkUp.menuSelection, 2);
     xglFontDebugHex(0, 0x68, MenuWorkUp.selectedAgws, 2);
@@ -2758,9 +2867,22 @@ void MenuAgws(void) {
     xglFontDebugHex(0, 0x80, MenuWorkUp.weaponHand, 2);
     xglFontDebugHex(0, 0x88, MenuWorkUp.equipSlot, 2);
     xglFontDebugHex(0, 0x90, MenuWorkUp.agwsCount, 1);
-    xglFontDebugPrintf(0x40, 0x50, (s8 *) D_004DAFF8, MenuWorkUp.selectedWeapon);
-    xglFontDebugPrintf(0x40, 0x58, (s8 *) D_004DAFF8, MenuWorkUp.selectedAmmo);
-    xglFontDebugPrintf(0x40, 0x60, (s8 *) D_004DAFF8, MenuWorkUp.selectedAccessory);
-    xglFontDebugPrintf(0x40, 0x68, (s8 *) D_004DAFF8, MenuWorkUp.listSelect);
-    xglFontDebugPrintf(0x40, 0x78, (s8 *) D_004C72D0, MenuWorkUp.pilotId);
+    xglFontDebugPrintf(0x40, 0x50, (s8 *) "%4d", MenuWorkUp.selectedWeapon);
+    xglFontDebugPrintf(0x40, 0x58, (s8 *) "%4d", MenuWorkUp.selectedAmmo);
+    xglFontDebugPrintf(0x40, 0x60, (s8 *) "%4d", MenuWorkUp.selectedAccessory);
+    xglFontDebugPrintf(0x40, 0x68, (s8 *) "%4d", MenuWorkUp.listSelect);
+    xglFontDebugPrintf(0x40, 0x78, (s8 *) "equip_pos %4d", MenuWorkUp.pilotId);
 }
+
+AgwsParaDisplay MenuAgwsPara = { { 0 } };
+AgwsParaDisplay MenuAgwsPara2 = { { 0 } };
+
+AgwsPasWork *AgwsPas = 0;
+AgwsInfoWork *AgwsInfo = 0;
+AgwsSelectWork *AgwsSelect = 0;
+AgwsListWork *AgwsList = 0;
+AgwsStatusWork *AgwsStatus = 0;
+AgwsWeapon2Work *AgwsWeapon2 = 0;
+AgwsNameWorkPrefix *AgwsName = 0;
+AgwsFaceWork *AgwsFace = 0;
+AgwsSwitchWork *AgwsSwitch = 0;

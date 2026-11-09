@@ -125,7 +125,7 @@ static char *getStrIndex(char *string, int length, int ch)
     return 0;
 }
 
-extern char tmpString[];
+static char tmpString[0x200];
 extern char D_004DC090[];
 extern char *strncpy(char *, const char *, unsigned int);
 extern int sprintf(char *, const char *, ...);
@@ -180,6 +180,10 @@ void Java_xeno_vm_System_println__Ljava_lang_String_(void *thread, void **argume
         }
     }
 }
+
+/* Defined after its only user: the original addresses it with lui/addiu, as
+ * an object of unknown size, not gp-relative. */
+static char D_004DC090[] = "%8.2f";
 
 extern SceneClass *classJava_xeno_Chr;
 extern SceneClass *classJava_xeno_Stage;

@@ -7,13 +7,13 @@
 
 void srsSetLoadMode(int load_mode);
 
-extern int srsLoadMode;
+static int srsLoadMode;
 
 int srsGetLoadMode(void);
 
 char *srsGetEsdData(int index);
 
-extern int _nRead;
+static int _nRead;
 
 char *srsGetEffectName(int effectNo);
 

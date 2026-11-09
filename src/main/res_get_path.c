@@ -5,13 +5,15 @@ static char *command_enenpcse(int command, char *cursor, int mode);
 extern void GameDiskChange(int disk_number);
 extern void Intermission(int save_number);
 extern int xglCdGetFileSize(const char *name);
-extern int arcfilepreload;
-extern char scene_txt_buffer[];
+/* .sbss (file-local, original order) */
+static u32 *arcfileaddr;
+static u8 arcno;
+static int arcfilepreload;
+static u8 GameResourceWorkReloadLeader;
 extern void SCRIPT_fade(int time);
 static char *command_mpeg2_core(int command, char *cursor, int mode);
 static int next_arc_size(void *address);
 extern void Enemy_LoadPreset(void *address, const char *name);
-extern u32 *arcfileaddr;
 extern void *AdrsEnemyPreset;
 #include "main/xgl_thread.h"
 
@@ -34,17 +36,564 @@ typedef struct {
     char name[16];
 } EnemySeEntry;
 
-extern EnemySeEntry EnemySeBank[8];
+/* .bss (file-local, original order) */
+static EnemySeEntry EnemySeBank[8];
+static char foot_name[0x10];
+static char env_name[0x10];
+static char scene_txt_buffer[0x800];
+static u32 archeader[0x40];
+static u8 GameResourceWorkReloadTable[0x80];
 extern u8 ScenePath;
-extern const char *tbl_0_00366420[20];
+/* Resource-key tables: {key, table, extension}; `table` is a NULL-terminated
+ * name list or (CID/RID/... in `model`) another key table. */
+typedef struct ResKeyTable {
+    const char *key;
+    const void *table;
+    const char *ext;
+} ResKeyTable;
+typedef struct {
+    char *name;
+    u16 ids[14];
+} CfMtnEntry;
+typedef struct { unsigned short *tbl; unsigned short en; unsigned short key; } FaceEnt;
+
+static const char *CID0[54] = {
+    "+shion,shion4", "kosmos", "chaos", "momo",
+    "jr", "ziggy", "shitan", "shion_ch",
+    "+shion1,shion5", "shion2", "shion3", "shion",
+    "+shion5,shion1", "kosmos1", "kosmos2", "kosmos3",
+    "kosmos5", "chaos1", "chaos2", "momo1",
+    "momo2", "momo3", "momo4", "jr1",
+    "jr2", "jr3", "ziggy1", "shitan1",
+    "shitan2", "+shion_h,shion4_h", "kosmos_h", "chaos_h",
+    "momo_h", "jr_h", "ziggy_h", "shitan_h",
+    "kosmos_h1", "kosmos_h2", "kosmos_h3", "kosmos_h4",
+    "kosmos_h5", "kosmos_h6", "+shion1_h,shion5_h", "jr1_h",
+    "shion2_h", "shion3_h", "jr4", "+shion4_h,shion_h",
+    "+shion5_h,shion1_h", "momo5", "momo5_h", "momo6",
+    "shion6_h", 0
+};
+static const char *CID1[89] = {
+    "marglis", "marglis1", "gaignun", "gaignun1",
+    "albelt", "albelt1", "allen", "allen1",
+    "kebin", "kebin1", "kebin2", "virgil",
+    "virgil1", "virgil2", "virgil3", "virgil4",
+    "fried", "elly", "matehws", "matehws1",
+    "tonny", "hammer", "andrew", "andrew1",
+    "andrew2", "andrew3", "andrew4", "feb",
+    "yuri", "joachim", "sellers", "mary",
+    "shelley", "abel", "helmer", "voyager",
+    "miyuki", "lapis", "cecilia", "cath",
+    "shi_dad", "shi_mam", "step_mam", "pelegri",
+    "togashi", "moriyama", "hynlin", "shalron",
+    "k_joach", "and_wife", "and_daug", "elly2",
+    "van", "chief", "cecilia1", "cath1",
+    "joachim1", "marglis_h", "albelt_h", "allen_h",
+    "kebin_h", "virgil_h", "fried_h", "+matehws_h,matehws",
+    "elly_h", "kebin1_h", "virgil2_h", "virgil4_h",
+    "andrew5", "andrew6", "andrew7", "andrew8",
+    "albelt2_h", "virgil1_h", "virgil3_h", "+andrew_h,andrew",
+    "+andrew_h,andrew1", "+andrew_h,andrew2", "+andrew_h,andrew3", "+andrew_h,andrew4",
+    "+andrew_h,andrew5", "+andrew_h,andrew6", "gaignun_h", "+tonny_h,tonny",
+    "+hammer_h,hammer", "feb1", "albelt3_h", "andrew9",
+    0
+};
+static const char *CID2[32] = {
+    "space", "vec_m", "vec_m1", "vec_m2",
+    "vec_w", "vec_w1", "off_m", "off_m1",
+    "off_m2", "off_m3", "off_w", "off_w1",
+    "pilot", "sold", "eng", "eng_off",
+    "suuki", "rw_m", "rw_m1", "rw_m2",
+    "rw_w", "rw_w1", "rw_w2", "esold",
+    "breal_m", "breal_m1", "breal_m2", "breal_m3",
+    "breal_m4", "breal_w", "breal_w1", 0
+};
+static const char *CID3[29] = {
+    "commi", "commi1", "commi2", "commi3",
+    "commi4", "commi5", "gove_w", "gove_w1",
+    "gove_w2", "u_sold", "u_space", "real_m",
+    "real_m1", "real_m2", "real_w", "real_w1",
+    "real_w2", "real_w2", "real_w2", "real_w2",
+    "real_w2", "real_w2", "real_w2", "real_w2",
+    "real_w2", "real_w2", "real_w2", "u_solds",
+    0
+};
+static const char *CID4[17] = {
+    "du", "du1", "du2", "hyaku",
+    "ass_m", "ass_m1", "ass_m2", "ass_w",
+    "gove_m", "gove_m1", "gove_m2", "gove_m2",
+    "gove_m2", "kancho", "ass_m3", "ass_m4",
+    0
+};
+static const char *CID5[10] = {
+    "cont", "utic_m", "utic_m1", "utic_m2",
+    "utic_w", "utic_w1", "utic_w2", "pol_m",
+    "pol_w", 0
+};
+static const char *CID6[81] = {
+    "man_a", "man_a1", "man_a2", "man_b",
+    "man_b1", "man_b2", "oji_a", "oji_a1",
+    "oji_a2", "oji_b", "oji_b1", "oji_b2",
+    "jiji_a", "jiji_a1", "jiji_a2", "jiji_b",
+    "jiji_b1", "jiji_b2", "kidsm_a", "kidsm_a1",
+    "kidsm_a2", "kidsm_b", "kidsm_b1", "kidsm_b2",
+    "boy_a", "boy_a1", "boy_a2", "boy_b",
+    "boy_b1", "boy_b2", "wman_a", "wman_a1",
+    "wman_a2", "wman_b", "wman_b1", "wman_b2",
+    "oba_a", "oba_a1", "oba_a2", "oba_b",
+    "oba_b1", "oba_b2", "baba_a", "baba_a1",
+    "baba_a2", "baba_b", "baba_b1", "baba_b2",
+    "kidsw_a", "kidsw_a1", "kidsw_a2", "kidsw_b",
+    "kidsw_b1", "kidsw_b2", "girl_a", "girl_a1",
+    "girl_a2", "girl_b", "girl_b1", "girl_b2",
+    "bread", "bar_oji", "bar_m", "doctor",
+    "nurse", "cle_ch", "robot", "king",
+    "cle_oba", "bread_ch", "inn_girl", "mouth",
+    "goro", "pilot_no", "king_cat", "barten",
+    "spy", "inn_oji", "scot", "eng_oji",
+    0
+};
+static const char *RID0[7] = {
+    "01", "02", "03", "04",
+    "05", "06", 0
+};
+static const char *RID1[14] = {
+    "_01", "_02", "_03", "_04",
+    "_05", "_01_cv", "_01_ho", "_01_ho2",
+    "_02_ho", "_06", "_07", "_08",
+    "_09", 0
+};
+static const char *RID2[11] = {
+    "ukn_g", "vx_1m", "ts_01", "ukunB",
+    "ukunS", "gr_final", "gr_head", "gr_hand",
+    "gr_body", "gr_leg", 0
+};
+static const char *WID0[11] = {
+    "hw01", "hw02", "hw03", "hw04",
+    "hw05", "hw06", "bw01", "bw02",
+    "bw03", "bw04", 0
+};
+static const char *WID1[18] = {
+    "rd01", "rd02", "rd03", "rd04",
+    "rd05", "rd06", "rd07", "rd08",
+    "rd09", "rd10", "rd11", "rd12",
+    "rd13", "rd14", "rd15", "rd16",
+    "rd17", 0
+};
+static const char *WID2[6] = {
+    "sw01", "bw01", "bw02", "bw03",
+    "bw04", 0
+};
+static const char *WID3[9] = {
+    "gun01", "gun02", "gun03", "gun04",
+    "gun05", "jr_hg06", "jr_hg07", "jr_hg08",
+    0
+};
+static const char *WID4[6] = {
+    "sw01", "sw02", "sw03", "sw04",
+    "sw05", 0
+};
+static const char *WID5[2] __attribute__((section(".data"))) = {
+    "mbox", 0
+};
+static const char *WID6[50] = {
+    "ax00", "bd00", "bd01", "wct00",
+    "hg00", "hg01", "hmr00", "dlc00",
+    "hmr02", "mg00", "mg01", "rf00",
+    "rf01", "rf02", "bam00", "bs00",
+    "drl00", "drl01", "lsr00", "pbk00",
+    "fl00", "gnd00", "glg00", "hb00",
+    "msp00", "msp02", "bl00", "cb00",
+    "eac00", "bp00", "lgc00", "amp02",
+    "msp01", "msp03", "shb00", "fsd00",
+    "vsd00", "bbc00", "bw00", "ead00",
+    "ecm01", "ecm02", "smp01", "wire00",
+    "sol00", "deff00", "glg00r", "hb00r",
+    "msp02r", 0
+};
+static const char *WID7[12] = {
+    "acc018", "acc028", "acc029", "acc030",
+    "acc031", "acc032", "acc033", "acc034",
+    "acc035", "acc036", "ewp_hg01", 0
+};
+static const char *WID8[2] __attribute__((section(".data"))) = {
+    "wing", 0
+};
+static const char *EID0[56] = {
+    "001", "002", "003", "004",
+    "005", "006", "007", "008",
+    "009", "010", "011", "012",
+    "013", "014", "015", "016",
+    "017", "018", "019", "020",
+    "021", "022", "023", "024",
+    "025", "301", "302", "303",
+    "304", "305", "306", "307",
+    "308", "309", "310", "311",
+    "312", "313", "314", "315",
+    "316", "317", "318", "319",
+    "320", "321", "322", "323",
+    "324", "325", "", "",
+    "", "", "114", 0
+};
+static const char *EID1[15] = {
+    "001", "002", "003", "004",
+    "005", "006", "007", "008",
+    "009", "010", "011", "012",
+    "013", "014", 0
+};
+static const char *EID2[7] = {
+    "001", "002", "003", "004",
+    "005", "006", 0
+};
+static const char *EID3[8] = {
+    "001", "002", "003", "004",
+    "005", "006", "007", 0
+};
+static const char *EID4[8] = {
+    "001", "002", "003", "004",
+    "005", "006", "007", 0
+};
+static const char *EID5[7] = {
+    "001", "002", "003", "004",
+    "005", "006", 0
+};
+static const char *EID6[2] __attribute__((section(".data"))) = {
+    "001", 0
+};
+static const char *EID7[5] = {
+    "001", "002", "003", "004",
+    0
+};
+static const char *EID8[4] = {
+    "001", "002", "003", 0
+};
+static const char *EIDf[34] = {
+    "001", "002", "003", "004",
+    "005", "006", "007", "008",
+    "009", "010", "011", "012",
+    "013", "014", "015", "016",
+    "017", "018", "019", "020",
+    "021", "022", "023", "024",
+    "025", "026", "027", "028",
+    "029", "030", "031", "032",
+    "033", 0
+};
+static const char *MID0[182] = {
+    "000", "001", "002", "003",
+    "004", "005", "006", "007",
+    "008", "009", "010", "011",
+    "012", "013", "014", "015",
+    "016", "017", "018", "019",
+    "020", "021", "022", "023",
+    "024", "025", "026", "027",
+    "028", "029", "030", "031",
+    "032", "033", "034", "035",
+    "036", "037", "038", "039",
+    "040", "041", "042", "043",
+    "044", "045", "046", "047",
+    "048", "049", "050", "051",
+    "052", "053", "054", "055",
+    "056", "057", "058", "059",
+    "060", "061", "062", "063",
+    "064", "065", "066", "067",
+    "068", "069", "070", "071",
+    "072", "073", "074", "075",
+    "076", "077", "078", "079",
+    "080", "081", "082", "083",
+    "084", "085", "086", "087",
+    "088", "089", "090", "091",
+    "092", "093", "094", "095",
+    "096", "097", "098", "099",
+    "100", "101", "102", "103",
+    "104", "105", "106", "107",
+    "108", "109", "110", "111",
+    "112", "113", "114", "115",
+    "116", "117", "118", "119",
+    "120", "121", "122", "123",
+    "124", "125", "126", "127",
+    "128", "129", "130", "131",
+    "132", "133", "134", "135",
+    "136", "137", "138", "139",
+    "140", "141", "142", "143",
+    "144", "145", "146", "147",
+    "148", "149", "150", "151",
+    "152", "153", "154", "155",
+    "156", "157", "158", "159",
+    "160", "161", "162", "163",
+    "164", "165", "166", "167",
+    "168", "169", "170", "171",
+    "172", "173", "174", "175",
+    "176", "177", "178", "179",
+    "180", 0
+};
+static const char *AID0[128] = {
+    "001", "002", "003", "004",
+    "005", "006", "007", "008",
+    "009", "010", "011", "012",
+    "013", "014", "015", "016",
+    "017", "018", "019", "020",
+    "021", "022", "023", "024",
+    "025", "026", "027", "028",
+    "029", "030", "031", "032",
+    "033", "034", "035", "036",
+    "037", "038", "039", "040",
+    "041", "042", "043", "044",
+    "045", "046", "047", "048",
+    "049", "050", "051", "052",
+    "053", "054", "055", "056",
+    "057", "058", "059", "060",
+    "061", "062", "063", "064",
+    "065", "066", "067", "068",
+    "069", "070", "071", "072",
+    "073", "074", "075", "076",
+    "077", "078", "079", "080",
+    "081", "082", "083", "084",
+    "085", "086", "087", "088",
+    "089", "090", "091", "092",
+    "093", "094", "095", "096",
+    "097", "098", "099", "100",
+    "101", "102", "103", "104",
+    "105", "106", "107", "108",
+    "109", "110", "111", "112",
+    "113", "114", "115", "116",
+    "117", "118", "119", "120",
+    "121", "122", "123", "124",
+    "125", "126", "127", 0
+};
+static const char *MU[131] = {
+    "001", "002", "003", "004",
+    "005", "006", "007", "008",
+    "009", "010", "011", "012",
+    "013", "014", "015", "016",
+    "017", "018", "019", "020",
+    "021", "022", "023", "024",
+    "025", "026", "027", "028",
+    "029", "030", "031", "032",
+    "033", "034", "035", "036",
+    "037", "038", "039", "040",
+    "041", "042", "043", "044",
+    "045", "046", "047", "048",
+    "049", "050", "051", "052",
+    "053", "054", "055", "056",
+    "057", "058", "059", "060",
+    "061", "062", "063", "064",
+    "065", "066", "067", "068",
+    "069", "070", "071", "072",
+    "073", "074", "075", "076",
+    "077", "078", "079", "080",
+    "081", "082", "083", "084",
+    "085", "086", "087", "088",
+    "089", "090", "091", "092",
+    "093", "094", "095", "096",
+    "097", "098", "099", "100",
+    "101", "102", "103", "104",
+    "105", "106", "107", "108",
+    "109", "110", "111", "112",
+    "113", "114", "115", "116",
+    "117", "118", "119", "120",
+    "121", "122", "123", "124",
+    "125", "126", "127", "128",
+    "129", "130", 0
+};
+static const char *MUW[21] = {
+    "001", "002", "003", "004",
+    "005", "006", "007", "008",
+    "009", "010", "011", "012",
+    "013", "014", "015", "016",
+    "017", "018", "019", "020",
+    0
+};
+static const char *TRE[11] = {
+    "001", "002", "003", "004",
+    "005", "006", "007", "008",
+    "009", "010", 0
+};
+static const char *MUX[11] = {
+    "001", "002", "003", "004",
+    "005", "006", "007", "008",
+    "009", "010", 0
+};
+static const char *MUF[11] = {
+    "001", "002", "003", "004",
+    "005", "006", "007", "008",
+    "009", "010", 0
+};
+static const char *MUS[11] = {
+    "001", "002", "003", "004",
+    "005", "006", "007", "008",
+    "009", "010", 0
+};
+static ResKeyTable CID[8] = {
+    {"", CID0, "pc\\"},
+    {"", CID1, "npc\\"},
+    {"", CID2, "ppl\\"},
+    {"", CID3, "ppl\\"},
+    {"", CID4, "ppl\\"},
+    {"", CID5, "ppl\\"},
+    {"", CID6, "citi\\"},
+    {0, 0, 0}
+};
+static ResKeyTable RID[4] = {
+    {"vx_", RID0, "vx\\vx_"},
+    {"ag", RID1, "ag\\ag"},
+    {"", RID2, "etc\\"},
+    {0, 0, 0}
+};
+static ResKeyTable WID[10] = {
+    {"kos_", WID0, "pc\\kos_"},
+    {"mmo_", WID1, "pc\\mmo_"},
+    {"zig_", WID2, "pc\\zig_"},
+    {"jr_", WID3, "pc\\jr_"},
+    {"stn_", WID4, "pc\\stn_"},
+    {"son_", WID5, "pc\\son_"},
+    {"", WID6, "robo\\"},
+    {"", WID7, "enemy\\"},
+    {"cho_", WID8, "pc\\cho_"},
+    {0, 0, 0}
+};
+static ResKeyTable EID[17] = {
+    {"guno_", EID0, "guno\\guno_"},
+    {"utma_", EID1, "utma\\utma_"},
+    {"utre_", EID2, "utre\\utre_"},
+    {"utso_", EID3, "utso\\utso_"},
+    {"utro_", EID4, "utro\\utro_"},
+    {"fema_", EID5, "fema\\fema_"},
+    {"fero_", EID6, "fero\\fero_"},
+    {"feso_", EID7, "feso\\feso_"},
+    {"fere_", EID8, "fere\\fere_"},
+    {"_", EID8, "guno\\guno_"},
+    {"_", EID8, "guno\\guno_"},
+    {"_", EID8, "guno\\guno_"},
+    {"_", EID8, "guno\\guno_"},
+    {"_", EID8, "guno\\guno_"},
+    {"_", EID8, "guno\\guno_"},
+    {"boss_", EIDf, "boss\\boss_"},
+    {0, 0, 0}
+};
+static ResKeyTable MID[2] = {
+    {"", MID0, "mobj000\\mobj_"},
+    {0, 0, 0}
+};
+static ResKeyTable AID[2] = {
+    {"", AID0, "aobj000\\acc_"},
+    {0, 0, 0}
+};
+static ResKeyTable MOBJ[10] = {
+    {"mu_", MU, "muobj\\MU_"},
+    {"muw_", MUW, "muwobj\\muw_"},
+    {"tre_", TRE, "treobj\\tre_"},
+    {"tre_", TRE, "treobj\\tre_"},
+    {"mux_", MUX, "muxobj\\mux_"},
+    {"mux_", MUX, "muxobj\\mux_"},
+    {"muf_", MUF, "mufobj\\muf_"},
+    {"muf_", MUF, "mufobj\\muf_"},
+    {"mus_", MUS, "musobj\\mus_"},
+    {0, 0, 0}
+};
+static ResKeyTable model[9] = {
+    {"cid_", CID, "char\\"},
+    {"cid_", CID, "char\\"},
+    {"rid_", RID, "robo\\"},
+    {"wid_", WID, "weapon\\"},
+    {"eid_", EID, "enemy\\"},
+    {"mid_", MID, "obj\\"},
+    {"aid_", AID, "obj\\"},
+    {"", MOBJ, "obj\\"},
+    {0, 0, 0}
+};
+CfMtnEntry cfMtnList[31] = {
+    {"shion_cf", {1, 9, 10, 11, 12, 13, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"kosmos_cf", {2, 14, 15, 16, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"chaos_cf", {3, 18, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"momo_cf", {4, 20, 21, 22, 23, 50, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"jr_cf", {5, 24, 25, 26, 47, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"ziggy_cf", {6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"shitan_cf", {7, 28, 29, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"allen_cf", {263, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"oldw_cf", {1579, 1582, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"oldm_cf", {1549, 1552, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"middlem_cf", {1543, 1546, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"middlew_cf", {1573, 1576, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"soldierw_cf", {1289, 542, 523, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"soldierm_cf", {526, 536, 525, 513, 527, 1288, 537, 519, 0, 0, 0, 0, 0, 0}},
+    {"woman_cf", {1567, 1570, 783, 533, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"youngm_cf", {1537, 1540, 780, 530, 529, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"youngw_cf", {1591, 1594, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"guno001_cf", {16385, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"guno_301", {16410, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"guno_302", {16411, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"guno_303", {16412, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"guno_304", {16413, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"guno_305", {16414, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"guno_323", {16432, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"guno_324", {16433, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"guno_325", {16434, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"guno_301", {16410, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"guno_302", {16411, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"guno_303", {16412, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"guno_307", {16416, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+};
+static unsigned short facePC[54] = {
+    0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1, 0x1, 0x1,
+    0x1, 0x1, 0x2, 0x2, 0x2, 0x2, 0x3, 0x3, 0x4, 0x4, 0x4, 0x4,
+    0x5, 0x5, 0x5, 0x6, 0x0, 0x0, 0x1E, 0x0, 0x0, 0x0, 0x0, 0x0,
+    0x0, 0x1F, 0x1F, 0x1F, 0x1F, 0x25, 0x1F, 0x1E, 0x22, 0x1E, 0x1E, 0x5,
+    0x1E, 0x1E, 0x4, 0x21, 0x4, 0x1E
+};
+static unsigned short faceNPC[89] = {
+    0x0, 0x0, 0x102, 0x0, 0x5, 0x0, 0x5, 0x0, 0x107, 0x10A, 0x0, 0x10A,
+    0x10D, 0x10D, 0x10D, 0x10D, 0x10D, 0x0, 0x0, 0x0, 0x113, 0x0, 0x0, 0x0,
+    0x117, 0x117, 0x117, 0x117, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x137, 0x11E, 0x0, 0x0,
+    0x0, 0x0, 0x144, 0x0, 0x0, 0x0, 0x0, 0x0, 0x144, 0x117, 0x117, 0x117,
+    0x117, 0x13B, 0x144, 0x144, 0x14C, 0x14D, 0x14E, 0x14F, 0x150, 0x151, 0x152, 0x0,
+    0x0, 0x0, 0x0, 0x0, 0x14C
+};
+static unsigned short facePPL1[32] = {
+    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x205, 0x0, 0x0, 0x0, 0x0, 0x0,
+    0x0, 0x0, 0x0, 0x0, 0x301, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+    0x0, 0x219, 0x219, 0x219, 0x219, 0x219, 0x21E, 0x21E
+};
+static unsigned short facePPL2[29] = {
+    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x30F, 0x30F, 0x30F, 0x0, 0x0,
+    0x0, 0x30C, 0x30C, 0x0, 0x30F, 0x30F, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+    0x0, 0x0, 0x0, 0x0, 0x0
+};
+static unsigned short facePPL3[17] = {
+    0x0, 0x0, 0x0, 0x202, 0x0, 0x304, 0x305, 0x0, 0x0, 0x0, 0x409, 0x409,
+    0x409, 0x409, 0x135, 0x407, 0x304
+};
+static unsigned short facePPL4[10] = {
+    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0
+};
+FaceEnt faceTbl[7] = {
+    {facePC, 54, 0},
+    {faceNPC, 89, 256},
+    {facePPL1, 32, 512},
+    {facePPL2, 29, 768},
+    {facePPL3, 17, 1024},
+    {facePPL4, 10, 1280},
+    {0, 0, 0}
+};
+
 
 static void default_callback(void)
 {
     xglSleep();
 }
 
+
 const char *RES_getPath(void)
 {
+    static const char *tbl_0_00366420[20] __asm__("tbl.0") = {
+        "data\\scene\\", "data\\scene\\test\\", "data\\scene\\check\\", "data\\scene\\cf\\",
+        "data\\scene\\event\\", "data\\scene\\gash\\", "data\\scene\\fuji\\", "data\\scene\\kojima\\",
+        "data\\scene\\sakisako\\", "data\\scene\\konishi\\", "data\\scene\\koji\\", "data\\scene\\nv-yone\\",
+        "data\\scene\\nakahara\\", "data\\scene\\yajima\\", "data\\scene\\kuramoto\\", "data\\scene\\keiichi\\",
+        "data\\scene\\sato\\", "data\\scene\\sugisawa\\", "data\\scene\\yagi\\", "data\\scene\\itai\\"
+    };
     if (ScenePath >= 20)
         ScenePath = 0;
     return tbl_0_00366420[ScenePath];
@@ -128,11 +677,6 @@ const char *RES_GetEnemySeName(int index)
     return 0;
 }
 
-typedef struct {
-    char *name;
-    u16 ids[14];
-} CfMtnEntry;
-extern CfMtnEntry cfMtnList[];
 
 static int RES_GetMotBaseID(int id)
 {
@@ -156,8 +700,6 @@ static int RES_GetMotBaseID(int id)
     return 1;
 }
 
-typedef struct { unsigned short *tbl; unsigned short en; unsigned short key; } FaceEnt;
-extern FaceEnt faceTbl[];
 
 static int convert_face(int id)
 {
@@ -267,9 +809,7 @@ unsigned int GameResourceGetFreeAddr(void)
     return a;
 }
 
-extern u8 GameResourceWorkReloadLeader;
 
-extern u8 GameResourceWorkReloadTable[];
 
 int GameResourceWorkAlloc(int size)
 {
@@ -372,8 +912,6 @@ int GameResourceRealloc(int resource, int size)
     return 0;
 }
 
-extern u32 archeader[];
-extern u8 arcno;
 extern int xglArxExtract(void *destination, void *source);
 extern void *memcpy(void *destination, const void *source, unsigned int count);
 
@@ -671,12 +1209,11 @@ static unsigned char *command_loadmap(int command, unsigned char *cursor, int mo
 
 extern int RES_loadFile(int command, int callback, int resource_id, int flags);
 static char *search_key(char *cursor, u8 *table, int *id);
-extern u8 model[];
 
 static char *command_loadact(int command, char *cursor, int mode)
 {
     int resource_id = 0;
-    char *next_cursor = search_key(cursor, model, &resource_id);
+    char *next_cursor = search_key(cursor, (u8 *)model, &resource_id);
 
     RES_loadFile(command, 0, resource_id, 0);
     return next_cursor;
@@ -685,7 +1222,7 @@ static char *command_loadact(int command, char *cursor, int mode)
 static char *command_loadface(int command, char *cursor, int mode)
 {
     int resource_id = 0;
-    char *next_cursor = search_key(cursor, model, &resource_id);
+    char *next_cursor = search_key(cursor, (u8 *)model, &resource_id);
 
     RES_loadFile(command, 0, resource_id + 0x10000, 0);
     return next_cursor;
@@ -911,11 +1448,12 @@ static char *command_dummy(int command, char *cursor, int mode)
 }
 
 extern unsigned char SaveData[];
-extern char foot_name[];
-extern char *tbl_1_00366470[];
 
 void RES_GetLeaderSeName(char *dst)
 {
+    static char *tbl_1_00366470[7] __asm__("tbl.1") = {
+        (char *)"", (char *)"SO", (char *)"KM", (char *)"CS", (char *)"MO", (char *)"JR", (char *)"Z8"
+    };
     char *src = tbl_1_00366470[*(u16 *)(SaveData + 0x100A4)];
     dst[0] = src[0];
     dst[1] = src[1];
@@ -928,7 +1466,6 @@ void RES_GetLeaderSeName(char *dst)
     }
 }
 
-extern char env_name[];
 
 void RES_GetMapEnvSeName(char *name)
 {
@@ -943,9 +1480,6 @@ void RES_GetMapEnvSeName(char *name)
 #include "main/xgl_sound.h"
 extern struct SoundWork SoundWork;
 int sprintf(char *buffer, const char *format, ...);
-extern const char D_004C00A8[];
-extern const char D_004C00C0[];
-extern const char D_004C00D8[];
 extern int SsdGetResultValue(int *result);
 extern int SsdGetSeqPlayStatus(int sequence_id);
 extern int SsdCheckPlayEffectFileID(u16 file_id);
@@ -1064,10 +1598,10 @@ environment_name_done:
             second_address = (void *)(address + first_size);
             second_size = next_arc_size(second_address);
         } else {
-            sprintf(path, D_004C00A8, env_name);
+            sprintf(path, "data\\sound\\sed\\%s.SWD", env_name);
             first_size = xglCdReadFile(path, (void *)address, 0, 0);
             second_address = (void *)(address + first_size);
-            sprintf(path, D_004C00C0, env_name);
+            sprintf(path, "data\\sound\\sed\\%s.SED", env_name);
             second_size = xglCdReadFile(path, second_address, 0, 0);
         }
         if (file_id != ((SoundLoadBuffer *)address)->sequence_id) {
@@ -1097,7 +1631,7 @@ environment_name_done:
             if (arcfileaddr != 0) {
                 size = next_arc_size((void *)address);
             } else {
-                sprintf(path, D_004C00D8, sequence_name);
+                sprintf(path, "data\\sound\\smd\\%s.SMD", sequence_name);
                 size = xglCdReadFile(path, (void *)address, 0, 0);
             }
             if (size != 0) {
@@ -1169,7 +1703,7 @@ static u8 *command_loadsmd(int command, u8 *cursor)
             if (arcfileaddr != 0) {
                 file_size = next_arc_size((void *)address);
             } else {
-                const char *sequence_format = D_004C00D8;
+                const char *sequence_format = "data\\sound\\smd\\%s.SMD";
 
                 sprintf(path, sequence_format, name);
                 file_size = xglCdReadFile(path, (void *)address, 0, 0);
@@ -1207,11 +1741,11 @@ static u8 *command_loadsmd(int command, u8 *cursor)
     return cursor;
 }
 
-extern char base_2[];
 extern void GameMpeg2Play(char *name, int mode);
 
 static char *command_mpeg2_core(int command, char *cursor, int mode)
 {
+    static char base_2[] __asm__("base.2") = "data\\movie\\mpeg2\\";
     char path[256];
     char *s = base_2;
     char *d = path;
@@ -1290,7 +1824,7 @@ static char *command_enenpcse(int command, char *cursor, int mode)
     unsigned char s_comma;
     unsigned char s_tab;
 
-    p = (unsigned char *)search_key(cursor, model, &id);
+    p = (unsigned char *)search_key(cursor, (u8 *)model, &id);
 
 skip_top:
     if ((*p & 0xFF) == k_comma)
@@ -1415,7 +1949,32 @@ typedef struct {
     char *(*callback)(int, char *);
     void *unmodeled_08;
 } GameResourceCommand;
-extern GameResourceCommand command[];
+static GameResourceCommand command[24] = {
+    {"reset", (char *(*)(int, char *))command_reset, 0},
+    {"loadmap", (char *(*)(int, char *))command_loadmap, 0},
+    {"loadact", (char *(*)(int, char *))command_loadact, 0},
+    {"loadface", (char *(*)(int, char *))command_loadface, 0},
+    {"loadmot", (char *(*)(int, char *))command_loadmot, 0},
+    {"loadtex", (char *(*)(int, char *))command_loadtex, 0},
+    {"loadmovie", (char *(*)(int, char *))command_loadmovie, 0},
+    {"loadeffect", (char *(*)(int, char *))command_loadeffect, 0},
+    {"loadene", (char *(*)(int, char *))command_loadene, 0},
+    {"script", (char *(*)(int, char *))command_script, 0},
+    {"player", (char *(*)(int, char *))command_player, 0},
+    {"dummy", (char *(*)(int, char *))command_dummy, 0},
+    {"loadse", (char *(*)(int, char *))command_loadse, 0},
+    {"loadsmd", (char *(*)(int, char *))command_loadsmd, 0},
+    {"mpeg2", (char *(*)(int, char *))command_mpeg2, 0},
+    {"mpeg2_btl", (char *(*)(int, char *))command_mpeg2battle, 0},
+    {"mpeg2_nofade", (char *(*)(int, char *))command_mpeg2nofade, 0},
+    {"enese", (char *(*)(int, char *))command_enese, 0},
+    {"npcse", (char *(*)(int, char *))command_npcse, 0},
+    {"event_btl", (char *(*)(int, char *))command_event2battle, 0},
+    {"disk", (char *(*)(int, char *))command_disk, 0},
+    {"save", (char *(*)(int, char *))command_save, 0},
+    {"player_lock", (char *(*)(int, char *))command_player_lock, 0},
+    {0, 0, 0}
+};
 
 void GameResourceLoad(int scene_id)
 {
@@ -1512,10 +2071,10 @@ void GameResourceLoad(int scene_id)
 }
 
 extern char *MAP_getPath(void);
-extern char dummy_3[];
 
 static int RES_loadFileSubMapSub(char *dir, char *name, void *buffer)
 {
+    static char dummy_3[] __asm__("dummy.3") = "data\\map\\dummy";
     char path[256];
     char *d = path;
     char *s;
@@ -1549,9 +2108,6 @@ static int RES_loadFileSubMapSub(char *dir, char *name, void *buffer)
     return size;
 }
 
-extern char D_004D9EA8[];
-extern char D_004D9EB0[];
-extern char D_004D9EB8[];
 extern int func_A1CF18(char *, int);
 extern char *MapGetName(int map_id);
 typedef struct RESMapView {
@@ -1588,7 +2144,7 @@ static int RES_loadFileSubMap(void *arg0, int arg1)
   }
   else
   {
-    var_4 = RES_loadFileSubMapSub(arg0, D_004D9EA8, (void *) var_16);
+    var_4 = RES_loadFileSubMapSub(arg0, ".lex", (void *) var_16);
   }
   var_16 = ((var_16 + var_4) + 0xF) & (~0xF);
   af = arcfileaddr != 0;
@@ -1599,7 +2155,7 @@ static int RES_loadFileSubMap(void *arg0, int arg1)
   }
   else
   {
-    var_4 = RES_loadFileSubMapSub(arg0, D_004D9EB0, (void *) var_16);
+    var_4 = RES_loadFileSubMapSub(arg0, ".xtx", (void *) var_16);
   }
   if (var_4 <= 0)
   {
@@ -1617,7 +2173,7 @@ static int RES_loadFileSubMap(void *arg0, int arg1)
   }
   else
   {
-    var_4 = RES_loadFileSubMapSub(arg0, D_004D9EB8, (void *) var_16);
+    var_4 = RES_loadFileSubMapSub(arg0, ".id", (void *) var_16);
   }
   if (var_4 <= 0)
   {
@@ -1679,9 +2235,6 @@ char *RES_GetMotBaseName(u16 id)
   return cfMtnList->name;
 }
 
-extern char root_4[6];
-extern char dummy_5[6];
-extern char D_004D9ED0[];
 static int convert_face(int id);
 static inline char *scopy(char *d, char *s)
 {
@@ -1694,6 +2247,8 @@ static inline char *scopy(char *d, char *s)
 
 static int RES_GetMdlFileNameSub(char *name, int key)
 {
+    static char root_4[6] __asm__("root.4") = "data\\";
+    static char dummy_5[6] __asm__("dummy.5") = "dummy";
     char *suffix = 0;
     int id = key & 0xFFFF;
     int n;
@@ -1708,7 +2263,7 @@ static int RES_GetMdlFileNameSub(char *name, int key)
     unsigned char u;
 
     if ((key & 0xFFFF0000) == 0x10000) {
-        suffix = D_004D9ED0;
+        suffix = "_face";
         id = convert_face(id);
     }
     top = (ResourceKeyEntry *)model + ((id & 0x7000) >> 12);
@@ -1829,21 +2384,18 @@ void RES_GetMdlFileName(char *name, int charaId)
     }
 }
 
-extern const char D_004D9ED8[];
 typedef struct {
     void *first_file;
     void *second_file;
     void *third_file;
     u8 unmodeled_0c[4];
 } ResourceFileSet;
-extern const char D_004C0160[];
-extern const char base_6[];
-extern const char base_7[];
-extern const char base_8[];
-extern const char base_9[6];
 
 static int RES_loadFileSub(int callback, int resource_id, int address_word)
 {
+    static char base_6[] __asm__("base.6") = "data\\motion\\";
+    static char base_7[] __asm__("base.7") = "data\\movie\\small\\mvs0000.ipu";
+    static char base_8[] __asm__("base.8") = "data\\texture\\fm0000.xtx";
     void *address = (void *)address_word;
     char single_path[256];
     char model_path[256];
@@ -1871,7 +2423,7 @@ static int RES_loadFileSub(int callback, int resource_id, int address_word)
             size = next_arc_size(address);
             break;
         }
-        __builtin_memcpy(single_end, D_004D9ED8, 5);
+        __builtin_memcpy(single_end, ".jnt", 5);
         size = xglCdGetFileSize(single_path);
         if (size > 0)
             readreq(single_path, (void *)address);
@@ -1897,7 +2449,7 @@ static int RES_loadFileSub(int callback, int resource_id, int address_word)
             if (size <= 0)
                 break;
         } else {
-            __builtin_memcpy(model_end, D_004D9EA8, 5);
+            __builtin_memcpy(model_end, ".lex", 5);
             size = xglCdGetFileSize(model_path);
             if (size <= 0)
                 break;
@@ -1909,7 +2461,7 @@ static int RES_loadFileSub(int callback, int resource_id, int address_word)
             if (arcfileaddr != 0) {
                 size = next_arc_size(next);
             } else {
-                __builtin_memcpy(model_end, D_004D9EB0, 5);
+                __builtin_memcpy(model_end, ".xtx", 5);
                 size = xglCdGetFileSize(model_path);
                 if (size > 0)
                     readreq(model_path, next);
@@ -1923,7 +2475,7 @@ static int RES_loadFileSub(int callback, int resource_id, int address_word)
             if (arcfileaddr != 0) {
                 size = next_arc_size(next);
             } else {
-                __builtin_memcpy(model_end, D_004D9ED8, 5);
+                __builtin_memcpy(model_end, ".jnt", 5);
                 size = xglCdGetFileSize(model_path);
                 if (size > 0)
                     readreq(model_path, next);
@@ -1944,7 +2496,7 @@ static int RES_loadFileSub(int callback, int resource_id, int address_word)
             size = next_arc_size(address);
             break;
         }
-        sprintf(motion_path, D_004C0160, ((char *(*)(int))RES_GetMotBaseName)(resource_id));
+        sprintf(motion_path, "data\\motion\\%s.fpk", ((char *(*)(int))RES_GetMotBaseName)(resource_id));
         size = xglCdGetFileSize(motion_path);
         if (size > 0) {
             size = xglCdGetFileSize(motion_path);
@@ -2036,6 +2588,7 @@ format_numbered_path:
     case 5: {
         char *texture_end;
         const char *texture_source;
+        static char base_9[6] __asm__("base.9") = "data\\";
 
         texture_end = texture_path;
         texture_source = base_9;
@@ -2146,7 +2699,6 @@ int GameResourceGetIndex(int id)
 }
 
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
-extern char D_004C01B0[];
 
 void GameResourceDump(int dump)
 {
@@ -2169,7 +2721,7 @@ void GameResourceDump(int dump)
         if (i < 0) i = 0;
 
         for (n = 0; n < 16; n++) {
-            xglFontDebugPrintf(0x40, 0x40 + n * 8, D_004C01B0, i, GameResource[i].address, GameResource[i].size, GameResource[i].state, GameResource[i].handle);
+            xglFontDebugPrintf(0x40, 0x40 + n * 8, "%2d:%8x,%9d,%2d,%4x", i, GameResource[i].address, GameResource[i].size, GameResource[i].state, GameResource[i].handle);
             i++;
 
         }
@@ -2228,3 +2780,8 @@ void GameResourceInit(u32 addr, int size)
     *(int *)0x010E6000 = 0;
     *(int *)0x010E7000 = 0;
 }
+
+GameResourceEntry GameResource[128] = {{0}};
+u8 ModelPath = 0;
+u8 ScenePath = 0;
+void (*GameResourceReadFileCallback)(void) = 0;

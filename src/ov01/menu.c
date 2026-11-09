@@ -12,28 +12,56 @@ typedef struct MenuEtherStatusEntry {
     short etherStatus;
 } MenuEtherStatusEntry;
 
-extern const signed char *font_0;
-extern const signed char *font_1;
 extern void menuStatSprite();
 
-extern ObjectTask *pMenuBat;
+typedef struct { float a; float b; } SplPt;
+typedef struct MenuEthEntry {
+    int name;
+    int help;
+    signed char disabled;
+    unsigned char ep;
+    short id;
+} MenuEthEntry;
+typedef struct MenuItmEntry {
+    int name;
+    int help;
+    signed char disabled;
+    unsigned char count;
+    short id;
+} MenuItmEntry;
+
+/* This TU's file-local work (BSS), in original address order. */
+static ObjectTask *pMenuBat;
+static ObjectTask *pPreObj, *pAtbObj, *pKeyGuideObj, *pBoostObj, *pCritObj;
+static ObjectTask *pStatObj[4];
+static ObjectTask *pStockObj[5];
+static int selX;
+static int selY;
+static int eventTimer;
+static int eventTimerX;
+static float ETRot, ETRotDist, RingRot;
+static int mapH, mapHDist;
+static int menuSel;
+static int menuSelCnt;
+static int menuResBat;
+static int D_00A5A310[8];
+static SplPt D_00A5A330[8];
+static unsigned char ethWin[0x28];
+static MenuEthEntry ethBw[13];      /* 12 ether slots + terminator */
+static unsigned char itmWin[0x28];
+static MenuItmEntry itmBw[101];
+
 
 void menuInitBat(void) {
     pMenuBat = 0;
 }
 
-extern int menuSel;
-extern int menuSelCnt;
-extern int menuResBat;
 void menuBatObj(ObjectTask *task);
 void menuBatObjDraw(ObjectTask *task);
 extern ObjectTask *objEntry2(void *argument, void (*callback)(ObjectTask *task));
 extern void objStdInit(ObjectTask *task);
-extern int D_00A5A310[];
-typedef struct { float a; float b; } SplPt;
-extern SplPt D_00A5A330[];
-extern char chaTbl_00A3F038[];
-extern char agwsTbl_00A3F088[];
+int chaTbl_00A3F038[20] = {0, 1, 0, 0, 1, 2, 4, 28, 2, 5, 8, 56, 3, 4, 12, 84, 5, 3, 16, 112};
+int agwsTbl_00A3F088[20] = {6, 6, 0, 0, 1, 2, 4, 28, 2, 5, 8, 56, 4, 4, 12, 84, 5, 3, 16, 112};
 extern void calcSplineInit(void *a, void *b, int c, int d);
 int sndSysSePlay(int soundId);
 
@@ -74,7 +102,6 @@ void menuOpenBat(ObjectTask *unit) {
     sndSysSePlay(7);
 }
 
-extern int menuResBat;
 void objRemove(ObjectTask *task);
 int sndSysSePlay(int soundId);
 
@@ -168,15 +195,13 @@ void menuBatObjDraw(ObjectTask *task)
   extern int menuCmdExecChk(ObjectTask *unit, int cmd);
   extern void menuStatSpriteRGB(int packet, int x, int y, int w, int h, int u, int v, unsigned char *col);
   extern void calcSpline();
-  extern unsigned char D_00A46730[];
-  extern int D_00A5A310[];
-  extern char chaTbl_00A3F038[];
-  extern char agwsTbl_00A3F088[];
+  extern int chaTbl_00A3F038[];
+  extern int agwsTbl_00A3F088[];
 
   int packet[4];
   float *new_var;
   typedef struct __attribute__((packed)) { int rgba; } DrawColor;
-  DrawColor col[4];
+  unsigned char col[4] = {0x40, 0x40, 0x40, 0x80};
   int *p;
   char *tbl;
   float *pos;
@@ -194,7 +219,6 @@ void menuBatObjDraw(ObjectTask *task)
   fx = pos[0];
   fy = *new_var;
   unit = *((ObjectTask **) (((char *) task->work) + 0x80));
-  col[0] = *(DrawColor *)D_00A46730;
   x = (int) fx;
   y = (int) fy;
   tbl = (int *) ((calcUPGet(unit)->flags & 0x40) ? (agwsTbl_00A3F088) : (chaTbl_00A3F038));
@@ -346,13 +370,6 @@ int menuEtherNumChk(ObjectTask *unit)
     return count;
 }
 
-typedef struct MenuEthEntry {
-    int name;
-    int help;
-    signed char disabled;
-    unsigned char ep;
-    short id;
-} MenuEthEntry;
 typedef struct MenuEthWin {
     int x;
     int y;
@@ -362,9 +379,6 @@ typedef struct MenuEthWin {
     MenuEthEntry *list;
     char *title;
 } MenuEthWin;
-extern MenuEthEntry ethBw[];
-extern char D_00A46758[];
-extern unsigned char ethWin[];
 int *dataEthNameGet(int id);
 unsigned char *dataEthGet(int id);
 int calcTakeEpGet(ObjectTask *unit, int ep);
@@ -408,14 +422,13 @@ void menuOpenEth(ObjectTask *unit) {
     ((MenuEthWin *)ethWin)->y = 0x6C;
     ((MenuEthWin *)ethWin)->color = 0xFFFFFD;
     ((MenuEthWin *)ethWin)->w = 0xF0;
-    ((MenuEthWin *)ethWin)->title = D_00A46758;
+    ((MenuEthWin *)ethWin)->title = "Ether List";
     ((MenuEthWin *)ethWin)->list = ethBw;
     ((MenuEthWin *)ethWin)->unk0C = 0;
     eBattleWinOpen(ethWin);
     sndSysSePlay(7);
 }
 
-extern unsigned char ethWin[];
 void eBattleWinClose(void *window);
 
 void menuCloseEth(void) {
@@ -470,13 +483,6 @@ s32 menuResultEth(s32 *arg0)
   return temp_17;
 }
 
-typedef struct MenuItmEntry {
-    int name;
-    int help;
-    signed char disabled;
-    unsigned char count;
-    short id;
-} MenuItmEntry;
 typedef struct MenuItmWin {
     int x;
     int y;
@@ -486,9 +492,6 @@ typedef struct MenuItmWin {
     MenuItmEntry *list;
     char *title;
 } MenuItmWin;
-extern MenuItmEntry itmBw[];
-extern char D_00A46768[];
-extern unsigned char itmWin[];
 int dataItmBoxChk(int id);
 int *dataItmNameGet(int id);
 int calcItmEnableChk(ObjectTask *unit, int id);
@@ -532,14 +535,13 @@ void menuOpenItm(ObjectTask *unit) {
     ((MenuItmWin *)itmWin)->y = 0x6C;
     ((MenuItmWin *)itmWin)->color = 0xFFFFFD;
     ((MenuItmWin *)itmWin)->w = 0xF0;
-    ((MenuItmWin *)itmWin)->title = D_00A46768;
+    ((MenuItmWin *)itmWin)->title = "Items List";
     ((MenuItmWin *)itmWin)->list = itmBw;
     ((MenuItmWin *)itmWin)->unk0C = 0;
     eBattleWinOpen(itmWin);
     sndSysSePlay(7);
 }
 
-extern unsigned char itmWin[];
 
 void menuCloseItm(void) {
     eBattleWinClose(itmWin);
@@ -690,7 +692,7 @@ typedef struct MsdStatObjWork {
 } MsdStatObjWork;
 enum { MSD_CRIT_HIDDEN = 0x4, MSD_STOCK_HIDDEN = 0x4 };
 enum MenuStatStartZ { MENU_STAT_START_Z = -88 };
-extern const enum MenuStatStartZ menuStatStartZ __asm__("D_00A46774");
+const enum MenuStatStartZ menuStatStartZ = MENU_STAT_START_Z;
 static __inline__ MsdCritWork *msdCritWorkGet(ObjectTask *task)
 { return (MsdCritWork *)*(u32 *)&task->work; }
 static __inline__ MsdStockWork *msdStockWorkGet(ObjectTask *task)
@@ -698,11 +700,6 @@ static __inline__ MsdStockWork *msdStockWorkGet(ObjectTask *task)
 static __inline__ MsdStatObjWork *msdStatWorkGet(ObjectTask *task)
 { return (MsdStatObjWork *)*(u32 *)&task->work; }
 void *objCmdPush(ObjectTask *task);
-extern ObjectTask *pPreObj, *pAtbObj, *pKeyGuideObj, *pBoostObj, *pCritObj;
-extern ObjectTask *pStockObj[5];
-extern ObjectTask *pStatObj[4];
-extern int mapH, mapHDist;
-extern float RingRot, ETRot, ETRotDist;
 extern int rnd(int max);
 void menuTimeSet(int time);
 void menuStatPreObj(void);
@@ -855,13 +852,6 @@ void menuStatDispCreate(void)
     }
 }
 
-extern ObjectTask *pPreObj;
-extern ObjectTask *pAtbObj;
-extern ObjectTask *pKeyGuideObj;
-extern ObjectTask *pBoostObj;
-extern ObjectTask *pCritObj;
-extern ObjectTask *pStatObj[4];
-extern ObjectTask *pStockObj[5];
 
 void menuStatDispRemove(void) {
     int i;
@@ -915,10 +905,6 @@ void menuStatPreObjDraw(void) {
     menuStatTexTrans();
 }
 
-extern f32 ETRot;
-extern float ETRotDist;
-extern int mapHDist;
-extern int mapH;
 int objCmdNext(ObjectTask *task);
 int objHatoVec(ObjectTask *task, int direction);
 int objStdMove(ObjectTask *task);
@@ -1169,7 +1155,6 @@ lerp3:
     cmd[1]--;
 }
 
-extern float RingRot;
 
 void menuBoostObj(ObjectTask *task) {
     float twoPi;
@@ -1224,7 +1209,6 @@ typedef struct BoostFT4 {
     float v[4];
 } __attribute__((aligned(16))) BoostFT4;
 typedef struct { BoostFT4 e[2]; } BoostFT4Pair;
-extern BoostFT4Pair D_00A46780;
 
 void menuBoostObjDrawCha(ObjectTask *task) {
     int packet[4];
@@ -1233,7 +1217,12 @@ void menuBoostObjDrawCha(ObjectTask *task) {
     float vec[4];
     BoostFT4 vtx;
     ObjectTask *sel = 0;
-    BoostFT4Pair tbl = D_00A46780;
+    BoostFT4Pair tbl = {{
+        {{{0.0f, -30.0f, 0.0f, 1.0f}, {30.0f, -30.0f, 0.0f, 1.0f}, {0.0f, 30.0f, 0.0f, 1.0f}, {30.0f, 30.0f, 0.0f, 1.0f}},
+         {0x80, 0x80, 0x80, 0x80}, {16.0f, 45.0f, 16.0f, 45.0f}, {65.0f, 65.0f, 125.0f, 125.0f}},
+        {{{-30.0f, -30.0f, 0.0f, 1.0f}, {0.0f, -30.0f, 0.0f, 1.0f}, {-30.0f, 30.0f, 0.0f, 1.0f}, {0.0f, 30.0f, 0.0f, 1.0f}},
+         {0x80, 0x80, 0x80, 0x80}, {45.0f, 16.0f, 45.0f, 16.0f}, {125.0f, 125.0f, 65.0f, 65.0f}},
+    }};
     int fw;
     int fh;
 
@@ -1306,15 +1295,12 @@ extern int calcBoostChk(ObjectTask *unit, int mode);
 void menuStatSpriteRGB(int packet, int x, int y, int w, int h, int u, int v, unsigned char *col);
 typedef struct { int v[3]; } BoostOfs3;
 typedef struct { unsigned char c[3][4]; } BoostCol3;
-extern BoostOfs3 D_00A46860;
-extern BoostOfs3 D_00A46870;
-extern BoostCol3 D_00A46880;
 
 void menuBoostObjDrawSel(ObjectTask *task) {
     int packet[4];
-    BoostOfs3 xo = D_00A46860;
-    BoostOfs3 yo = D_00A46870;
-    BoostCol3 col = D_00A46880;
+    BoostOfs3 xo = {{12, 38, 64}};
+    BoostOfs3 yo = {{-28, -56, -28}};
+    BoostCol3 col = {{{0x60, 0x00, 0x60, 0x80}, {0x00, 0x60, 0x00, 0x80}, {0x60, 0x00, 0x00, 0x80}}};
     ObjectTask **units;
     int i;
     int n;
@@ -1358,7 +1344,6 @@ void menuBoostObjDrawSel(ObjectTask *task) {
  * name).
  * Its work record's first word is a flag set; bit 2 (0x4) hides the object.
  */
-extern ObjectTask *pBoostObj;
 
 void menuBoostDisp(int enabled)
 {
@@ -1432,7 +1417,6 @@ void menuCritDispOn(ObjectTask *target)
  * The critical-indicator display object (data still asm-owned; original
  * ELF symbol name). Its work record's first word is a flag set; bit 2 (0x4) hides it.
  */
-extern ObjectTask *pCritObj;
 
 void menuCritDispOff(void)
 {
@@ -1489,7 +1473,6 @@ int menuCritObj(ObjectTask *task)
     return result;
 }
 
-extern int mapH;
 void grGpInit(int packet);
 void grPacketSend(int packet);
 extern void grCloseSpr(void);
@@ -1528,9 +1511,6 @@ void menuCritObjDraw(ObjectTask *task)
     }
 }
 
-extern int selY;
-extern int selX;
-extern int mapH;
 void grGpInit(int packet);
 void grPacketSend(int packet);
 void menuEventTimerDisp(ObjectTask *task, int packet);
@@ -1561,7 +1541,6 @@ void menuATBObjDraw(ObjectTask *task)
  * The battle map's height-scan distance (data still asm-owned; original
  * ELF symbol name).
  */
-extern int mapHDist;
 
 void menuMapHSet(int enable)
 {
@@ -1572,7 +1551,6 @@ void menuMapHSet(int enable)
     mapHDist = 0x40;
 }
 
-extern unsigned char D_00A46890[16];
 int curSelGrpGet(void);
 void grGsRegSet(int packet, int reg, unsigned long long value);
 void menuATBEnvPalSet(int packet, int palette);
@@ -1595,7 +1573,6 @@ void menuMapDisp(ObjectTask *task, int packet)
     int x19;
     int x20;
     int yb;
-    unsigned char col[8];
 
     h = mapH;
     d = 0x40 - h;
@@ -1603,7 +1580,8 @@ void menuMapDisp(ObjectTask *task, int packet)
     y = y22;
     x = (int)(*(float *)((char *)task->work + 0x90));
     sp20 = 0x35;
-    __builtin_memcpy(col, D_00A46890, 8);
+    {
+        unsigned char col[8] = {0x80, 0x80, 0xFF, 0x80, 0xFF, 0x80, 0x80, 0x80};
     y23 = y + 0x4C;
     y22 = y + d;
     x17 = x + 63;
@@ -1632,6 +1610,7 @@ void menuMapDisp(ObjectTask *task, int packet)
     menuStatSprite2RGB(packet, x19, yb, 0xC, 0xA, 0, 0x4B, 0xC, 0x55, &col[b * 4]);
     menuStatSprite2RGB(packet, x20, yb, 0xC, 0xA, 0xC, 0x4B, 0, 0x55, &col[b * 4]);
     grCloseSpr();
+    }
 }
 
 /*
@@ -1913,7 +1892,6 @@ void menuStockBoost(void)
     menuStockWorkGet(task)->flags &= ~MENU_STOCK_HIDDEN;
 }
 
-extern char D_00A46898[];
 extern int printf(const char *format, ...);
 
 void menuStockDead(int no) {
@@ -1938,7 +1916,7 @@ void menuStockDead(int no) {
                 *cmd = 1;
                 pos->x = stockPosTbl[n].x;
                 pos->y = stockPosTbl[n].y;
-                printf(D_00A46898, no, i);
+                printf("** StockDead %d %d\n", no, i);
             }
         }
     }
@@ -2095,7 +2073,6 @@ void faceUVGet(ObjectTask *arg0, s32 *arg1, s32 *arg2) {
     }
 }
 
-extern unsigned char D_00A468B0[12];
 extern int unitTblGet(int side, ObjectTask ***table);
 extern int calcStatGetNorm(ObjectTask *unit, int category, int flag);
 extern float *dataPosTblGet(int index);
@@ -2103,7 +2080,7 @@ void menuStatSpriteRGB(int packet, int x, int y, int w, int h, int u, int v, uns
 
 void menuMapItemDispSub(ObjectTask *task, int packet, int index, int x, int z)
 {
-    unsigned char col[12];
+    unsigned char col[12] = {0x00, 0x80, 0x00, 0x80, 0x80, 0x80, 0x00, 0x80, 0x80, 0x00, 0x00, 0x80};
     ObjectTask **tbl;
     ObjectTask *unit;
     int n;
@@ -2117,7 +2094,6 @@ void menuMapItemDispSub(ObjectTask *task, int packet, int index, int x, int z)
     int py;
     int dy;
 
-    __builtin_memcpy(col, D_00A468B0, 12);
     n = unitTblGet(index, &tbl);
     for (i = 0; i < n; i++) {
         unit = tbl[i];
@@ -2256,8 +2232,6 @@ typedef struct MenuETWork {
     MenuETTransform transform;
 } MenuETWork;
 typedef struct MenuETInt4 { int a[4]; } MenuETInt4;
-extern MenuETInt4 D_00A468C0;
-extern MenuETInt4 D_00A468D0;
 extern float xglSin(float x);
 extern float xglCos(float x);
 
@@ -2284,8 +2258,8 @@ void menuEventTimerDispSub(ObjectTask *task, int packet)
     int col;
     int idx;
     int cellRow;
-    MenuETInt4 uBase = D_00A468C0;
-    MenuETInt4 vBase = D_00A468D0;
+    MenuETInt4 uBase = {{0x9A, 0xAE, 0xAE, 0x9A}};
+    MenuETInt4 vBase = {{0x30, 0x30, 1, 1}};
 
     /* Read the work slot as a word, like menuCritWorkGet: a pointer-typed load
      * of task->work is hoisted above the table copies above. */
@@ -2347,9 +2321,6 @@ void menuEventTimerDispSub(ObjectTask *task, int packet)
 }
 
 extern int rnd(int max);
-extern int eventTimer;
-extern int eventTimerX;
-extern float ETRotDist;
 
 void menuTimeSet(int time) {
     int r;
@@ -2371,7 +2342,6 @@ void menuTimeSet(int time) {
 
 /* menuTimeSet (this TU, still asm) applies a new menu time setting. */
 void menuTimeSet(int time);
-extern int eventTimer;
 
 int menuTimeNext(void) {
     eventTimer++;
@@ -2386,7 +2356,6 @@ int menuTimeGet(void) {
     return eventTimer;
 }
 
-extern int eventTimerX;
 
 int menuTimeXGet(void) {
     return eventTimerX;
@@ -2544,11 +2513,10 @@ void menuPlStatPut(ObjectTask *task, int packet, BattleUnit *unit)
 }
 
 typedef struct { unsigned char c[2][4]; } NumCol2;
-extern NumCol2 D_00A468E0;
 
 int menuNumPut(int packet, int x, int y, int value, int digits, int style)
 {
-    NumCol2 col = D_00A468E0;
+    NumCol2 col = {{{0xFF, 0xFF, 0xFF, 0x80}, {0xFF, 0x00, 0x00, 0x80}}};
     int kind;
     int w;
     int h;
@@ -2648,7 +2616,93 @@ int menuBpBarPut(int packet, int x, int y, int amount) {
 }
 
 typedef struct StatTblEnt { int mask; int pad[2]; } StatTblEnt;
-extern StatTblEnt *statTbl[];
+StatTblEnt statBA[] = {
+    {0x2000, {0, 0}},
+    {0x1000, {22, 0}},
+    {0x800, {44, 0}},
+    {0x400, {66, 0}},
+    {0x200, {66, 0}},
+    {0x100, {66, 0}},
+    {0x80, {66, 0}},
+    {0x40, {66, 0}},
+    {0x20, {88, 0}},
+    {0x10, {88, 0}},
+    {0x8, {88, 0}},
+    {0x4, {0, 24}},
+    {0x2, {0, 24}},
+    {0x1, {0, 24}},
+    {0x0, {0, 0}}
+};
+StatTblEnt statMA[] = {
+    {0x4000, {22, 24}},
+    {0x2000, {44, 24}},
+    {0x1000, {0, 24}},
+    {0x800, {66, 0}},
+    {0x400, {66, 24}},
+    {0x80, {88, 0}},
+    {0x40, {88, 0}},
+    {0x20, {44, 0}},
+    {0x10, {88, 0}},
+    {0x8, {88, 0}},
+    {0x4, {0, 24}},
+    {0x0, {0, 0}}
+};
+StatTblEnt statBB[] = {
+    {0x4000, {88, 48}},
+    {0x2000, {0, 48}},
+    {0x1000, {22, 48}},
+    {0x800, {22, 48}},
+    {0x400, {22, 48}},
+    {0x200, {22, 48}},
+    {0x100, {44, 48}},
+    {0x80, {44, 48}},
+    {0x40, {22, 48}},
+    {0x20, {22, 48}},
+    {0x10, {66, 48}},
+    {0x1, {88, 48}},
+    {0x0, {0, 0}}
+};
+StatTblEnt statMB[] = {
+    {0x800, {110, 48}},
+    {0x400, {0, 72}},
+    {0x80, {22, 72}},
+    {0x40, {44, 72}},
+    {0x20, {22, 48}},
+    {0x10, {22, 48}},
+    {0x8, {66, 72}},
+    {0x4, {88, 72}},
+    {0x0, {0, 0}}
+};
+StatTblEnt statAA1[] = {
+    {0x2000, {0, 0}},
+    {0x1000, {66, 0}},
+    {0x800, {22, 0}},
+    {0x400, {66, 0}},
+    {0x200, {66, 0}},
+    {0x100, {66, 0}},
+    {0x80, {88, 0}},
+    {0x40, {88, 24}},
+    {0x20, {88, 0}},
+    {0x10, {88, 0}},
+    {0x4, {0, 24}},
+    {0x2, {0, 24}},
+    {0x1, {0, 24}},
+    {0x0, {0, 0}}
+};
+StatTblEnt statAA2[] = {
+    {0x4000, {110, 24}},
+    {0x2000, {44, 24}},
+    {0x1000, {22, 24}},
+    {0x0, {0, 0}}
+};
+StatTblEnt statAB[] = {
+    {0x4000, {44, 48}},
+    {0x2000, {44, 48}},
+    {0x1000, {66, 48}},
+    {0x800, {110, 72}},
+    {0x0, {0, 0}}
+};
+StatTblEnt *statTbl[] = {statBA, statMA, statBB, statMB, statAA1, statAA2, statAB, 0};
 
 int menuStatIconChk(int charaId, int iconSlot) {
     StatTblEnt *p = statTbl[charaId];
@@ -2696,7 +2750,6 @@ struct StatNameOpenParams {
 int *dataStatNameGet(int charaId, int iconSlot);
 void eBattleWinOpen2(struct StatNameOpenParams *params);
 int menuStatIconChk(int charaId, int iconSlot);
-extern unsigned char D_00A468E8[];
 extern void eBattleWinMain2(void);
 
 void menuStatNamePut(ObjectTask *task)
@@ -2715,7 +2768,7 @@ void menuStatNamePut(ObjectTask *task)
         params.flags = 0xFFFFFD;
         params.priority = 0x800000B0;
         params.target = *dataStatNameGet(charaId, icon);
-        params.iconGraphic = D_00A468E8;
+        params.iconGraphic = "Status";
         eBattleWinOpen2(&params);
         eBattleWinMain2();
     }
@@ -2723,8 +2776,59 @@ void menuStatNamePut(ObjectTask *task)
 
 typedef struct { int id; int cmd; } KeyGuideRow;
 typedef struct { KeyGuideRow *rows; int *list; } KeyGuideEnt;
-extern KeyGuideEnt keyGuideTblChr[];
-extern KeyGuideEnt keyGuideTblAgws[];
+int keyDispL[] = {5, 0};
+int keyDispU[] = {6, 0};
+int keyDispLL[] = {5, 5, 0};
+int keyDispLU[] = {5, 6, 0};
+int keyDispUU[] = {6, 6, 0};
+int keyDispUL[] = {6, 5, 0};
+int keyDispLR[] = {5, 8, 0};
+int keyDispUR[] = {6, 8, 0};
+int keyDispR[] = {8, 0};
+int keyDispRL[] = {8, 5, 0};
+int keyDispRU[] = {8, 6, 0};
+int keyDispRR[] = {8, 8, 0};
+KeyGuideRow keyGuideNull[] = {{1, 1}, {2, 2}, {4, 7}, {3, 28}, {0, 0}};
+KeyGuideRow keyGuideL[] = {{1, 3}, {2, 4}, {4, 11}, {3, 0}, {0, 0}};
+KeyGuideRow keyGuideU[] = {{1, 6}, {2, 5}, {4, 12}, {3, 0}, {0, 0}};
+KeyGuideRow keyGuideLL[] = {{4, 13}, {3, 0}, {0, 0}};
+KeyGuideRow keyGuideLU[] = {{4, 14}, {3, 0}, {0, 0}};
+KeyGuideRow keyGuideUU[] = {{4, 15}, {3, 0}, {0, 0}};
+KeyGuideRow keyGuideUL[] = {{4, 16}, {3, 0}, {0, 0}};
+KeyGuideRow keyGuideLR[] = {{4, 17}, {3, 0}, {0, 0}};
+KeyGuideRow keyGuideUR[] = {{4, 18}, {3, 0}, {0, 0}};
+KeyGuideRow keyGuideR[] = {{1, 8}, {2, 9}, {4, 10}, {3, 0}, {0, 0}};
+KeyGuideRow keyGuideD[] = {{3, 0}, {0, 0}};
+KeyGuideEnt keyGuideTblChr[] = {
+    {keyGuideNull, 0},
+    {keyGuideL, keyDispL},
+    {keyGuideU, keyDispU},
+    {keyGuideLL, keyDispLL},
+    {keyGuideLU, keyDispLU},
+    {keyGuideUU, keyDispUU},
+    {keyGuideUL, keyDispUL},
+    {0, 0},
+    {0, 0},
+    {0, 0},
+    {0, 0},
+    {keyGuideLR, keyDispLR},
+    {keyGuideUR, keyDispUR}
+};
+KeyGuideEnt keyGuideTblAgws[] = {
+    {keyGuideNull, 0},
+    {keyGuideL, keyDispL},
+    {keyGuideU, keyDispU},
+    {keyGuideD, keyDispLL},
+    {keyGuideD, keyDispLU},
+    {keyGuideD, keyDispUU},
+    {keyGuideD, keyDispUL},
+    {keyGuideR, keyDispR},
+    {keyGuideD, keyDispRL},
+    {keyGuideD, keyDispRU},
+    {keyGuideD, keyDispRR},
+    {keyGuideD, keyDispLR},
+    {keyGuideD, keyDispUR}
+};
 extern int menuChk(void);
 extern int calcTuigekiChk(ObjectTask *unit);
 extern int keyCmdChk(ObjectTask *unit, BattleUnit *tgt, int cmd);
@@ -2799,7 +2903,7 @@ void menuKeyGuideDisp(int packet, ObjectTask *task, int phase)
 }
 
 typedef struct { int u, v, w, h; } KeyGideUV;
-extern KeyGideUV uvTbl[];
+KeyGideUV uvTbl[] = {{0x18, 0xC0, 0x18, 0x18}, {0x30, 0xC0, 0x18, 0x18}, {0x48, 0xC0, 0x18, 0x18}, {0x0, 0xC0, 0x18, 0x18}, {0x18, 0xD8, 0x18, 0x18}, {0x30, 0xD8, 0x18, 0x18}, {0x48, 0xD8, 0x18, 0x18}, {0x0, 0xD8, 0x18, 0x18}};
 
 void keyGideDisp(int packet, int x, int y, int id)
 {
@@ -2810,14 +2914,12 @@ void keyGideDisp(int packet, int x, int y, int id)
 }
 
 typedef struct { unsigned char c[3][4]; } GuideFrameCol;
-extern GuideFrameCol D_00A468F0;
 void menuStatSprite2RGB(int packet, int x, int y, int flip, int w, int u, int r, int u2, int g, unsigned char *col);
 
 void menuGuideFrameDisp(int packet, int x, int y, int h, int sel)
 {
-    GuideFrameCol col;
+    GuideFrameCol col = {{{0x18, 0x18, 0x50, 0x80}, {0x50, 0x18, 0x40, 0x80}, {0x18, 0x50, 0x18, 0x80}}};
 
-    col = D_00A468F0;
     grGsRegSet(packet, 0x42, 0x2000000029ULL);
     grOpenSpr(packet);
     menuStatSprite2RGB(packet, x, y, h, 0xC, 0x84, 0xC4, 0xBC, 0xCF, col.c[sel]);
@@ -2861,13 +2963,9 @@ extern unsigned char *dataTecGet(int);
 extern const char **dataNrmNameGet(int);
 extern const char **dataSpcNameGet(int);
 extern const char **dataWepNameGet(int);
-extern char D_00A46960[];
-extern char D_00A46968[];
-extern char D_00A46970[];
-extern char D_00A46978[];
-extern s8 *atr1Name[3];
-extern s8 *atr2Name[4];
-extern s8 *atr3Name[6];
+s8 *atr1Name[3] = {"Near", "Line", "Air "};
+s8 *atr2Name[4] = {"Hit ", "Slsh", "Prce", "----"};
+s8 *atr3Name[6] = {"Ice ", "Fire", "Ltng", "Sprt", "Beam", "----"};
 
 void menuKeyGuideHelp(int packet, ObjectTask *task, int cmd, int x, int y) {
     char sp[32];
@@ -2892,10 +2990,9 @@ void menuKeyGuideHelp(int packet, ObjectTask *task, int cmd, int x, int y) {
     menuGuideFrameDisp(packet, tx, y, 0x56, sel);
     menuFontEnvMake(packet);
     tx += 2;
-    text = D_00A46970;
     if (cmd != 0 && cmd != 0x1C) {
         tid = keyCmd2tid(task, cmd);
-        text = D_00A46960;
+        text = "";
         if (battleCtrlHelpGet() == 0) {
             if ((unsigned)(tid - 1) < 0x2C) {
                 text = *dataNrmNameGet(tid);
@@ -2922,7 +3019,7 @@ void menuKeyGuideHelp(int packet, ObjectTask *task, int cmd, int x, int y) {
             i = 2;
 atr1_have:;
             strcat(sp, atr1Name[i]);
-            strcat(sp, D_00A46968);
+            strcat(sp, "/");
             a = *(unsigned short *)((char *)dataTecGet(tid) + 0x12) & 0xE0;
             switch (a) {
             case 0x40:
@@ -2939,7 +3036,7 @@ atr1_have:;
                 break;
             }
             strcat(sp, atr2Name[i]);
-            strcat(sp, D_00A46968);
+            strcat(sp, "/");
             h = *(unsigned short *)((char *)dataTecGet(tid) + 0x12) & 0x1F;
             switch (h) {
             case 16:
@@ -2963,8 +3060,8 @@ atr1_have:;
             }
             strcat(sp, atr3Name[i]);
         }
-    } else if (cmd == 0x1C) {
-        text = D_00A46978;
+    } else {
+        text = (cmd != 0x1C) ? "End" : "Menu";
     }
     menuFontPut(packet, tx + ((0x11 - strlen(text)) * 5), ty, text);
     menuStatEnvMake(packet);
@@ -3135,11 +3232,10 @@ void objDmgNumDraw(ObjectTask *task)
 }
 
 typedef struct { KeyGideUV e[5]; } DmgMsgUVTbl;
-extern DmgMsgUVTbl D_00A46A70;
 
 void dmgMsgPut(int packet, int x, int y, int id)
 {
-    DmgMsgUVTbl tbl = D_00A46A70;
+    DmgMsgUVTbl tbl = {{{0x84, 0xD1, 0x2B, 0x0E}, {0x84, 0xDF, 0x2B, 0x0E}, {0x84, 0xED, 0x2B, 0x0E}, {0xAF, 0xDF, 0x1F, 0x0E}, {0xAF, 0xD1, 0x1F, 0x0E}}};
 
     menuStatSprite(packet, x - 0x12, y - 0xE, tbl.e[id].w, tbl.e[id].h, tbl.e[id].u, tbl.e[id].v);
 }
@@ -3206,10 +3302,11 @@ void dmgNumPut(int packet, int x, int y, int num, int type) {
 
 int menuFontIdxGet(const signed char *text)
 {
+    static const signed char *font __asm__("font.0") = " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz                                                                                    .    '                      /                   -                                 ";
     int index;
 
     for (index = 0; index < 230; index++) {
-        if (text[0] == font_0[index]) {
+        if (text[0] == font[index]) {
             return index;
         }
     }
@@ -3218,10 +3315,11 @@ int menuFontIdxGet(const signed char *text)
 
 int menuDFontIdxGet(const signed char *text)
 {
+    static const signed char *font __asm__("font.1") = "\xa1\xbf\xa1\xa1\xa1\xa6\xa1\xa1\xa1\xb0\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1";
     int index;
 
     for (index = 0; index < 230; index++) {
-        if (text[0] == font_1[index * 2] && text[1] == font_1[index * 2 + 1]) {
+        if (text[0] == font[index * 2] && text[1] == font[index * 2 + 1]) {
             return index + 175;
         }
     }
@@ -3316,14 +3414,12 @@ typedef struct {
 
 extern void grPutSpr(int packet, MenuSprPrim *spr, int flag);
 
-extern MenuSprCol D_00A46C10;
 
 void menuStatSprite(int packet, int x, int y, int width, int height, int srcX, int srcY, int srcRow)
 {
     MenuSprPrim spr;
-    union { MenuSprCol c; int i; } col;
+    unsigned char col[4] = "\x80\x80\x80\x80";
 
-    col.c = D_00A46C10;
     spr.x0 = x;
     spr.y0 = y;
     spr.z0 = 16777212.0f;
@@ -3334,16 +3430,15 @@ void menuStatSprite(int packet, int x, int y, int width, int height, int srcX, i
     spr.u1 = srcX + width + 1;
     spr.v0 = srcY;
     spr.v1 = srcY + height + 1;
-    *(int *)&spr.col = col.i;
+    __builtin_memcpy(&spr.col, col, 4);
     grPutSpr(packet, &spr, 0);
 }
 
 void menuStatSprite2(int packet, int x, int y, int w, int h, int u0, int v0, int u1, int v1)
 {
     MenuSprPrim spr;
-    union { MenuSprCol c; int i; } col;
+    unsigned char col[4] = "\x80\x80\x80\x80";
 
-    col.c = D_00A46C10;
     spr.u0 = u0;
     spr.x0 = x;
     spr.y0 = y;
@@ -3354,7 +3449,7 @@ void menuStatSprite2(int packet, int x, int y, int w, int h, int u0, int v0, int
     spr.z1 = 16777212.0f;
     spr.u1 = u1;
     spr.v1 = v1;
-    *(int *)&spr.col = col.i;
+    __builtin_memcpy(&spr.col, col, 4);
     grPutSpr(packet, &spr, 0);
 }
 

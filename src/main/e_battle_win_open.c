@@ -2,8 +2,6 @@
 #include "shared.h"
 #include "e_battle_win_open.h"
 
-extern char text_0[1];
-extern char D_004C3960[];
 extern void *BW_item;
 struct SPSetW;
 extern void WindowSPSet(struct SPSetW *w);
@@ -49,6 +47,7 @@ typedef struct {
 
 void eBattleWinOpen(OpenArg *a)
 {
+  static char text[1] __asm__("text.0") = "";
   OpenItem *s;
   OutItem *d;
   char *v;
@@ -79,7 +78,7 @@ void eBattleWinOpen(OpenArg *a)
     it = BW_item;
   }
   d[1].a = 0;
-  d->a = text_0;
+  d->a = text;
   w->x = a->x;
   w->y = a->y;
   w->z = a->z;
@@ -103,7 +102,7 @@ void eBattleWinOpen(OpenArg *a)
   w_52->wz = tz_t;
   w_52->ww = 0x138;
   w_52->wh = 0x40;
-  w_52->tag = D_004C3960;
+  w_52->tag = "Information";
   BW->window.ribbon_initialized = 1;
   BW->window.state = 1;
   eMessageSet(&((BWX *) BW)->msg, 0);
@@ -321,15 +320,9 @@ typedef struct BattleWinOpen2Params {
 } BattleWinOpen2Params;
 
 extern int BW3BattleOrDataBase;
-extern const char D_004C39D0[];
-extern const char D_004DA9D8[];
-extern const char *msg00_1_0036D600[];
-extern const char *msg01_2_0036D610[];
-extern unsigned short msg03_3[3];
 typedef struct BattleWinConditionLabelTable {
     const unsigned short *rows[10];
 } BattleWinConditionLabelTable;
-extern const BattleWinConditionLabelTable D_004C39A8;
 const char **func_A2C5F8(int id);
 const char **func_A2C698(int id);
 const char **func_A2C6E8(int id);
@@ -396,7 +389,15 @@ extern UpBattleWindow3 *UBW3 __asm__("BW3");
 void eBattleWinOpen3(void *data)
 {
     const BattleWinAnalysisParams *param = data;
-    BattleWinConditionLabelTable condition_labels = D_004C39A8;
+    static const char *msg00[] __asm__("msg00.1") = {"Weakness: ", "Rare Item: ", "Item: "};
+    static const char *msg01[] __asm__("msg01.2") = {"\x01T.Pts", "\x01" "E.Pts", "\x01S.Pts", "\x01" "Exp", "\x01Money"};
+    static unsigned short msg03_3[3] __asm__("msg03.3");
+    BattleWinConditionLabelTable condition_labels = {{
+        (const unsigned short *)"B", (const unsigned short *)"Sp", (const unsigned short *)"L",
+        (const unsigned short *)"F", (const unsigned short *)"I", (const unsigned short *)"Pr",
+        (const unsigned short *)"Sl", (const unsigned short *)"Ht", (const unsigned short *)"Ar",
+        (const unsigned short *)"Cu",
+    }};
     unsigned char code_ids[2];
     unsigned char code_kinds[2];
     unsigned char rare_category;
@@ -414,7 +415,7 @@ void eBattleWinOpen3(void *data)
     {
         UpBattleWindow3 *window = (*analysis_window_slot);
         unsigned int x = (unsigned short)param->x;
-        const char *tag = D_004C39D0;
+        const char *tag = "Analysis";
         unsigned int y = (unsigned short)param->y;
         int depth = param->style;
         unsigned int mode = *database_mode;
@@ -447,7 +448,7 @@ void eBattleWinOpen3(void *data)
         message_window->messages[0].extent = depth + 2;
         message_window->messages[0].x = x + 3;
     }
-    eMessageSet(&(*analysis_window_slot)->messages[1], (int)(msg00_1_0036D600[0]));
+    eMessageSet(&(*analysis_window_slot)->messages[1], (int)(msg00[0]));
     {
         UpBattleWindow3 *message_window = (*analysis_window_slot);
 
@@ -496,7 +497,7 @@ void eBattleWinOpen3(void *data)
         message_window->messages[2].extent = depth + 2;
         message_window->messages[2].x = x + 123;
     }
-    eTagFontSet(&(*analysis_window_slot)->tag_font, (int)D_004DA9D8);
+    eTagFontSet(&(*analysis_window_slot)->tag_font, (int)"\x01Hp");
     (*analysis_window_slot)->tag_font.x = (*analysis_window_slot)->window.x + 191;
     (*analysis_window_slot)->tag_font.y = (*analysis_window_slot)->window.y + 16;
     (*analysis_window_slot)->tag_font.style = (*analysis_window_slot)->window.style + 2;
@@ -536,7 +537,7 @@ void eBattleWinOpen3(void *data)
         }
         entry_index = 0;
         do {
-            eTagFontSet(&window->tag_fonts[entry_index], (int)msg01_2_0036D610[entry_index]);
+            eTagFontSet(&window->tag_fonts[entry_index], (int)msg01[entry_index]);
             window = (*analysis_window_slot);
             window->tag_fonts[entry_index].x = window->window2.x + (entry_index / 3) * 120 + 54;
             window->tag_fonts[entry_index].y = window->window2.y + (entry_index % 3) * 24 + 7;
@@ -581,7 +582,7 @@ initialize_next_number:
         do {
             UpBattleWindow3 *message_window;
 
-            text = msg00_1_0036D600[entry_index + 1];
+            text = msg00[entry_index + 1];
             eMessageSet(&(*analysis_window_slot)->messages2[entry_index], (int)(text));
             message_window = (*analysis_window_slot);
             message_window->messages2[entry_index].x = message_window->window2.x + entry_index * 40 + 3;
@@ -1957,3 +1958,10 @@ void WindowSPSetSelect(WindowSPCursor *cursor, WindowSPKeepBuffer keep)
     cursor->visible_bottom = keep[3];
     cursor->current_row = keep[4];
 }
+
+int BW3BattleOrDataBase = 0;
+BattleWindow *BW = 0;
+void *BW_item = 0;
+BattleWindow2 *BW2 = 0;
+BattleWindow3 *BW3 = 0;
+BattleWindow4 *BW4 = 0;

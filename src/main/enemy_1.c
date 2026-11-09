@@ -275,7 +275,6 @@ typedef struct EnemyGameLoopStateEI {
 } EnemyGameLoopStateEI;
 extern EnemyPresetEI *AdrsEnemy;
 extern EnemyResourceRecordEI GameResource[128];
-extern const char D_004CAB00[];
 void Homing_Add(unsigned char number, float x, float y, float z, short value);
 void ACT_initExMotion(EnemyActorEI *target, unsigned int slot, void *motion);
 void CallMethod_I(const char *method, int value);
@@ -402,9 +401,9 @@ void Enemy_Init(EnemyActorEI *self)
     Enemy_ActionReady((EnemyActor *)self, 16);
     work->hit_limit = 0;
     if (GameLoopState_EI.player == self)
-        CallMethod_I(D_004CAB00, 100);
+        CallMethod_I("Final_init", 100);
     else
-        CallMethod_I(D_004CAB00, work->event_type);
+        CallMethod_I("Final_init", work->event_type);
     UnduParamInit(&self->undulation);
     self->undulation.attr_mask = 2;
     UnduCheck(&self->position, 0, &self->undulation);
@@ -570,11 +569,6 @@ void Enemy_Tentacle(EnemyActor *actor)
 #define D_004D8010 0.01f
 #define D_004D8014 0.01f
 #define D_004D8018 0.01f
-extern const char D_004DB7F8[];
-extern const char D_004DB800[];
-extern const char D_004DB808[];
-extern const char D_004DB810[];
-extern const char D_004DB818[];
 typedef union EnemyVector4 {
     Vector4 vector;
     unsigned long long words[2];
@@ -660,16 +654,16 @@ void Enemy_Chase(EcActor *self)
         __builtin_fabsf(hit.z - work->escape_target.position.z) < D_004D800C &&
         crossed == 0) {
         work->last_player_position = work->escape_target.position_pair;
-        xglFontDebugPrintf(8, 100, D_004DB7F8);
+        xglFontDebugPrintf(8, 100, "\xCC\xDC\xB7\xE2");
     } else if (crossed == 1) {
         work->last_player_position.vector = cross_point;
-        xglFontDebugPrintf(8, 112, D_004DB800);
+        xglFontDebugPrintf(8, 112, "\xBE\xE5\xCA\xAA");
     } else {
         if (Check_MoveSquare(self->body_radius, &work->escape_target.position,
                              &self->position, &square.vector,
                              work->map_index) == 1) {
             work->last_player_position = square;
-            xglFontDebugPrintf(8, 112, D_004DB808);
+            xglFontDebugPrintf(8, 112, "\xBF\xB7\xB5\xAC");
         }
     }
 
@@ -687,10 +681,10 @@ void Enemy_Chase(EcActor *self)
         if (Check_MoveSquare(self->body_radius, &cross_point, &self->position,
                              &square.vector, work->map_index) == 1) {
             work->last_player_position = square;
-            xglFontDebugPrintf(8, 124, D_004DB800);
+            xglFontDebugPrintf(8, 124, "\xBE\xE5\xCA\xAA");
         } else {
             work->last_player_position.vector = cross_point;
-            xglFontDebugPrintf(8, 124, D_004DB810);
+            xglFontDebugPrintf(8, 124, "\xC4\xBE\xBF\xCA");
         }
     }
 
@@ -710,7 +704,7 @@ void Enemy_Chase(EcActor *self)
                              &self->position, &square.vector,
                              work->map_index) == 1) {
             work->last_player_position = square;
-            xglFontDebugPrintf(8, 112, D_004DB818);
+            xglFontDebugPrintf(8, 112, "\xC4\xC9\xB2\xC3");
             TM_Enemy_Move_Step(self->number, &work->last_player_position.vector,
                                speed);
         }
@@ -1163,6 +1157,7 @@ void Enemy_Route(EnemyActor *self)
 
 void Enemy_Escape(EnemyActor *actor)
 {
+    static unsigned short CoolDown_0 __asm__("CoolDown.0") = 0;
     EnemyWorkEntry *work = &enepc[actor->number];
     Vector4 point;
     float distance[3];
@@ -1203,7 +1198,7 @@ void Enemy_Escape(EnemyActor *actor)
         actor->target_angle = Get_Angle(&actor->position, &point);
     }
 
-    if (D_004D8034 <= Get_Distance(&actor->position, &point) ||
+    if (0.012f <= Get_Distance(&actor->position, &point) ||
         (short)CoolDown_0 > 0) {
         motion = Get_DefaultMotion(actor, 2);
     } else {
@@ -1211,7 +1206,7 @@ void Enemy_Escape(EnemyActor *actor)
     }
     Set_Motion(actor, motion, 9);
 
-    actor->speed = D_004D8038;
+    actor->speed = 0.06666667f;
     work->goback_x = point.x - actor->position.x;
     work->goback_z = point.z - actor->position.z;
     actor->position.x = point.x;
@@ -1220,6 +1215,7 @@ void Enemy_Escape(EnemyActor *actor)
 
 void Enemy_Route_Chase(EnemyActor *self)
 {
+    static unsigned short CoolDown_1 __asm__("CoolDown.1") = 0;
     EnemyWorkEntry *work = &enepc[self->number];
     Vector4 point;
     float distance[3];
@@ -1260,7 +1256,7 @@ void Enemy_Route_Chase(EnemyActor *self)
         self->target_angle = Get_Angle(&self->position, &point);
     }
 
-    if (D_004D803C <= Get_Distance(&self->position, &point) ||
+    if (0.012f <= Get_Distance(&self->position, &point) ||
         (short)CoolDown_1 > 0) {
         motion = Get_DefaultMotion(self, 2);
     } else {
@@ -1268,7 +1264,7 @@ void Enemy_Route_Chase(EnemyActor *self)
     }
     Set_Motion(self, motion, 9);
 
-    self->speed = D_004D8040;
+    self->speed = 0.06666667f;
     work->goback_x = point.x - self->position.x;
     work->goback_z = point.z - self->position.z;
     self->position.x = point.x;
@@ -1399,16 +1395,11 @@ extern EnemyGameLoopStateAU GameLoopState_AU __asm__("GameLoopState");
 extern EnemyPadViewAU PadData;
 extern short DebugActor;
 extern short NowTester;
-extern EnemyVector4AU EnemyTarget;
+EnemyVector4AU EnemyTarget = {0};
+EnemyWorkEntry enepc[16] = {0};
 extern short EfTab_Code[];
 extern short EfTab_Intr[];
 extern float EfTab_Scal[];
-extern const char D_004CAB48[];
-extern const char D_004CAB60[];
-extern const char D_004CAB78[];
-extern const char D_004CAB90[];
-extern const char D_004CABA8[];
-extern const char D_004CABC0[];
 extern int ENEMY_UNUSED_AU;
 void DispPillar(const void *position, const void *size, const int *color);
 void GameIdLightSet(EnemyActorAU *actor, void *query);
@@ -1463,17 +1454,17 @@ void ACT_updateEnemy(EnemyActorAU *self)
     marker.x = 0.0f;
     marker.z = 0.0f;
     if (self->number == DebugActor) {
-        xglFontDebugPrintf(8, 52, D_004CAB48, self->number, (double)self->anim_time);
+        xglFontDebugPrintf(8, 52, "%3d AnimTime  = %8f", self->number, (double)self->anim_time);
         if (self->number == DebugActor) {
-            xglFontDebugPrintf(8, 62, D_004CAB60, self->number, (double)self->anim_start);
+            xglFontDebugPrintf(8, 62, "%3d AnimStart = %8f", self->number, (double)self->anim_start);
             if (self->number == DebugActor) {
-                xglFontDebugPrintf(8, 72, D_004CAB78, self->number, (double)self->anim_final);
+                xglFontDebugPrintf(8, 72, "%3d AnimFinal = %8f", self->number, (double)self->anim_final);
                 if (self->number == DebugActor) {
-                    xglFontDebugPrintf(8, 82, D_004CAB90, self->number, (double)self->speed);
+                    xglFontDebugPrintf(8, 82, "%3d AnimSped  = %8f", self->number, (double)self->speed);
                     if (self->number == DebugActor) {
-                        xglFontDebugPrintf(8, 92, D_004CABA8, self->number, self->anim_number);
+                        xglFontDebugPrintf(8, 92, "%3d AnimNumb  = %3d", self->number, self->anim_number);
                         if (self->number == DebugActor)
-                            xglFontDebugPrintf(8, 102, D_004CABC0, self->number, (double)self->anim_blend);
+                            xglFontDebugPrintf(8, 102, "%3d Hokan     = %8f", self->number, (double)self->anim_blend);
                     }
                 }
             }
@@ -2020,3 +2011,13 @@ void Disp_EnemyMark(void)
     mark[15].sphere = AdrsEnemySphere;
     mark[14] = mark[15];
 }
+
+void *AdrsEnemyPreset = 0;
+void *AdrsEnemySpline = 0;
+void *AdrsEnemyExclamation = 0;
+void *AdrsEnemyQuestion = 0;
+void *AdrsEnemySphere = 0;
+void *AdrsEnemySquare = 0;
+EnemyPresetEI *AdrsEnemy = 0;
+short MostNearActor = 0;
+int MostNear = 0;

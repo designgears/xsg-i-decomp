@@ -16,8 +16,7 @@ struct HddRenderState {
 
 extern struct HddRenderState sRender;
 extern PadPrefix PadData;
-extern unsigned char TestEnv_0_004A8A80[];
-extern char D_004D2628[];
+extern const char D_004D2628[];
 extern void xglDmaDirectNormal(int channel, const void *packet, int qwords);
 extern void xglSoundEffectNormalDirect(int sound_id);
 
@@ -43,11 +42,10 @@ int xglHddUninstall(void);
 
 extern int sceRemove(const char *path);
 
-extern char partitionname[];
+
 
 extern u8 system_cnf[];
 
-extern u8 HddActive;
 
 extern u8 mount_device[];
 
@@ -60,9 +58,7 @@ extern u8 mount_device[];
  */
 extern char xgl_hdd_device[];
 
-extern u8 hddcheck[];
-
-extern u8 cd_filename[];
+extern const char cd_filename[];
 
 extern int xglHddCheck(void);
 
@@ -82,8 +78,6 @@ extern int sceDevctl(const char *device, int command, const void *input,
  */
 extern int sceOpen(const char *path, int flags, ...);
 
-extern char commonname[];
-extern char yoursaves[];
 
 struct HddLoadRequest {
     int card;

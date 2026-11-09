@@ -35,9 +35,8 @@ typedef struct TComponent {
     unsigned char unmodeled_a4[0x5B0 - 0xA4];
 } TComponent;
 
-extern TComponent tcomponent[4];
-extern unsigned char groupStatus[3];
-extern unsigned char D_004DC593;
+static TComponent tcomponent[4];
+static unsigned char groupStatus[4];
 
 void EW_init(unsigned char *freeSpace);
 void MBUF_init(void);
@@ -57,7 +56,7 @@ void TWSYS_init(void)
         component++;
     } while ((int)component < (int)end);
     count = 3;
-    groupByte = &D_004DC593;
+    groupByte = &groupStatus[3];
     do {
         count -= 1;
         *groupByte = 0;
@@ -148,7 +147,6 @@ void TWIN_drawScene2(TComponent *component);
 /* Defined by xgl_font.c; `text` is a font control-code string. */
 extern void xglFontPrintDirectOT(int ot, const char *text);
 
-extern const char D_004DA420[];
 
 /*
  * The font control strings TWSYS_draw emits before a component's own drawing
@@ -171,7 +169,7 @@ void TWSYS_draw(void)
         group = (component->kindAndGroup >> 4) & 3;
         if (!(groupStatus[group] & 2)) {
             if (component->flags & 0x10) {
-                xglFontPrintDirectOT(0xFFFFFF, D_004DA420);
+                xglFontPrintDirectOT(0xFFFFFF, "\v");
                 kind = component->kindAndGroup & 0xF;
                 switch (kind) {
                 case 1:
@@ -436,14 +434,13 @@ typedef struct WindowOwnerPrefix_SP {
     Vector4_SP position;
 } WindowOwnerPrefix_SP;
 int XTK_getWindowOwner(void);
-extern float D_004D7C94;
 extern void xglMatrixStackUnit(void);
 void xglMatrixStackTrans(const float translation[4]);
 extern void xglMatrixStackSave(float matrix[4][4]);
 void xglStudioGetCamera(StudioCamera_SP **camera, int index);
 void transformVector(Vector4_SP *destination, const Vector4_SP *vectors, int count,
                      TransformParams_SP *params);
-extern Vector4_SP vSample;
+static Vector4_SP vSample = { 0.0f, 0.0f, 0.0f, 1.0f };
 extern void xglVectorLength(float *destination, const Vector4_SP *vector);
 
 void TW_setPos(TComponent *component_)
@@ -475,7 +472,7 @@ void TW_setPos(TComponent *component_)
     projected = (Vector4_SP *)0x70001680;
     ownerPosition = &owner->position;
     anchorPosition.x = ownerPosition->x;
-    anchorPosition.y = ownerPosition->y + D_004D7C94;
+    anchorPosition.y = ownerPosition->y + 1.6f;
     anchorPosition.z = ownerPosition->z;
     component->ownerPosition = ownerPosition;
     anchorPosition.w = 1.0f;
@@ -1214,8 +1211,6 @@ void TWIN_update2(TComponent *component)
     }
 }
 
-extern char D_004C1C48[];
-extern char D_004DA428[];
 extern void xglFontPrint(int x, int y, int ot, char *text);
 void EW_sprtSetCursorUV(unsigned char *widget, int kind, int index);
 
@@ -1324,12 +1319,11 @@ void TWIN_draw2(TComponent *component)
   x = component->width + 16.0f;
   y = component->height + 16.0f;
   new_var = 0xA8;
-  xglFontPrintDirectOT(0xFFFFF0, D_004C1C48);
+  xglFontPrintDirectOT(0xFFFFF0, TWSYS_DRAW_WINDOW_FONT "\x19\x03");
   xglFontPrint(x, y, 0xFFFFF0, *((char **) (w + new_var)));
-  xglFontPrintDirectOT(0xFFFFF0, D_004DA428);
+  xglFontPrintDirectOT(0xFFFFF0, "\x19");
 }
 
-extern char D_004C1C60[];
 void EW_sprtSetCursorUV(unsigned char *widget, int kind, int index);
 
 void TWIN_drawScene2(TComponent *component)
@@ -1374,7 +1368,7 @@ void TWIN_drawScene2(TComponent *component)
     ((union { short s; char *p; } *)(b + 0x1C))->p = w + 0x14C;
     *(short *)(b + 0x12) = 0x1A;
     *(volatile unsigned short *)b |= 0x4000;
-    ((volatile union { short s; char *p; } *)(b + 0x20))->p = D_004C1C60;
+    ((volatile union { short s; char *p; } *)(b + 0x20))->p = TWSYS_DRAW_SCENE_FONT "\x15\x02\x02\x04\x15\x03\x03";
     s = *(unsigned short *)(w + 0x14);
     b = *(char **)(w + 0xE4);
     if (s == 0xB || s == 8 || s == 0xC || s == 0x11) {

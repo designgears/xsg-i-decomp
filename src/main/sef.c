@@ -1,7 +1,6 @@
 #include "common.h"
 #include "shared.h"
 #include "sef.h"
-extern int offset_2[];
 
 typedef struct SefActor {
     unsigned int flags;
@@ -44,7 +43,208 @@ typedef struct SefBattleActorTbl {
     int count;
     unsigned char unmodeled_d94[0x0c];
 } SefBattleActorTbl;
-extern SefBattleActorTbl _battleActor[];
+typedef struct SefSavePrm {
+    Vector4 position;
+    Vector4 orientation;
+    Vector4 saved_vector;
+    int active;
+    int saved_words[5];
+    short effect_no;
+    unsigned char saved_flags;
+    unsigned char unmodeled_4b[5];
+} SefSavePrm;
+#define SEF_SAVE_PRM_COUNT 0x80
+
+/* Arctangent lookup over [0, 1] in 1/1024 steps (srsAtan2 reads it through the uncached mirror 0x2040FAC0). */
+float sefAtanTbl[1025] __attribute__((aligned(64))) = {
+    0.0f, 0.000977f, 0.001953f, 0.00293f, 0.003906f, 0.004883f,
+    0.005859f, 0.006836f, 0.007812f, 0.008789f, 0.009765f, 0.010742f,
+    0.011718f, 0.012695f, 0.013671f, 0.014647f, 0.015624f, 0.0166f,
+    0.017576f, 0.018553f, 0.019529f, 0.020505f, 0.021481f, 0.022457f,
+    0.023433f, 0.024409f, 0.025385f, 0.026361f, 0.027337f, 0.028313f,
+    0.029288f, 0.030264f, 0.03124f, 0.032215f, 0.033191f, 0.034166f,
+    0.035142f, 0.036117f, 0.037092f, 0.038068f, 0.039043f, 0.040018f,
+    0.040993f, 0.041968f, 0.042942f, 0.043917f, 0.044892f, 0.045866f,
+    0.046841f, 0.047815f, 0.048789f, 0.049764f, 0.050738f, 0.051712f,
+    0.052686f, 0.053659f, 0.054633f, 0.055607f, 0.05658f, 0.057554f,
+    0.058527f, 0.0595f, 0.060473f, 0.061446f, 0.062419f, 0.063392f,
+    0.064364f, 0.065337f, 0.066309f, 0.067281f, 0.068253f, 0.069225f,
+    0.070197f, 0.071169f, 0.07214f, 0.073112f, 0.074083f, 0.075054f,
+    0.076025f, 0.076996f, 0.077967f, 0.078937f, 0.079908f, 0.080878f,
+    0.081848f, 0.082818f, 0.083788f, 0.084757f, 0.085727f, 0.086696f,
+    0.087665f, 0.088634f, 0.089603f, 0.090572f, 0.09154f, 0.092509f,
+    0.093477f, 0.094445f, 0.095413f, 0.09638f, 0.097348f, 0.098315f,
+    0.099282f, 0.100249f, 0.101215f, 0.102182f, 0.103148f, 0.104114f,
+    0.10508f, 0.106046f, 0.107012f, 0.107977f, 0.108942f, 0.109907f,
+    0.110872f, 0.111836f, 0.1128f, 0.113764f, 0.114728f, 0.115692f,
+    0.116655f, 0.117619f, 0.118582f, 0.119544f, 0.120507f, 0.121469f,
+    0.122431f, 0.123393f, 0.124355f, 0.125316f, 0.126278f, 0.127239f,
+    0.128199f, 0.12916f, 0.13012f, 0.13108f, 0.13204f, 0.132999f,
+    0.133959f, 0.134918f, 0.135876f, 0.136835f, 0.137793f, 0.138751f,
+    0.139709f, 0.140666f, 0.141624f, 0.142581f, 0.143537f, 0.144494f,
+    0.14545f, 0.146406f, 0.147361f, 0.148317f, 0.149272f, 0.150227f,
+    0.151181f, 0.152136f, 0.15309f, 0.154043f, 0.154997f, 0.15595f,
+    0.156903f, 0.157855f, 0.158808f, 0.15976f, 0.160711f, 0.161663f,
+    0.162614f, 0.163565f, 0.164515f, 0.165465f, 0.166415f, 0.167365f,
+    0.168314f, 0.169263f, 0.170212f, 0.17116f, 0.172108f, 0.173056f,
+    0.174004f, 0.174951f, 0.175898f, 0.176844f, 0.17779f, 0.178736f,
+    0.179682f, 0.180627f, 0.181572f, 0.182516f, 0.18346f, 0.184404f,
+    0.185348f, 0.186291f, 0.187234f, 0.188177f, 0.189119f, 0.190061f,
+    0.191002f, 0.191943f, 0.192884f, 0.193825f, 0.194765f, 0.195705f,
+    0.196644f, 0.197583f, 0.198522f, 0.199461f, 0.200399f, 0.201336f,
+    0.202274f, 0.203211f, 0.204147f, 0.205083f, 0.206019f, 0.206955f,
+    0.20789f, 0.208825f, 0.209759f, 0.210693f, 0.211627f, 0.21256f,
+    0.213493f, 0.214426f, 0.215358f, 0.216289f, 0.217221f, 0.218152f,
+    0.219083f, 0.220013f, 0.220943f, 0.221872f, 0.222801f, 0.22373f,
+    0.224658f, 0.225586f, 0.226514f, 0.227441f, 0.228367f, 0.229294f,
+    0.23022f, 0.231145f, 0.23207f, 0.232995f, 0.233919f, 0.234843f,
+    0.235767f, 0.23669f, 0.237612f, 0.238535f, 0.239456f, 0.240378f,
+    0.241299f, 0.242219f, 0.24314f, 0.244059f, 0.244979f, 0.245898f,
+    0.246816f, 0.247734f, 0.248652f, 0.249569f, 0.250486f, 0.251402f,
+    0.252318f, 0.253233f, 0.254149f, 0.255063f, 0.255977f, 0.256891f,
+    0.257804f, 0.258717f, 0.25963f, 0.260542f, 0.261453f, 0.262364f,
+    0.263275f, 0.264185f, 0.265095f, 0.266004f, 0.266913f, 0.267821f,
+    0.268729f, 0.269637f, 0.270544f, 0.27145f, 0.272357f, 0.273262f,
+    0.274167f, 0.275072f, 0.275976f, 0.27688f, 0.277784f, 0.278687f,
+    0.279589f, 0.280491f, 0.281392f, 0.282293f, 0.283194f, 0.284094f,
+    0.284994f, 0.285893f, 0.286791f, 0.28769f, 0.288587f, 0.289485f,
+    0.290381f, 0.291278f, 0.292173f, 0.293069f, 0.293963f, 0.294858f,
+    0.295752f, 0.296645f, 0.297538f, 0.29843f, 0.299322f, 0.300214f,
+    0.301105f, 0.301995f, 0.302885f, 0.303774f, 0.304663f, 0.305552f,
+    0.30644f, 0.307327f, 0.308214f, 0.3091f, 0.309986f, 0.310872f,
+    0.311757f, 0.312641f, 0.313525f, 0.314409f, 0.315291f, 0.316174f,
+    0.317056f, 0.317937f, 0.318818f, 0.319698f, 0.320578f, 0.321458f,
+    0.322336f, 0.323215f, 0.324092f, 0.32497f, 0.325846f, 0.326723f,
+    0.327598f, 0.328474f, 0.329348f, 0.330222f, 0.331096f, 0.331969f,
+    0.332842f, 0.333714f, 0.334585f, 0.335456f, 0.336327f, 0.337197f,
+    0.338066f, 0.338935f, 0.339803f, 0.340671f, 0.341538f, 0.342405f,
+    0.343271f, 0.344137f, 0.345002f, 0.345867f, 0.346731f, 0.347594f,
+    0.348457f, 0.34932f, 0.350182f, 0.351043f, 0.351904f, 0.352764f,
+    0.353624f, 0.354483f, 0.355342f, 0.3562f, 0.357057f, 0.357914f,
+    0.358771f, 0.359627f, 0.360482f, 0.361337f, 0.362191f, 0.363045f,
+    0.363898f, 0.36475f, 0.365602f, 0.366454f, 0.367305f, 0.368155f,
+    0.369005f, 0.369854f, 0.370703f, 0.371551f, 0.372398f, 0.373245f,
+    0.374092f, 0.374938f, 0.375783f, 0.376628f, 0.377472f, 0.378316f,
+    0.379159f, 0.380001f, 0.380843f, 0.381684f, 0.382525f, 0.383365f,
+    0.384205f, 0.385044f, 0.385883f, 0.386721f, 0.387558f, 0.388395f,
+    0.389231f, 0.390067f, 0.390902f, 0.391736f, 0.39257f, 0.393403f,
+    0.394236f, 0.395068f, 0.3959f, 0.396731f, 0.397562f, 0.398391f,
+    0.399221f, 0.40005f, 0.400878f, 0.401705f, 0.402532f, 0.403359f,
+    0.404184f, 0.40501f, 0.405834f, 0.406658f, 0.407482f, 0.408305f,
+    0.409127f, 0.409949f, 0.41077f, 0.41159f, 0.41241f, 0.41323f,
+    0.414049f, 0.414867f, 0.415684f, 0.416501f, 0.417318f, 0.418134f,
+    0.418949f, 0.419764f, 0.420578f, 0.421391f, 0.422204f, 0.423016f,
+    0.423828f, 0.424639f, 0.42545f, 0.42626f, 0.427069f, 0.427878f,
+    0.428686f, 0.429493f, 0.4303f, 0.431107f, 0.431912f, 0.432717f,
+    0.433522f, 0.434326f, 0.435129f, 0.435932f, 0.436734f, 0.437536f,
+    0.438337f, 0.439137f, 0.439937f, 0.440736f, 0.441534f, 0.442332f,
+    0.44313f, 0.443926f, 0.444722f, 0.445518f, 0.446313f, 0.447107f,
+    0.447901f, 0.448694f, 0.449486f, 0.450278f, 0.45107f, 0.45186f,
+    0.45265f, 0.45344f, 0.454229f, 0.455017f, 0.455805f, 0.456592f,
+    0.457378f, 0.458164f, 0.458949f, 0.459734f, 0.460518f, 0.461301f,
+    0.462084f, 0.462866f, 0.463648f, 0.464429f, 0.465209f, 0.465989f,
+    0.466768f, 0.467546f, 0.468324f, 0.469101f, 0.469878f, 0.470654f,
+    0.47143f, 0.472204f, 0.472979f, 0.473752f, 0.474525f, 0.475298f,
+    0.476069f, 0.47684f, 0.477611f, 0.478381f, 0.47915f, 0.479919f,
+    0.480687f, 0.481454f, 0.482221f, 0.482988f, 0.483753f, 0.484518f,
+    0.485283f, 0.486046f, 0.486809f, 0.487572f, 0.488334f, 0.489095f,
+    0.489856f, 0.490616f, 0.491375f, 0.492134f, 0.492893f, 0.49365f,
+    0.494407f, 0.495164f, 0.495919f, 0.496674f, 0.497429f, 0.498183f,
+    0.498936f, 0.499689f, 0.500441f, 0.501192f, 0.501943f, 0.502693f,
+    0.503443f, 0.504192f, 0.50494f, 0.505688f, 0.506435f, 0.507181f,
+    0.507927f, 0.508673f, 0.509417f, 0.510161f, 0.510905f, 0.511647f,
+    0.512389f, 0.513131f, 0.513872f, 0.514612f, 0.515352f, 0.516091f,
+    0.516829f, 0.517567f, 0.518304f, 0.519041f, 0.519777f, 0.520512f,
+    0.521247f, 0.521981f, 0.522715f, 0.523447f, 0.52418f, 0.524911f,
+    0.525642f, 0.526373f, 0.527102f, 0.527832f, 0.52856f, 0.529288f,
+    0.530015f, 0.530742f, 0.531468f, 0.532193f, 0.532918f, 0.533642f,
+    0.534366f, 0.535089f, 0.535811f, 0.536533f, 0.537254f, 0.537975f,
+    0.538694f, 0.539414f, 0.540132f, 0.54085f, 0.541568f, 0.542284f,
+    0.543001f, 0.543716f, 0.544431f, 0.545145f, 0.545859f, 0.546572f,
+    0.547284f, 0.547996f, 0.548707f, 0.549418f, 0.550128f, 0.550837f,
+    0.551546f, 0.552254f, 0.552962f, 0.553668f, 0.554375f, 0.55508f,
+    0.555785f, 0.55649f, 0.557194f, 0.557897f, 0.558599f, 0.559301f,
+    0.560003f, 0.560703f, 0.561403f, 0.562103f, 0.562802f, 0.5635f,
+    0.564198f, 0.564895f, 0.565591f, 0.566287f, 0.566982f, 0.567676f,
+    0.56837f, 0.569064f, 0.569756f, 0.570449f, 0.57114f, 0.571831f,
+    0.572521f, 0.573211f, 0.5739f, 0.574588f, 0.575276f, 0.575963f,
+    0.57665f, 0.577336f, 0.578021f, 0.578706f, 0.57939f, 0.580073f,
+    0.580756f, 0.581439f, 0.58212f, 0.582801f, 0.583482f, 0.584162f,
+    0.584841f, 0.58552f, 0.586198f, 0.586875f, 0.587552f, 0.588228f,
+    0.588903f, 0.589578f, 0.590253f, 0.590927f, 0.5916f, 0.592272f,
+    0.592944f, 0.593615f, 0.594286f, 0.594956f, 0.595626f, 0.596295f,
+    0.596963f, 0.597631f, 0.598298f, 0.598964f, 0.59963f, 0.600295f,
+    0.60096f, 0.601624f, 0.602287f, 0.60295f, 0.603612f, 0.604274f,
+    0.604935f, 0.605595f, 0.606255f, 0.606914f, 0.607573f, 0.608231f,
+    0.608888f, 0.609545f, 0.610201f, 0.610857f, 0.611512f, 0.612166f,
+    0.61282f, 0.613473f, 0.614126f, 0.614778f, 0.615429f, 0.61608f,
+    0.61673f, 0.61738f, 0.618029f, 0.618677f, 0.619325f, 0.619972f,
+    0.620619f, 0.621265f, 0.62191f, 0.622555f, 0.623199f, 0.623843f,
+    0.624486f, 0.625128f, 0.62577f, 0.626411f, 0.627052f, 0.627692f,
+    0.628332f, 0.62897f, 0.629609f, 0.630246f, 0.630883f, 0.63152f,
+    0.632156f, 0.632791f, 0.633426f, 0.63406f, 0.634694f, 0.635327f,
+    0.635959f, 0.636591f, 0.637222f, 0.637852f, 0.638482f, 0.639112f,
+    0.639741f, 0.640369f, 0.640996f, 0.641623f, 0.64225f, 0.642876f,
+    0.643501f, 0.644126f, 0.64475f, 0.645373f, 0.645996f, 0.646619f,
+    0.647241f, 0.647862f, 0.648482f, 0.649102f, 0.649722f, 0.650341f,
+    0.650959f, 0.651577f, 0.652194f, 0.65281f, 0.653426f, 0.654042f,
+    0.654657f, 0.655271f, 0.655884f, 0.656497f, 0.65711f, 0.657722f,
+    0.658333f, 0.658944f, 0.659554f, 0.660164f, 0.660773f, 0.661381f,
+    0.661989f, 0.662596f, 0.663203f, 0.663809f, 0.664415f, 0.66502f,
+    0.665624f, 0.666228f, 0.666831f, 0.667434f, 0.668036f, 0.668638f,
+    0.669239f, 0.669839f, 0.670439f, 0.671038f, 0.671637f, 0.672235f,
+    0.672833f, 0.67343f, 0.674026f, 0.674622f, 0.675217f, 0.675812f,
+    0.676406f, 0.677f, 0.677593f, 0.678185f, 0.678777f, 0.679368f,
+    0.679959f, 0.680549f, 0.681139f, 0.681728f, 0.682317f, 0.682904f,
+    0.683492f, 0.684079f, 0.684665f, 0.685251f, 0.685836f, 0.68642f,
+    0.687005f, 0.687588f, 0.688171f, 0.688753f, 0.689335f, 0.689916f,
+    0.690497f, 0.691077f, 0.691657f, 0.692236f, 0.692814f, 0.693392f,
+    0.693969f, 0.694546f, 0.695122f, 0.695698f, 0.696273f, 0.696848f,
+    0.697422f, 0.697995f, 0.698568f, 0.699141f, 0.699712f, 0.700284f,
+    0.700854f, 0.701425f, 0.701994f, 0.702563f, 0.703132f, 0.7037f,
+    0.704267f, 0.704834f, 0.7054f, 0.705966f, 0.706532f, 0.707096f,
+    0.70766f, 0.708224f, 0.708787f, 0.70935f, 0.709912f, 0.710473f,
+    0.711034f, 0.711594f, 0.712154f, 0.712713f, 0.713272f, 0.71383f,
+    0.714388f, 0.714945f, 0.715502f, 0.716058f, 0.716613f, 0.717168f,
+    0.717723f, 0.718277f, 0.71883f, 0.719383f, 0.719935f, 0.720487f,
+    0.721038f, 0.721589f, 0.722139f, 0.722689f, 0.723238f, 0.723786f,
+    0.724334f, 0.724882f, 0.725429f, 0.725975f, 0.726521f, 0.727066f,
+    0.727611f, 0.728156f, 0.728699f, 0.729243f, 0.729785f, 0.730328f,
+    0.730869f, 0.731411f, 0.731951f, 0.732491f, 0.733031f, 0.73357f,
+    0.734109f, 0.734646f, 0.735184f, 0.735721f, 0.736257f, 0.736793f,
+    0.737329f, 0.737864f, 0.738398f, 0.738932f, 0.739465f, 0.739998f,
+    0.74053f, 0.741062f, 0.741593f, 0.742124f, 0.742654f, 0.743184f,
+    0.743713f, 0.744242f, 0.74477f, 0.745298f, 0.745825f, 0.746352f,
+    0.746878f, 0.747403f, 0.747928f, 0.748453f, 0.748977f, 0.749501f,
+    0.750024f, 0.750546f, 0.751068f, 0.75159f, 0.752111f, 0.752631f,
+    0.753151f, 0.753671f, 0.75419f, 0.754708f, 0.755226f, 0.755744f,
+    0.756261f, 0.756777f, 0.757293f, 0.757809f, 0.758324f, 0.758838f,
+    0.759352f, 0.759865f, 0.760378f, 0.760891f, 0.761403f, 0.761914f,
+    0.762425f, 0.762936f, 0.763446f, 0.763955f, 0.764464f, 0.764973f,
+    0.76548f, 0.765988f, 0.766495f, 0.767001f, 0.767507f, 0.768013f,
+    0.768518f, 0.769022f, 0.769526f, 0.77003f, 0.770533f, 0.771036f,
+    0.771538f, 0.772039f, 0.77254f, 0.773041f, 0.773541f, 0.774041f,
+    0.77454f, 0.775038f, 0.775537f, 0.776034f, 0.776531f, 0.777028f,
+    0.777524f, 0.77802f, 0.778515f, 0.77901f, 0.779504f, 0.779998f,
+    0.780491f, 0.780984f, 0.781477f, 0.781968f, 0.78246f, 0.782951f,
+    0.783441f, 0.783931f, 0.784421f, 0.78491f, 0.785398f
+};
+
+static unsigned char _eftBuffer[0xD4800];
+static unsigned char _scheduler[0xAB0 * 0x80];
+static unsigned char _lineData[0x41000];
+static unsigned char _ptAlloc[0xA0810];
+static SefSavePrm _savePrm[SEF_SAVE_PRM_COUNT];
+static unsigned char _battleData[0x230];
+static unsigned char _battlePrm[0x40];
+static SefBattleActorTbl _battleActor[1];
+
+static SchedulerState *_nowScheduler;
+static int _nowScriptAdr;
+/* 8 bytes in the original (cc1 emits each .lcomm label before its .align, so the
+ * unused word at 0x004DC67C is the tail of this object); only word 0 is used. */
+static int _nowParentLocal[2];
+static int _sefLoadEftQue;
 
 #define SEF_LINE_DATA_RECORD_SIZE 0x820
 #define SEF_LINE_DATA_COUNT 0x80
@@ -57,7 +257,6 @@ typedef struct SefLineDataTable {
     unsigned char unmodeled_000[0x810];
     SefLineDataEntry entries[SEF_LINE_DATA_COUNT];
 } SefLineDataTable;
-extern unsigned char _lineData[];
 
 typedef struct GameLoopFlagsView {
     unsigned char unmodeled_00[0x10];
@@ -85,24 +284,20 @@ typedef struct SefProgressState {
 
 float MMathCalcLength(float *vec);
 
-/*
- * The original routine keeps each literal-pool access as a distinct volatile
- * read across its quadrant branches; the pool addresses and load order are
- * evidenced by the function's original instructions.
- */
-extern volatile const float D_004D82B4;
-extern volatile const float D_004D82B8;
-extern volatile const float D_004D82BC;
-extern volatile const float D_004D82C0;
-extern volatile const float D_004D82C4;
-extern volatile const float D_004D82C8;
-extern volatile const float D_004D82CC;
-extern volatile const float D_004D82D0;
-extern volatile const float D_004D82D4;
-extern float *atanTbl_0;
+static int _parentLine = -1;
+static float _gravity = 0.0f;
+static float _colision = 0.0f;
+static float _height = 0.0f;
+static short _revDirZ = 0;
+static short _initialize = 0;
+short _hitFlag = 0;
+short _hitSignal = 0;
+short _seSignal = 0;
+short _sefBattleMode = 0;
 
 float srsAtan2(float x, float y)
 {
+    static float *atanTbl_0 __asm__("atanTbl.0") = (float *)0x2040FAC0;
     int y_is_positive;
     int x_is_positive;
     float result = 0.0f;
@@ -113,9 +308,9 @@ float srsAtan2(float x, float y)
 
     if (y == 0.0f) {
         if (x != 0.0f) {
-            result = D_004D82B4;
+            result = 1.5707964f;
             if (!x_is_positive) {
-                return D_004D82B8;
+                result = -1.5707964f;
             }
         }
         return result;
@@ -123,7 +318,7 @@ float srsAtan2(float x, float y)
 
     if (x == 0.0f) {
         if (!y_is_positive) {
-            return D_004D82BC;
+            result = 3.1415927f;
         }
         return result;
     }
@@ -143,38 +338,38 @@ float srsAtan2(float x, float y)
                 angle = -angle;
             }
         } else if (x_is_positive) {
-            angle = D_004D82C0 - angle;
+            angle = 3.1415927f - angle;
         } else {
-            angle += D_004D82C4;
+            angle += 3.1415927f;
         }
     } else {
         angle = atanTbl_0[(int)(y * 1024.0f / x)];
 
         if (y_is_positive) {
             if (x_is_positive) {
-                angle = D_004D82C8 - angle;
+                angle = 1.5707964f - angle;
             } else {
-                angle = -(D_004D82CC - angle);
+                angle = -(1.5707964f - angle);
             }
         } else if (x_is_positive) {
-            angle += D_004D82D0;
+            angle += 1.5707964f;
         } else {
-            angle = D_004D82D4 - angle;
+            angle = 4.712389f - angle;
         }
     }
 
     return angle;
 }
 
+static int sefRandSeed = 0x12345678;
+
 static float sefRandf(void)
 {
-    extern int sefRandSeed;
-    extern const float sef_rand_unit_scale_literal;
     int bits;
 
     sefRandSeed = sefRandSeed * 0x41C64E6D + 0x3039;
     bits = ((unsigned int)sefRandSeed >> 16) & 0x7FFF;
-    return (float)bits * sef_rand_unit_scale_literal;
+    return (float)bits * 3.051851e-05f;
 }
 
 /*
@@ -354,8 +549,6 @@ int sefSearchMapperIndex(int effect_id) {
     return sefSearchMapperIndex2(effect_id, number, category);
 }
 
-extern unsigned char _battleData[];
-extern unsigned char _ptAlloc[];
 
 /*
  * sevInitPtAllocator (main:0x002e1580): clears the whole _ptAlloc particle
@@ -578,7 +771,7 @@ int sefLerpVector(SefKey5 *keys, SefProgressState *state)
 static int sefLerpVectorSC(void *keys, Vector4 *vectors)
 {
     int status = sefLerpVector(keys, vectors);
-    float scale = effect_scale_literal_0_1;
+    float scale = 0.1f;
 
     __asm__ __volatile__("" : : "f"(scale));
 
@@ -840,8 +1033,6 @@ void sefGetWeaponPosition(SefQuadBlock *out, void *actor, unsigned int id)
     }
 }
 
-extern int _parentLine;
-extern int _nowParentLocal;
 extern void *MMathApplyMatrix(Vector4 *destination, void *matrix, Vector4 *point);
 extern unsigned char D_00795100[];
 static inline short sefPointHasOffset(unsigned char *source)
@@ -902,8 +1093,8 @@ void sefGetPoint(Vector4 *position, unsigned char *source, int target)
             if (target == 4) {
                 unsigned char *parent;
 
-                if (_parentLine >= 0 && _nowParentLocal >= 0) {
-                    parent = &_ptAlloc[_nowParentLocal * 640];
+                if (_parentLine >= 0 && _nowParentLocal[0] >= 0) {
+                    parent = &_ptAlloc[_nowParentLocal[0] * 640];
                 } else {
                     parent = 0;
                 }
@@ -939,7 +1130,8 @@ void sefGetPoint(Vector4 *position, unsigned char *source, int target)
 }
 
 extern void sefGetPoint(Vector4 *position, unsigned char *source, int target);
-extern unsigned char _zeroPos_004CBF00[];
+static const float _zeroPos[4] __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 1.0f};
+static const float _zeroAng[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
 /*
  * sefGetPosition (main:0x002e2240): fills `position`'s XYZ via sefGetPoint
@@ -950,7 +1142,7 @@ void sefGetPosition(Vector4 *position, unsigned char *source, int target) {
     unsigned char *point = source;
 
     if (point == 0) {
-        point = _zeroPos_004CBF00;
+        point = (unsigned char *)_zeroPos;
     }
     sefGetPoint(position, point, target);
     position->w = 1.0f;
@@ -970,7 +1162,7 @@ void sefGetPosition(Vector4 *position, unsigned char *source, int target) {
  */
 static void sefGetCirclePos(Vector4 *pos, float radius)
 {
-    float angle = sefRandf() * 360.0f * circle_angle_scale_literal;
+    float angle = sefRandf() * 360.0f * 0.017453292f;
     float x_unit;
     float z_unit;
 
@@ -1002,7 +1194,6 @@ static void sefGetCirclePos(Vector4 *pos, float radius)
     pos->z = z_unit * radius;
 }
 
-extern int sefRandSeed;
 
 static void sefGetSpherePos(Vector4 *pos, float radius)
 {
@@ -1209,8 +1400,6 @@ static void sefGetCubePosTop(Vector4 *pos, const int *extent)
     pos->y = -pos->y;
 }
 
-extern float D_004D82F4;
-extern float D_004D82F8;
 
 static void sefGetCubePos(Vector4 *pos, const int *extent)
 {
@@ -1231,7 +1420,7 @@ static void sefGetCubePos(Vector4 *pos, const int *extent)
     __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
     random_vector.w = 0.0f;
 
-    random_scale = D_004D82F4;
+    random_scale = 3.051851e-05f;
     seed_1 = sefRandSeed * 0x41C64E6Du + 0x3039u;
     seed_2 = seed_1 * 0x41C64E6Du + 0x3039u;
     seed_3 = seed_2 * 0x41C64E6Du + 0x3039u;
@@ -1259,21 +1448,13 @@ static void sefGetCubePos(Vector4 *pos, const int *extent)
     __asm__ __volatile__("vsub.xyz vf1, vf1, vf2" : : : "memory");
     __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
 
-    final_scale = D_004D82F8;
+    final_scale = 0.1f;
     __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
     __asm__ __volatile__("mfc1 $8, %0\n\tqmtc2 $8, vf2" : : "f"(final_scale) : "$8", "memory");
     __asm__ __volatile__("vmulx.xyz vf1, vf1, vf2x" : : : "memory");
     __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(pos) : "memory");
 }
 
-extern const float D_004D82FC;
-extern const float D_004D8300;
-extern const float D_004D8304;
-extern const float D_004D8308;
-extern const float D_004D830C;
-extern const float D_004D8310;
-extern const float D_004D8314;
-extern const char D_004CBF20[];
 extern Matrix4 *MMathRotateMatrixX(Matrix4 *out, Matrix4 *matrix, float angle);
 extern Matrix4 *MMathRotateMatrixZ(Matrix4 *out, Matrix4 *matrix, float angle);
 
@@ -1289,7 +1470,7 @@ static void sefGetOfsRange(Vector4 *position, const void *offset_table, int inde
         if (!__builtin_expect(offsets[0], 0)) {
             return;
         }
-        radius = (float)offsets[0] * D_004D82FC;
+        radius = (float)offsets[0] * 0.1f;
         sefGetSpherePos(position, radius * sefRandf());
         return;
     }
@@ -1297,7 +1478,7 @@ static void sefGetOfsRange(Vector4 *position, const void *offset_table, int inde
         if (!__builtin_expect(offsets[0], 0)) {
             return;
         }
-        sefGetSpherePos(position, (float)offsets[0] * D_004D8300);
+        sefGetSpherePos(position, (float)offsets[0] * 0.1f);
         return;
     }
     if (index == 2) {
@@ -1316,7 +1497,7 @@ static void sefGetOfsRange(Vector4 *position, const void *offset_table, int inde
         Matrix4 rotation;
         Vector4 circle_position;
 
-        sefGetCirclePos(&circle_position, (float)offsets[0] * D_004D8304);
+        sefGetCirclePos(&circle_position, (float)offsets[0] * 0.1f);
         __asm__ __volatile__(
             "vmr32.xyzw vf1, vf0\n\t"
             "vmr32.xyzw vf2, vf1\n\t"
@@ -1330,10 +1511,10 @@ static void sefGetOfsRange(Vector4 *position, const void *offset_table, int inde
             : "memory");
 
         if (offsets[1] != 0) {
-            MMathRotateMatrixX(&rotation, &rotation, (float)offsets[1] * D_004D8308);
+            MMathRotateMatrixX(&rotation, &rotation, (float)offsets[1] * 0.017453292f);
         }
         if (offsets[2] != 0) {
-            MMathRotateMatrixZ(&rotation, &rotation, (float)offsets[2] * D_004D830C);
+            MMathRotateMatrixZ(&rotation, &rotation, (float)offsets[2] * 0.017453292f);
         }
         MMathApplyMatrix(position, &rotation, &circle_position);
         return;
@@ -1347,11 +1528,11 @@ static void sefGetOfsRange(Vector4 *position, const void *offset_table, int inde
         sample = (int)((seed >> 16) & 0x7FFFu);
         sefRandSeed = seed;
         sefGetCirclePos(position,
-                        (float)sample * D_004D8310 * range * D_004D8314);
-        position->y = sefRandf() * (float)offsets[1] * D_004D8314;
+                        (float)sample * 3.051851e-05f * range * 0.1f);
+        position->y = sefRandf() * (float)offsets[1] * 0.1f;
         return;
     }
-    tracePrint(D_004CBF20, index);
+    tracePrint("bad range prm : %d", index);
 }
 
 static void sefGetDirMatrix(Matrix4 *dest, Vector4 *dir)
@@ -1506,8 +1687,6 @@ static void sefGetTargetPos(Vector4 *position, SefParticleOffset *record) {
     __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(position) : "memory");
 }
 
-extern int _parentLine;
-extern int _nowParentLocal;
 extern void MMathSpecialVectorSub(Vector4 *destination, Vector4 *left, Vector4 *right, float scale);
 extern void *MMathApplyMatrix(Vector4 *destination, void *matrix, Vector4 *point);
 
@@ -1534,8 +1713,8 @@ static void sefGetSpeed(Vector4 *speed_out, unsigned char *record, int type, int
     } else if (type == 4) {
         unsigned char *parent;
 
-        if (_parentLine >= 0 && _nowParentLocal >= 0) {
-            parent = &_ptAlloc[_nowParentLocal * 640];
+        if (_parentLine >= 0 && _nowParentLocal[0] >= 0) {
+            parent = &_ptAlloc[_nowParentLocal[0] * 640];
         } else {
             parent = 0;
         }
@@ -1563,9 +1742,6 @@ static void sefGetSpeed(Vector4 *speed_out, unsigned char *record, int type, int
         : "$8", "memory");
 }
 
-extern float _gravity;
-extern float _colision;
-extern float _height;
 
 void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
 {
@@ -1689,10 +1865,6 @@ void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
 #define SEF_LOCAL_OFFSET_Z       0x0f8
 #define SEF_PARENT_DIR_MATRIX    0x120
 
-extern unsigned char _battleData[];
-extern int _parentLine;
-extern int _nowParentLocal;
-extern unsigned char _ptAlloc[];
 /* _battleData + 0x200, still owned by the scaffold, so it keeps the original
  * object's own name for the address (docs/naming.md). The two callees below
  * materialise the same address differently, which is why both spellings are
@@ -1717,8 +1889,8 @@ static void sefCalcLocalMatrix(unsigned char *record, int target, int previous_t
     if (target == 4) {
         unsigned char *parent;
 
-        if (_parentLine >= 0 && _nowParentLocal >= 0) {
-            parent = &_ptAlloc[_nowParentLocal * 640];
+        if (_parentLine >= 0 && _nowParentLocal[0] >= 0) {
+            parent = &_ptAlloc[_nowParentLocal[0] * 640];
         } else {
             parent = 0;
         }
@@ -1844,7 +2016,7 @@ static void sefCalcRotChange(unsigned char *record, int flags, int update)
     __asm__ __volatile__("lqc2 $vf2, 0(%0)" : : "r"(record + SEF_ROTCHANGE_DELTA) : "memory");
 
     {
-        register float degToRad asm("$f8") = D_004D8318;
+        register float degToRad asm("$f8") = 0.017453292f;
 
         __asm__ __volatile__(
             "mfc1 $8, %1\n\t"
@@ -2061,9 +2233,7 @@ typedef struct SefLineData {
     unsigned char unmodeled_81A[6];
 } SefLineData;
 
-extern float D_004D831C;
 extern int D_00794334[];
-extern short _revDirZ;
 static int sefFreeLocalData(unsigned char *line_data, unsigned int index);
 static int sefAnimate(unsigned char *object, unsigned char *state, int advance);
 static void sefAddLightActor(const Vector4 *position, const SefLightInput *light);
@@ -2103,7 +2273,7 @@ static int sefExecLineLocalData(SefLineData *line_data, unsigned short frame)
     reverse_direction = _revDirZ;
     point_part = loop_mode & ~0xe000;
     if (point_part >= 5) {
-        sefGetPoint((Vector4 *)D_00794310, _zeroPos_004CBF00, point_part);
+        sefGetPoint((Vector4 *)D_00794310, (unsigned char *)_zeroPos, point_part);
     }
 
     index = 0;
@@ -2147,7 +2317,7 @@ static int sefExecLineLocalData(SefLineData *line_data, unsigned short frame)
                             "qmtc2 $8, $vf2\n\t"
                             "vmulx.xyz $vf1xyz, $vf1xyz, $vf2x\n\t"
                             "sqc2 $vf1, 0(%0)"
-                            : : "r"(&particle->size), "f"(D_004D831C)
+                            : : "r"(&particle->size), "f"(0.01f)
                             : "$8", "memory");
                     }
                     sefLerpFloat(float_keys, (SefProgressState *)&particle->float_progress);
@@ -2166,7 +2336,7 @@ static int sefExecLineLocalData(SefLineData *line_data, unsigned short frame)
                         }
                     }
 
-                    _nowParentLocal = particle->kind;
+                    _nowParentLocal[0] = particle->kind;
                     __asm__ __volatile__(
                         "lqc2 $vf21, 0(%0)\n\t"
                         "lqc2 $vf1, 0(%2)\n\t"
@@ -2298,7 +2468,6 @@ static void sefDestroyLocalData(unsigned char *line_data) {
     }
 }
 
-extern int _nowScriptAdr;
 extern void *scGetImmAdrImmIdx2(int script, void *table, int index);
 static inline float sefLineRandomOffset(short *range_word)
 {
@@ -2314,11 +2483,6 @@ static inline float sefLineRandomOffset(short *range_word)
     }
     return 0.0f;
 }
-extern const float D_004D8320;
-extern const float D_004D8324;
-extern const float D_004D8328;
-extern const float D_004D832C;
-extern const float D_004D8330;
 
 static void sefInitLineData(SefLineData *line_data, int start_time, int frame,
                             unsigned short *script_table, int link_index,
@@ -2365,9 +2529,9 @@ static void sefInitLineData(SefLineData *line_data, int start_time, int frame,
     line_data->start_time = start_time;
     line_data->loop_mode = frame;
     line_data->global_data_count = global_data_count;
-    line_data->gravity = (float)gravity_input * D_004D8320;
+    line_data->gravity = (float)gravity_input * 0.001f;
     line_data->collision_progress = collision_input;
-    line_data->height = (float)height_input * D_004D8324;
+    line_data->height = (float)height_input * 0.01f;
     line_data->field_80E = 0;
     line_data->local_result = 0;
     line_data->frame = 0;
@@ -2405,7 +2569,7 @@ static void sefInitLineData(SefLineData *line_data, int start_time, int frame,
 
     if (line_data->scale_keys != 0 && ((short *)line_data->scale_keys)[9] == 0x400) {
         sefLerpVectorA(line_data->scale_keys + 8, &line_data->global_position_source);
-        vector_scale = D_004D8328;
+        vector_scale = 0.1f;
         __asm__ __volatile__(
             "lqc2 $vf1, 0(%0)\n\t"
             "mfc1 $8, %1\n\t"
@@ -2418,7 +2582,7 @@ static void sefInitLineData(SefLineData *line_data, int start_time, int frame,
     }
     if (line_data->rotation_keys != 0 && ((short *)line_data->rotation_keys)[9] == 0x400) {
         sefLerpVectorA(line_data->rotation_keys + 8, &line_data->parent_position_source);
-        vector_scale = D_004D832C;
+        vector_scale = 0.1f;
         __asm__ __volatile__(
             "lqc2 $vf1, 0(%0)\n\t"
             "mfc1 $8, %1\n\t"
@@ -2432,7 +2596,7 @@ static void sefInitLineData(SefLineData *line_data, int start_time, int frame,
     if (line_data->position_keys != 0 && line_data->position_keys[9] == 0x400) {
         sefLerpVectorA(line_data->position_keys + 4,
                        (Vector4 *)line_data->position_source);
-        vector_scale = D_004D8330;
+        vector_scale = 0.1f;
         __asm__ __volatile__(
             "lqc2 $vf1, 0(%0)\n\t"
             "mfc1 $8, %1\n\t"
@@ -2526,7 +2690,6 @@ typedef struct SefImageItem {
     unsigned short u30;
 } SefImageItem;
 extern void *svGetImageListItem(int type, int image_id);
-extern const float D_004D8334;
 
 static void sefAnalyzeAnim(unsigned char *object)
 {
@@ -2538,7 +2701,7 @@ static void sefAnalyzeAnim(unsigned char *object)
     if (records->image_id <= 0) {
         return;
     }
-    scale = D_004D8334;
+    scale = 0.005f;
     do {
         SefImageItem *item_a;
         SefImageItem *item_b;
@@ -2672,7 +2835,6 @@ found:
     return result;
 }
 
-extern short _revDirZ;
 
 typedef struct SefLocalData {
     unsigned char *position_keys;                    /* +0x000 */
@@ -2692,7 +2854,6 @@ typedef struct SefLocalData {
     unsigned char unmodeled_800[0x80e - 0x800];
     short cursor;                                      /* +0x80e */
 } SefLocalData;
-extern float D_004D8338;
 #define D_004D833C (0.009999999776482582f)
 #define D_004D8340 (0.009999999776482582f)
 #define D_004D8344 (3.0518509447574615e-05f)
@@ -2765,16 +2926,19 @@ int sefCreateParticle(SefLocalData *data, int kind)
                     "lqc2 vf1, 0(%0)\n\t"
                     "lqc2 vf2, 0(%1)\n\t"
                     "vsub.xyz vf1, vf1, vf2\n\t"
-                    "sqc2 vf1, 0(%2)"
+                    "sqc2 vf1, 0(%2)\n\t"
+                    "lqc2 vf2, 0(%2)"
                     : : "r"(&jitter), "r"(&spread), "r"(&particle->random_rotation) : "memory");
-                __asm__ __volatile__(
-                    "lqc2 vf2, 0(%0)\n\t"
-                    "lwc1 $f8, %1\n\t"
-                    "mfc1 $8, $f8\n\t"
-                    "qmtc2 $8, vf1\n\t"
-                    "vmulx.xyz vf2, vf2, vf1x\n\t"
-                    "sqc2 vf2, 0(%0)"
-                    : : "r"(&particle->random_rotation), "m"(D_004D8338) : "$8", "$f8", "memory");
+                {
+                    register float degToRad asm("$f8") = 0.017453292f;
+
+                    __asm__ __volatile__(
+                        "mfc1 $8, %1\n\t"
+                        "qmtc2 $8, vf1\n\t"
+                        "vmulx.xyz vf2, vf2, vf1x\n\t"
+                        "sqc2 vf2, 0(%0)"
+                        : : "r"(&particle->random_rotation), "f"(degToRad) : "$8", "memory");
+                }
                 battle = _battleData;
                 if (*(int *)(battle + 0x22C) != 0) {
                     __asm__ __volatile__(
@@ -2985,7 +3149,7 @@ static int sefExecLineGlobalData(void *line_arg, int frame)
             for (parent_line = 0; parent_line < 0x100; parent_line++) {
                 point_handle = parent_data->pointHandles[parent_line];
                 if (point_handle >= 0) {
-                    _nowParentLocal = point_handle;
+                    _nowParentLocal[0] = point_handle;
                     if (scale_is_fixed) {
                         sefGetPosition(&global->global_position, (unsigned char *)&global->global_position_source, keys[0][0]);
                         __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&global->global_position) : "memory");
@@ -3025,7 +3189,6 @@ static int sefExecLineGlobalData(void *line_arg, int frame)
 }
 
 int sefExecLineGlobalData(void *arg0, int arg1);
-extern float D_004D834C;
 static inline short *sefKeyPtr(void *a)
 {
     return *(short **)((char *)a + 0x1F4);
@@ -3068,7 +3231,7 @@ static int sefExecLineData(void *arg0, int arg1)
   block_7:
   {
     short s816 = *((short *) (((char *) arg0) + 0x816));
-    float k = D_004D834C;
+    float k = 0.01f;
     void *key1d0;
     float g = *((float *) (((char *) arg0) + 0x5F8));
     float h = *((float *) (((char *) arg0) + 0x5FC));
@@ -3254,9 +3417,6 @@ typedef struct SefEffectCommand {
     short count;                     /* +0x8 */
     short flags;                     /* +0xa */
 } SefEffectCommand;
-extern short _hitSignal;
-extern short _seSignal;
-extern const char D_004CBF38[];
 extern void tracePrint(char *fmt, ...);
 static void sefSetSeSignal(SefActor *actor);
 
@@ -3369,7 +3529,7 @@ int sefExecEffectData(EffectData *effect, int frame, short *active_count)
                                     continue;
                                 }
                             } else {
-                                tracePrint(D_004CBF38);
+                                tracePrint("line empty!!");
                             }
                         }
                     }
@@ -3460,10 +3620,10 @@ void sefInitScheduler(void)
 
 extern const volatile struct { unsigned short value, pad; } _nowEvent;
 extern int _nowScript;
-extern int _schridx_1;
 
 static int sefAllocScheduler(int arg0)
 {
+    static int _schridx_1 __asm__("_schridx.1") = 0;
     int start = _schridx_1;
     int end = (start + 0x7f) % 0x80;
     int i = start;
@@ -3654,7 +3814,6 @@ typedef struct SefEffectDescriptor {
     unsigned short script_offset;
     short setting;
 } SefEffectDescriptor;
-extern int _nowScriptAdr;
 static inline void sefInitializeDescriptorEffect(EffectData *effect,
                                                   SefEffectDescriptor *entry,
                                                   int scheduler_index,
@@ -3814,7 +3973,7 @@ int sefCreateScheduler2(int effect_no, int parameters, int position, int table, 
     sefSchedulerCreateTable[scheduler_index].casterUnit = 0;
     sefSchedulerCreateTable[scheduler_index].target = ((SefEffectRequest *)parameters)->target;
     if (origin == 0) {
-        origin = (void *)_zeroPos_004CBF00;
+        origin = (void *)_zeroPos;
     }
     __asm__ __volatile__("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r"(&sefSchedulerCreateTable[scheduler_index].position), "r"(origin) : "$8", "memory");
     __asm__ __volatile__("sq $0, 0(%0)\n" : : "r"(&sefSchedulerCreateTable[scheduler_index].rotation) : "memory");
@@ -3877,6 +4036,7 @@ int sefCreateScheduler(int effect_no, int value2, int value3, int value4, int va
  * ints); sefCreateReactionEffect and sefCnvDeathEffectNo are its callers.
  */
 static int sefGetSizeOffset(int index) {
+    static const int offset_2[5] __asm__("offset.2") = {0, 0, 1, 2, 2};
     return offset_2[index];
 }
 
@@ -4139,8 +4299,7 @@ extern unsigned char D_0065B030[];
 #ifndef offsetof
 #define offsetof(type, member) ((unsigned int)&((type *)0)->member)
 #endif
-extern short _hitFlag;
-extern int _nowEftNo;
+int _nowEftNo = 0;
 #define SLOT(f) (*(__typeof__(((SchedulerState *)0)->f) *)(control_address + (offsetof(SchedulerState, f) - 0xa80)))
 #define BATTLE ((SefBattleStatus *)_battleData)
 
@@ -4335,7 +4494,6 @@ int sefIsDeadSchduler(unsigned int scheduler_index)
     return *(int *)(_scheduler + 0x6b0 + scheduler_index * 0xab0) == 0;
 }
 
-extern int revEft_3[10];
 
 /*
  * sefSetReverseDir (main:0x002e6380): when `category` falls in [0x18,0x20)
@@ -4347,6 +4505,9 @@ extern int revEft_3[10];
  */
 static int sefSetReverseDir(int effect_id, int category)
 {
+    static int revEft_3[10] __asm__("revEft.3") = {
+        0xB03, 0xB04, 0xAFD, 0xB07, 0xB05, 0xB32, 0xB31, 0xAFB, 0xAFE, 0xB06,
+    };
     int normalized_id;
     unsigned int index;
 
@@ -4593,14 +4754,13 @@ int sefIsSeSignal(SefActor *actor)
 typedef struct SefLightSet {
     unsigned long long words[30];
 } SefLightSet;
-extern float D_004D8350;
 extern Vector4 _defLight[15];
 extern void *MMathNormalizeVector2(void *destination, const Vector4 *source);
 extern float MMathVectorDotProduct(const Vector4 *first, const Vector4 *second);
 
 static void sefAddLightActor(const Vector4 *position, const SefLightInput *light)
 {
-    float range_squared = (float)light->range * D_004D8350;
+    float range_squared = (float)light->range * 0.01f;
     int actor_index;
     SefBattleActor *battle_actor;
     Vector4 *lights;
@@ -4676,10 +4836,6 @@ extern void scInitScript(void);
 extern void sdvInitSpecialWork(void);
 extern void sdvInitAmbient(void);
 extern void sresLoadCommonMemory(void);
-extern unsigned char _eftBuffer[];
-extern unsigned char _battlePrm[];
-extern int _sefLoadEftQue;
-extern short _initialize;
 
 /*
  * sefInitEffect (main:0x002e6b60): the effect subsystem's one-time
@@ -4721,7 +4877,6 @@ typedef struct {
     short pendingHandle;                      /* +0x10c */
 } SefMemRes;
 extern SefMemRes _srsMemRes;
-extern short _sefBattleMode;
 extern void sdvInitAlters(void);
 extern void sefDestroyEffect(void);
 extern void sefDestroyEffectCf(void);
@@ -4765,7 +4920,6 @@ void sefInitEffectCf(void)
     sRender.cfDrawCallback = sefDrawEffect2D;
 }
 
-extern char D_004CBF60[];
 extern void tracePrint(char *fmt, ...);
 void sefSetupEffect(void);
 typedef struct {
@@ -4809,10 +4963,9 @@ void sefSetupPlayer(int id, int a, int b, int c)
     }
   }
 
-  tracePrint(D_004CBF60, id);
+  tracePrint("\245\255\245\343\245\351\244\254\304\311\262\303\244\307\244\255\244\336\244\273\244\363", id);
 }
 
-extern char D_004CBF78[];
 extern void sresFreeReloaderMemoryNo(int no);
 typedef struct {
     s16 pid[3];
@@ -4860,10 +5013,9 @@ void sefSetupEnemy(int id)
     }
   }
 
-  tracePrint(D_004CBF78, id);
+  tracePrint("\305\250\245\255\245\343\245\351\244\254\304\311\262\303\244\307\244\255\244\336\244\273\244\363 : %d", id);
 }
 
-extern char D_004CBF98[];
 
 void sefReleaseID(int id)
 {
@@ -4895,11 +5047,10 @@ void sefReleaseID(int id)
     }
   }
 
-  tracePrint(D_004CBF98, id);
+  tracePrint("\273\330\304\352\243\311\243\304\244\316\245\255\245\343\245\351(%d)\244\317\302\270\272\337\244\267\244\336\244\273\244\363!!", id);
 }
 
 extern void sresLoadBattleData(unsigned char *battle_prm);
-extern unsigned char _battlePrm[];
 
 /*
  * sefSetupEffect (main:0x002e6fe0): loads battle effect resources into
@@ -4928,8 +5079,6 @@ extern void scDestroyScriptAll(void);
 extern void sdvDestroyAlters(void);
 extern void sdvInitAmbient(void);
 extern void sresFreeReloaderMemory(int reload_bgm);
-extern SefBattleActorTbl _battleActor[];
-extern int _sefLoadEftQue;
 void sefKillEffect(int effect_no);
 
 /*
@@ -5005,7 +5154,6 @@ void sefLoadEffect(int effect_no, int character_id)
 }
 
 extern int srsLeaveCdRead(void);
-extern int _sefLoadEftQue;
 
 int sefCheckLoad(void)
 {
@@ -5017,9 +5165,6 @@ int sefCheckLoad(void)
 
 extern void scExecEffect(void);
 extern void sdvExecAlters(void);
-extern short _hitFlag;
-extern short _hitSignal;
-extern short _seSignal;
 
 void sefExecEffect(void)
 {
@@ -5071,7 +5216,6 @@ void sefDrawEffect(void)
 }
 
 extern void svDrawScheduler3D(int flags);
-extern short _initialize;
 
 /*
  * sefDrawEffect3D (main:0x002e7220): while `_initialize` is set and
@@ -5118,9 +5262,19 @@ typedef struct {
     short id;
     short effectNo;
 } SefBossDeathEnt;
-extern SefBossDeathEnt _sefBossDeathPrm_4[];
 
 static void sefCnvDeathEffectNo(SefDeathPrm *p) {
+    static SefBossDeathEnt _sefBossDeathPrm_4[0x24] __asm__("_sefBossDeathPrm.4") = {
+        { 0x97, 0xA7B }, { 0x98, 0xA7E }, { 0x99, 0xA81 }, { 0x9A, 0xA84 },
+        { 0x9B, 0xA87 }, { 0x9C, 0xA8A }, { 0x9D, 0xA8D }, { 0x9E, 0xA90 },
+        { 0x9F, 0xA93 }, { 0xA0, 0xA96 }, { 0xA1, 0xA99 }, { 0xA2, 0xA9C },
+        { 0xA3, 0xA9F }, { 0xA4, 0xAA2 }, { 0xA5, 0xAA5 }, { 0xA6, 0xAA8 },
+        { 0xA7, 0xAAB }, { 0xA8, 0xAAE }, { 0xA9, 0xAB1 }, { 0xAA, 0xAB4 },
+        { 0xAB, 0xAB7 }, { 0xAC, 0xABA }, { 0xAD, 0xABD }, { 0xAE, 0xAC0 },
+        { 0xAF, 0xAC3 }, { 0xB0, 0xAC6 }, { 0xB1, 0xAC9 }, { 0xB2, 0xACC },
+        { 0xB3, 0xACF }, { 0xB4, 0xAD2 }, { 0xB5, 0xAD5 }, { 0xB6, 0xAD8 },
+        { 0xB7, 0xADB }, { 0xB8, 0xA81 }, { 0xB9, 0xA84 }, { 0xBA, 0xAB4 },
+    };
     int kind;
     short id;
     unsigned int i;
@@ -5167,7 +5321,9 @@ typedef struct {
     unsigned short sig;
     char pad8e[2];
 } SefSeEnt;
-extern unsigned short steftTbl[];
+static unsigned short steftTbl[17] = {
+    0x0000, 0x09CE, 0x09CA, 0x09C6, 0x09DE, 0x09D6, 0x09D2, 0x09DA,
+};
 int srsGetBossWaitEftNo(int no);
 
 static void sefCnvWaitEffectNo(char *p)
@@ -5646,16 +5802,6 @@ typedef enum SefSaveTail {
     SEF_SAVE_TAIL_NONE
 } SefSaveTail;
 
-typedef struct SefSavePrm {
-    Vector4 position;
-    Vector4 orientation;
-    Vector4 saved_vector;
-    int active;
-    int saved_words[5];
-    short effect_no;
-    unsigned char saved_flags;
-    unsigned char unmodeled_4b[5];
-} SefSavePrm;
 typedef struct SefSavedEffect {
     Vector4 saved_vector;
     unsigned char unmodeled_010[0x608];
@@ -5667,8 +5813,6 @@ typedef struct SefSavedEffect {
     unsigned char saved_flags;
     unsigned char unmodeled_9fb[0xB5];
 } SefSavedEffect;
-#define SEF_SAVE_PRM_COUNT 0x80
-extern SefSavePrm _savePrm[SEF_SAVE_PRM_COUNT];
 extern SefSavedEffect D_0065A9A0[];
 
 #ifndef offsetof
@@ -5853,7 +5997,7 @@ SchedulerState *sefGetNowScheduler(void)
 
 /* Same gate and record address as the target == 4 case in sefCalcLocalMatrix
  * (this file, sef.c:358-359), but on parameters rather than on _parentLine
- * and _nowParentLocal directly. */
+ * and _nowParentLocal[0] directly. */
 unsigned char *sefGetParentLine(int line, int parent_local)
 {
     if (line >= 0 && parent_local >= 0) {
@@ -5887,7 +6031,7 @@ void sefDeg2RadVector(Vector4 *dst, Vector4 *src)
     __asm__ __volatile__("lqc2 $vf2, 0(%0)" : : "r"(src) : "memory");
 
     {
-        register float degToRad asm("$f8") = lit4_004d8354;
+        register float degToRad asm("$f8") = 0.017453292f;
 
         __asm__ __volatile__(
             "mfc1 $8, %1\n\t"
@@ -6012,3 +6156,119 @@ void sefLerpIVectorB(void *first, Vector4 *dest, float factor)
         : "$8", "$9", "$10", "$11", "memory"
     );
 }
+
+/* Effect names (the table in srs points at them). */
+const char D_004CBFC0[16] = "boss_033";
+const char D_004CBFD0[16] = "boss_032";
+const char D_004CBFE0[16] = "boss_031";
+const char D_004CBFF0[16] = "boss_030";
+const char D_004CC000[16] = "boss_029";
+const char D_004CC010[16] = "boss_028";
+const char D_004CC020[16] = "boss_027";
+const char D_004CC030[16] = "boss_026";
+const char D_004CC040[16] = "boss_025";
+const char D_004CC050[16] = "boss_024";
+const char D_004CC060[16] = "boss_023";
+const char D_004CC070[16] = "boss_022";
+const char D_004CC080[16] = "boss_021";
+const char D_004CC090[16] = "boss_020";
+const char D_004CC0A0[16] = "boss_019";
+const char D_004CC0B0[16] = "boss_018";
+const char D_004CC0C0[16] = "boss_017";
+const char D_004CC0D0[16] = "boss_016";
+const char D_004CC0E0[16] = "boss_015";
+const char D_004CC0F0[16] = "boss_014";
+const char D_004CC100[16] = "boss_013";
+const char D_004CC110[16] = "boss_012";
+const char D_004CC120[16] = "boss_011";
+const char D_004CC130[16] = "boss_010";
+const char D_004CC140[16] = "boss_009";
+const char D_004CC150[16] = "boss_008";
+const char D_004CC160[16] = "boss_007";
+const char D_004CC170[16] = "boss_006";
+const char D_004CC180[16] = "boss_005";
+const char D_004CC190[16] = "boss_004";
+const char D_004CC1A0[16] = "boss_003";
+const char D_004CC1B0[16] = "boss_002";
+const char D_004CC1C0[16] = "boss_001";
+const char D_004CC1D0[16] = "utso_007";
+const char D_004CC1E0[16] = "utso_006";
+const char D_004CC1F0[16] = "utso_005";
+const char D_004CC200[16] = "utso_004";
+const char D_004CC210[16] = "utso_003";
+const char D_004CC220[16] = "utso_002";
+const char D_004CC230[16] = "utso_001";
+const char D_004CC240[16] = "utro_007";
+const char D_004CC250[16] = "utro_006";
+const char D_004CC260[16] = "utro_005";
+const char D_004CC270[16] = "utro_004";
+const char D_004CC280[16] = "utro_003";
+const char D_004CC290[16] = "utro_002";
+const char D_004CC2A0[16] = "utro_001";
+const char D_004CC2B0[16] = "utre_006";
+const char D_004CC2C0[16] = "utre_005";
+const char D_004CC2D0[16] = "utre_004";
+const char D_004CC2E0[16] = "utre_003";
+const char D_004CC2F0[16] = "utre_002";
+const char D_004CC300[16] = "utre_001";
+const char D_004CC310[16] = "utma_014";
+const char D_004CC320[16] = "utma_013";
+const char D_004CC330[16] = "utma_012";
+const char D_004CC340[16] = "utma_011";
+const char D_004CC350[16] = "utma_010";
+const char D_004CC360[16] = "utma_009";
+const char D_004CC370[16] = "utma_008";
+const char D_004CC380[16] = "utma_007";
+const char D_004CC390[16] = "utma_006";
+const char D_004CC3A0[16] = "utma_005";
+const char D_004CC3B0[16] = "utma_004";
+const char D_004CC3C0[16] = "utma_003";
+const char D_004CC3D0[16] = "utma_002";
+const char D_004CC3E0[16] = "utma_001";
+const char D_004CC3F0[16] = "feso_004";
+const char D_004CC400[16] = "feso_003";
+const char D_004CC410[16] = "feso_002";
+const char D_004CC420[16] = "feso_001";
+const char D_004CC430[16] = "fero_001";
+const char D_004CC440[16] = "fere_003";
+const char D_004CC450[16] = "fere_002";
+const char D_004CC460[16] = "fere_001";
+const char D_004CC470[16] = "fema_006";
+const char D_004CC480[16] = "fema_005";
+const char D_004CC490[16] = "fema_004";
+const char D_004CC4A0[16] = "fema_003";
+const char D_004CC4B0[16] = "fema_002";
+const char D_004CC4C0[16] = "fema_001";
+const char D_004CC4D0[16] = "guno_114";
+const char D_004CC4E0[16] = "guno_025";
+const char D_004CC4F0[16] = "guno_024";
+const char D_004CC500[16] = "guno_023";
+const char D_004CC510[16] = "guno_022";
+const char D_004CC520[16] = "guno_021";
+const char D_004CC530[16] = "guno_020";
+const char D_004CC540[16] = "guno_019";
+const char D_004CC550[16] = "guno_018";
+const char D_004CC560[16] = "guno_017";
+const char D_004CC570[16] = "guno_016";
+const char D_004CC580[16] = "guno_015";
+const char D_004CC590[16] = "guno_014";
+const char D_004CC5A0[16] = "guno_013";
+const char D_004CC5B0[16] = "guno_012";
+const char D_004CC5C0[16] = "guno_011";
+const char D_004CC5D0[16] = "guno_010";
+const char D_004CC5E0[16] = "guno_009";
+const char D_004CC5F0[16] = "guno_008";
+const char D_004CC600[16] = "guno_007";
+const char D_004CC610[16] = "guno_006";
+const char D_004CC620[16] = "guno_005";
+const char D_004CC630[16] = "guno_004";
+const char D_004CC640[16] = "guno_003";
+const char D_004CC650[16] = "guno_002";
+const char D_004CC660[16] = "guno_001";
+const char D_004CC670[16] = "catherin";
+
+/* File-scope globals, emitted after the function-local tables above. */
+Matrix4 _invView __attribute__((aligned(16))) = { { 0.0f } };
+Vector4 _defLight[15] = { { 0.0f } };
+Matrix4 sefDummy __attribute__((aligned(64))) = { { 0.0f } };
+Matrix4 sefDummy2 = { { 0.0f } };

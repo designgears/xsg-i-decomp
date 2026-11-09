@@ -2,6 +2,11 @@
 
 #include "shared.h"
 
+signed char dispflg = 0;
+signed char lineflg = 0;
+signed char printflg = 0;
+signed char collflg = 0;
+
 /*
  * UwamonoMapUnit is this TU's local view of the same MapUnit[] record that
  * src/main/init_drill.c also touches; only the fields SendBrokenSignal,
@@ -36,9 +41,6 @@ typedef struct UwamonoMapUnit {
     signed char crossType;            /* +0x1CD */
 } UwamonoMapUnit;
 
-/* Runtime-loaded object message with a hexadecimal unit identifier. */
-
-const char D_004CA028[24] = "\xBE\xEF\xC3\xF3\xBE\xE5\xCA\xAA\xA5\xED\xA1\xBC\xA5\xC9 %x\n";
 
 extern int uwares_tbl[14];
 
@@ -384,7 +386,6 @@ typedef struct UwamonoCreatedUnit {
     UwamonoCreatedState state;
 } UwamonoCreatedUnit;
 
-extern const char D_004CA1B0[32];
 
 extern UwamonoCreatedUnit *MAP_createUnit(int index, int resourceId);
 
@@ -403,7 +404,8 @@ typedef struct UwamonoMapUnitState {
     int timer;                         /* +0x44 */
 } UwamonoMapUnitState;
 
-typedef struct UwamonoKowareDimensions {
+typedef union UwamonoKowareDimensions {
+    float size[4];                     /* x, y, z extents (w unused) */
     unsigned long long lanes[2];
 } UwamonoKowareDimensions;
 
@@ -412,7 +414,8 @@ typedef struct UwamonoKowareKind {
     unsigned char unmodeled_01[0xf];
     UwamonoKowareDimensions dimensions;
     signed char target;
-    unsigned char unmodeled_21[7];
+    unsigned char unmodeled_21[3];
+    int resourceId;                    /* +0x24 */
     unsigned long long unmodeled_28;
 } UwamonoKowareKind;
 
@@ -429,7 +432,6 @@ typedef struct UwamonoKowareUnit {
 
 extern UwamonoKowareKind KowareKind_t[];
 
-extern const char D_004CA1D0[];
 
 extern void MAP_updateUnitKoware(void *unit);
 
@@ -487,13 +489,9 @@ struct UwamonoBoxUnit;
 
 int HitCheckBox(UwamonoCollisionActor *actor, struct UwamonoBoxUnit *unit);
 
-extern const float D_004D7ED0;
 
-extern const float D_004D7ED4;
 
-extern const float D_004D7ED8;
 
-extern const float D_004D7EDC;
 
 typedef struct UwamonoBoxBasis {
     float x;
@@ -579,7 +577,6 @@ typedef struct UwamonoCrossActor {
 
 extern UwamonoCrossActor actor[64];
 
-extern const float D_004D7F18;
 
 extern int CheckCrossCircle(float radius, const Vector4 *from, const Vector4 *to, const Vector4 *center);
 
@@ -625,7 +622,7 @@ typedef struct UwamonoSpritePacket {
 } UwamonoSpritePacket;
 
 typedef struct UwamonoLinePacket {
-    unsigned char unmodeled_00[0x20];
+    unsigned int header[8];            /* +0x00: GIF tag + register setup */
     UwamonoScreenPoint color0;
     UwamonoScreenPoint position0;
     UwamonoScreenPoint color1;
@@ -740,43 +737,49 @@ void CalcNearCrossPointBox(Vector4 *first, Vector4 *second,
 extern int CrossCheckMapUnitBox(Vector4 *first, Vector4 *second,
                                 UwamonoCrossUnit *unit);
 
-extern unsigned char uwamono_dat[];
+static unsigned char uwamono_dat[0x50000];
 extern unsigned char ItemBoxTbl[0x12C8];
 extern unsigned char EvtItemTbl[0x7F80];
 extern unsigned char *WorkEnd;
 extern int xglCdReadFile(const char *name, void *buffer, int offset, int mode);
 extern char *strcpy(char *destination, const char *source);
 extern char *strcat(char *destination, const char *source);
-extern char D_004DB6D8[];
-extern char D_004DB6E0[];
-typedef struct UwamonoNameTbl { unsigned char b[0x38]; } UwamonoNameTbl;
-extern UwamonoNameTbl D_004C9F20;
-extern const char D_004C9F58[];
-extern const char D_004C9F88[];
-extern const char D_004C9FB0[];
-extern const char D_004C9FD0[];
 
 void InitUwamonoSys(void)
 {
     char sp[0x80];
-    char *names[14];
+    char *names[14] = {
+        "data\\obj\\muobj\\MU_001",
+        "data\\obj\\muobj\\MU_002",
+        "data\\obj\\muobj\\MU_003",
+        "data\\obj\\muobj\\MU_004",
+        "data\\obj\\muobj\\Tre_001",
+        "data\\obj\\muobj\\Save_P",
+        "data\\obj\\muobj\\Shop_P",
+        "data\\obj\\muobj\\Tre_002",
+        "data\\obj\\muobj\\MU_009",
+        "data\\obj\\muobj\\MU_010",
+        "data\\obj\\muobj\\MU_011",
+        "data\\obj\\muobj\\MU_012",
+        "data\\obj\\muobj\\MU_013",
+        "data\\obj\\muobj\\MU_014",
+    };
     unsigned char *cur;
     int i;
     int used;
     unsigned char *work;
 
-    *(UwamonoNameTbl *)names = D_004C9F20;
     cur = uwamono_dat;
     for (i = 0; i < 14; i++) {
         memset(sp, 0, 0x80);
         strcpy(sp, names[i]);
-        strcat(sp, D_004DB6D8);
+        strcat(sp, ".lex");
         uwares_tbl[i] = (int)cur;
         cur += xglCdReadFile(sp, cur, 0, 1);
         cur = (unsigned char *)(((int)cur + 0xF) & ~0xF);
         memset(sp, 0, 0x80);
         strcpy(sp, names[i]);
-        strcat(sp, D_004DB6E0);
+        strcat(sp, ".xtx");
         xtxres_tbl[i] = (int)cur;
         cur += xglCdReadFile(sp, cur, 0, 1);
         cur = (unsigned char *)(((int)cur + 0xF) & ~0xF);
@@ -784,17 +787,17 @@ void InitUwamonoSys(void)
 
     used = cur - uwamono_dat;
     if (used > 0x50000) {
-        printf(D_004C9F58, used / 1024);
+        printf("\242\243\242\243\242\243\276\345\312\252\276\357\303\363\312\252\245\252\241\274\245\320\241\274\245\325\245\355\241\274 %dK byte\242\243\242\243\242\243\n", used / 1024);
     } else {
-        printf(D_004C9F88, used / 1024, i);
+        printf("use uwamono dat=%dK byte obj count=%d\n", used / 1024, i);
     }
 
     memset(ItemBoxTbl, 0, 0x12C8);
     memset(EvtItemTbl, 0, 0x7F80);
     work = WorkEnd;
-    xglCdReadFile(D_004C9FB0, work, 0, 1);
+    xglCdReadFile("data\\karakama\\itembox.dat", work, 0, 1);
     __builtin_memcpy(ItemBoxTbl, work, 0x12C8);
-    xglCdReadFile(D_004C9FD0, work, 0, 1);
+    xglCdReadFile("data\\karakama\\evtitem.dat", work, 0, 1);
     __builtin_memcpy(EvtItemTbl, work, 0x7F80);
 
     GameLoopState.selectionDistance = 3.0f;
@@ -803,8 +806,6 @@ void InitUwamonoSys(void)
 
 extern int unitSequence[];
 extern signed char printflg;
-extern const char D_004C9FF0[24];
-extern const char D_004CA008[];
 void InitUwamono(UwamonoCreatedUnit *arg0);
 
 UwamonoCreatedUnit *Unit_CreateUwamono(int arg0, int arg1)
@@ -831,7 +832,7 @@ UwamonoCreatedUnit *Unit_CreateUwamono(int arg0, int arg1)
       {
         if (printflg != 0)
         {
-          printf(D_004C9FF0, arg1);
+          printf("ID=%d already MapUnit\n", arg1);
         }
         unit = (UwamonoCreatedUnit *) temp;
         break;
@@ -845,7 +846,7 @@ UwamonoCreatedUnit *Unit_CreateUwamono(int arg0, int arg1)
     unit = MAP_createUnit(arg0, arg1);
     if (unit == 0)
     {
-      printf(D_004CA008);
+      printf("Create Uwamono over flow!\n");
       return 0;
     }
   }
@@ -912,7 +913,7 @@ void MAP_LoadUwamonoResource(UwamonoResourceUnit *unit, int resourceId)
     int uwaresId;
     int xtxresId;
 
-    printf((const char *) D_004CA028);
+    printf("\276\357\303\363\276\345\312\252\245\355\241\274\245\311 %x\n");
     if (resourceId != 0x7012 && resourceId >= 0x1000) {
         index = resourceId - 0x7001;
         uwaresId = uwares_tbl[index];
@@ -950,8 +951,6 @@ void SendBrokenSignal(UwamonoMapUnit *unit)
 }
 
 extern signed char printflg;
-extern const char D_004CA040[];
-extern const char D_004CA050[];
 
 int GetPartsSize(void *arg0)
 {
@@ -968,8 +967,8 @@ int GetPartsSize(void *arg0)
         *(float *)(u + 0xB4) = *(float *)(sub + 0x10);
         *(float *)(u + 0xB8) = *(float *)(sub + 0x14) * 0.5f;
         if (pf) {
-            printf(D_004CA040);
-            printf(D_004CA050, *(float *)(sub + 0xC), *(float *)(sub + 0x10), *(float *)(sub + 0x14));
+            printf("SetSize\n");
+            printf("x=%f y=%f z=%f\n", *(float *)(sub + 0xC), *(float *)(sub + 0x10), *(float *)(sub + 0x14));
         }
     } else {
         *(UwamonoKowareDimensions *)(u + 0xB0) = KowareKind_t[kind].dimensions;
@@ -1120,9 +1119,6 @@ void InitUwamono(UwamonoCreatedUnit *arg0)
     }
 }
 
-const char D_004CA0D0[24] = "Illegal Parts Type %d\n";
-const char D_004CA170[32] = "Create Save Symbol %f %f %f\n";
-const char D_004CA190[32] = "Create Shop Symbol %f %f %f\n";
 
 void InitMapParts(InitMapPartsUnit *unit)
 {
@@ -1138,7 +1134,7 @@ void InitMapParts(InitMapPartsUnit *unit)
         InitDrill(unit);
         break;
     default:
-        printf(D_004CA0D0, unit->mapType);
+        printf("Illegal Parts Type %d\n", unit->mapType);
         unit->update = 0;
         break;
     }
@@ -1147,9 +1143,6 @@ void InitMapParts(InitMapPartsUnit *unit)
 extern signed char printflg;
 int GetPartsSize(void *);
 void SetHideObject(void *);
-extern const char D_004CA0E8[];
-extern const char D_004CA108[];
-extern const char D_004CA138[];
 
 void InitMapKoware(InitMapPartsUnit *unit)
 {
@@ -1160,7 +1153,7 @@ void InitMapKoware(InitMapPartsUnit *unit)
     short id;
 
     if (kind < 0) {
-        printf(D_004CA0E8, kind);
+        printf("Illegal Koware Kind = %d\n", kind);
     }
     GetPartsPos((GetPartsPosUnit *)u);
     GetPartsSize(u);
@@ -1175,12 +1168,12 @@ void InitMapKoware(InitMapPartsUnit *unit)
     if (id >= 0 && id < *(int *)((char *)res + 0x40)) {
         nmlModelSetPartsVisible(res, id, 1);
     } else {
-        printf(D_004CA108, *(short *)(u + 0xA4));
+        printf("\262\365\244\354\312\252\300\270\300\256\245\250\245\351\241\274 \245\321\241\274\245\304\245\312\245\363\245\320\241\274\244\254\311\324\300\265\244\307\244\271 %d\n", *(short *)(u + 0xA4));
         *(short *)(u + 0xA4) = -1;
         *(void **)(u + 4) = 0;
     }
     if (printflg) {
-        printf(D_004CA138, *(short *)(u + 0xA4), kind,
+        printf("Create Kowaremono id=%d kind=%d pos x=%f y=%f z=%f\n", *(short *)(u + 0xA4), kind,
                *(float *)(u + 0x10), *(float *)(u + 0x14), *(float *)(u + 0x18));
     }
 }
@@ -1224,7 +1217,7 @@ void InitSaveSymbol(SaveSymbolUnit *unit)
   unit->flags |= 0x20000000;
   if (printflg)
   {
-    printf(D_004CA170, position[0], new_var = unit->position[1], unit->position[2]);
+    printf("Create Save Symbol %f %f %f\n", position[0], new_var = unit->position[1], unit->position[2]);
   }
 }
 
@@ -1261,7 +1254,7 @@ void InitShopSymbol(UwamonoCreatedUnit *arg0)
   unit->flags |= 0x40000000;
   if (printflg)
   {
-    printf(D_004CA190, position[0], unit->position[1], unit->position[2]);
+    printf("Create Shop Symbol %f %f %f\n", position[0], unit->position[1], unit->position[2]);
   }
 }
 
@@ -1291,7 +1284,7 @@ void InitEvsSymbol(UwamonoCreatedUnit *arg0)
   unit->flags |= 0x10000;
   if (printflg)
   {
-    printf(D_004CA190, fptodp(position[0]), fptodp(unit->position[1]), fptodp(unit->position[2]));
+    printf("Create Shop Symbol %f %f %f\n", fptodp(position[0]), fptodp(unit->position[1]), fptodp(unit->position[2]));
   }
 }
 
@@ -1321,7 +1314,7 @@ void InitRetSymbol(UwamonoCreatedUnit *arg0)
   unit->flags |= 0x10000;
   if (printflg)
   {
-    printf(D_004CA190, fptodp(position[0]), fptodp(unit->position[1]), fptodp(unit->position[2]));
+    printf("Create Shop Symbol %f %f %f\n", fptodp(position[0]), fptodp(unit->position[1]), fptodp(unit->position[2]));
   }
 }
 
@@ -1390,7 +1383,7 @@ void SetHideObject(void *arg0)
         nmlModelSetPartsVisible(res, (int) serial, 0);
         return;
       }
-      printf(D_004CA108, (short) ((unsigned short) slot->serial), effect, res);
+      printf("\262\365\244\354\312\252\300\270\300\256\245\250\245\351\241\274 \245\321\241\274\245\304\245\312\245\363\245\320\241\274\244\254\311\324\300\265\244\307\244\271 %d\n", (short) ((unsigned short) slot->serial), effect, res);
       slot->serial = -1;
       slot->update = 0;
     }
@@ -1451,7 +1444,7 @@ UwamonoCreatedUnit *CreateUwamono(float x, float y, float z, float rotationY, in
     int inactiveValue;
 
     if (unit == 0) {
-        printf(D_004CA1B0);
+        printf("Create Uwamono unit over flow!\n");
         return 0;
     }
     MAP_loadUnitResource(unit, resourceId);
@@ -1480,7 +1473,7 @@ UwamonoKowareUnit *CreateKowaremono(short resourceId, short kindIndex)
     UwamonoKowareUnit *unit = (UwamonoKowareUnit *)MAP_createUnit(-1, resourceId);
     UwamonoMapUnitState *state;
     if (unit == 0) {
-        printf(D_004CA1D0);
+        printf("Create Kowaremono unit over flow!\n");
         return 0;
     }
     GetPartsPos((GetPartsPosUnit *)unit);
@@ -1515,8 +1508,6 @@ extern void *sefCreateEffectCf(int, int, int);
 extern void SetUwaWind(UwamonoWindUnit *unit);
 extern void CallMethod_I(const char *name, int arg);
 extern void EXM_ClearWindStruct(void);
-extern const char D_004DB6E8[32];
-extern const char D_004CA1F8[32];
 
 void MAP_updateUnitKoware(void *unit) {
     char *temp_17;
@@ -1549,7 +1540,7 @@ void MAP_updateUnitKoware(void *unit) {
             temp_5_2 = *(short *)(temp_17 + 0x30);
             if (temp_5_2 != -1) {
                 GameLoopState.enemyUpdateState = 0;
-                CallMethod_I(D_004DB6E8, (int) temp_5_2);
+                CallMethod_I("broken", (int) temp_5_2);
                 return;
             }
         }
@@ -1563,7 +1554,7 @@ void MAP_updateUnitKoware(void *unit) {
         }
         if (*(int *)(temp_17 + 0x3C) < *(short *)((char *)unit + 0xA8)) {
             if (printflg != 0) {
-                printf(D_004CA1F8, *(short *)((char *)unit + 0xA4), *(unsigned char *)((char *)unit + 0xA0));
+                printf("unit koware delete id=0x%x serial=%d\n", *(short *)((char *)unit + 0xA4), *(unsigned char *)((char *)unit + 0xA0));
             }
             *(int *)unit = 0;
             *(short *)((char *)unit + 0xA4) = -1;
@@ -1647,7 +1638,7 @@ void MAP_updateUnitHide(UwamonoMapSlot *unit)
       }
       else
       {
-        printf(D_004CA108, (short) (unsigned short) unit->serial);
+        printf("\262\365\244\354\312\252\300\270\300\256\245\250\245\351\241\274 \245\321\241\274\245\304\245\312\245\363\245\320\241\274\244\254\311\324\300\265\244\307\244\271 %d\n", (short) (unsigned short) unit->serial);
         unit->serial = -1;
         unit->update = 0;
       }
@@ -1723,8 +1714,6 @@ void UwamonoBrokenSe(UwamonoBrokenSoundUnit *unit)
 }
 
 extern void *sefCreateEffectCf(int, int, int);
-extern f32 D_004D7EC8;
-extern f32 D_004D7ECC;
 
 void DrawActiveCursol(void *arg0) {
     void *var_4;
@@ -1750,7 +1739,7 @@ void DrawActiveCursol(void *arg0) {
             var_4 = sefCreateEffectCf(0x2E3, 0, 0);
             if (var_4 != 0) {
                 avg = (((*(f32 *)((char *)(arg0) + 0xB0)) + (*(f32 *)((char *)(arg0) + 0xB4))) + (*(f32 *)((char *)(arg0) + 0xB8)));
-                scale = D_004D7EC8;
+                scale = 0.55f;
                 var_f1 = avg / 3.0f;
                 var_f1 = var_f1 * scale;
                 *(void **)((char *)(var_4) + 0x6C4) = arg0;
@@ -1774,7 +1763,7 @@ void DrawActiveCursol(void *arg0) {
             var_4 = sefCreateEffectCf(0x2E2, 0, 0);
             if (var_4 != 0) {
                 avg = (((*(f32 *)((char *)(arg0) + 0xB0)) + (*(f32 *)((char *)(arg0) + 0xB4))) + (*(f32 *)((char *)(arg0) + 0xB8)));
-                scale = D_004D7ECC;
+                scale = 0.55f;
                 var_f1 = avg / 3.0f;
                 var_f1 = var_f1 * scale;
                 *(void **)((char *)(var_4) + 0x6C4) = arg0;
@@ -1952,12 +1941,12 @@ int HitCheckMapUnitAt(UwamonoCollisionActor *actor, UwamonoCollisionUnit *unit)
 {
     UwamonoMapUnitState *state;
 
-    if (unit->position.y + unit->height * D_004D7ED0 < actor->position.y) {
+    if (unit->position.y + unit->height * 0.9f < actor->position.y) {
         return 0;
     }
 
     state = &unit->state;
-    if (actor->position.y < unit->position.y - D_004D7ED4) {
+    if (actor->position.y < unit->position.y - 1.8f) {
         return 0;
     }
 
@@ -1983,10 +1972,10 @@ unsigned int HitCheckMapUnitPosAt(UwamonoCollisionActor *actor, UwamonoCollision
     float actorY = actor->position.y;
     signed char shape;
 
-    if (unitY + unit->height * D_004D7ED8 < actorY) {
+    if (unitY + unit->height * 0.9f < actorY) {
         return 0;
     }
-    if (actorY < unitY - D_004D7EDC) {
+    if (actorY < unitY - 1.8f) {
         return 0;
     }
     shape = state->state;
@@ -2189,17 +2178,6 @@ typedef union UwamonoCollisionPosition {
     Vector4 value;
     XglQuadword quadword;
 } UwamonoCollisionPosition;
-extern const char D_004CA220[];
-extern const char D_004CA230[];
-extern const char D_004CA240[];
-extern const char D_004CA250[];
-extern const char D_004DB6F0[];
-extern const char D_004DB6F8[];
-extern const char D_004DB700[];
-extern const char D_004DB708[];
-extern const char D_004DB710[];
-extern const char D_004DB718[];
-extern const char D_004DB720[];
 typedef struct UwamonoCornerCollisionUnit {
     unsigned char unmodeled_00[0x10];
     UwamonoAlignedVector position;
@@ -2261,19 +2239,19 @@ int HitCheckBoxTest(UwamonoCollisionActor *actor, UwamonoCollisionUnitView *unit
         xglMatrixStackSave(unit->matrix);
     }
 
-    xglFontDebugPrintf(8, 0x80, D_004CA220,
+    xglFontDebugPrintf(8, 0x80, "MAT %f %f %f",
                        basis[0][0],
                        basis[0][1],
                        basis[0][2]);
-    xglFontDebugPrintf(8, 0x88, D_004CA220,
+    xglFontDebugPrintf(8, 0x88, "MAT %f %f %f",
                        basis[1][0],
                        basis[1][1],
                        basis[1][2]);
-    xglFontDebugPrintf(8, 0x90, D_004CA220,
+    xglFontDebugPrintf(8, 0x90, "MAT %f %f %f",
                        basis[2][0],
                        basis[2][1],
                        basis[2][2]);
-    xglFontDebugPrintf(8, 0x98, D_004CA230,
+    xglFontDebugPrintf(8, 0x98, "POS %f %f %f",
                        basis[3][0],
                        basis[3][1],
                        basis[3][2]);
@@ -2299,7 +2277,7 @@ int HitCheckBoxTest(UwamonoCollisionActor *actor, UwamonoCollisionUnitView *unit
     nearestY = actor->position.y - center.value.y;
     nearestZ = actor->position.z - center.value.z;
     distance = (nearestX * basis[0][0]) + (nearestY * basis[0][1]) + (nearestZ * basis[0][2]);
-    xglFontDebugPrintf(8, 0x3C, D_004DB6F0, distance);
+    xglFontDebugPrintf(8, 0x3C, "len=%f", distance);
 
     if (distance < 0.0f) {
         return 0;
@@ -2310,22 +2288,22 @@ int HitCheckBoxTest(UwamonoCollisionActor *actor, UwamonoCollisionUnitView *unit
     nearestX = distance * basis[0][0] + center.value.x;
     nearestY = distance * basis[0][1] + center.value.y;
     nearestZ = distance * basis[0][2] + center.value.z;
-    xglFontDebugPrintf(8, 0x18, D_004DB6F8, nearestX);
-    xglFontDebugPrintf(8, 0x20, D_004DB700, nearestY);
-    xglFontDebugPrintf(8, 0x28, D_004DB708, nearestZ);
+    xglFontDebugPrintf(8, 0x18, "x=%f", nearestX);
+    xglFontDebugPrintf(8, 0x20, "y=%f", nearestY);
+    xglFontDebugPrintf(8, 0x28, "z=%f", nearestZ);
 
     dx = actor->position.x - nearestX;
     dy = actor->position.y - nearestY;
     dz = actor->position.z - nearestZ;
     radiusSquared = unit->dimensions.value.z * unit->dimensions.value.z;
     distance = (dx * dx) + (dy * dy) + (dz * dz);
-    xglFontDebugPrintf(8, 0x54, D_004DB710, dx);
-    xglFontDebugPrintf(8, 0x5C, D_004DB718, dy);
-    xglFontDebugPrintf(8, 0x64, D_004DB720, dz);
-    xglFontDebugPrintf(8, 0x6C, D_004CA240,
+    xglFontDebugPrintf(8, 0x54, "u=%f", dx);
+    xglFontDebugPrintf(8, 0x5C, "v=%f", dy);
+    xglFontDebugPrintf(8, 0x64, "w=%f", dz);
+    xglFontDebugPrintf(8, 0x6C, "len=%f r=%f",
                        distance, radiusSquared);
     if (distance < radiusSquared) {
-        xglFontDebugPrintf(8, 8, D_004CA250);
+        xglFontDebugPrintf(8, 8, "MATRIX_HIT");
     }
 
     return 0;
@@ -2369,7 +2347,6 @@ int HitCheckNyuru(void *pos, void *unit)
 
 extern float xglSin(float angle);
 extern float xglCos(float angle);
-extern float D_004D7EE8;
 static int NyuruCircle(UwamonoNyuruActor *actor, UwamonoCollisionUnit *unit) {
     Vector4 tmp;
     Vector4 nrm;
@@ -2403,7 +2380,7 @@ static int NyuruCircle(UwamonoNyuruActor *actor, UwamonoCollisionUnit *unit) {
             ang = ang + t;
         }
     }
-    r = ((UwamonoCollisionActor *)actor)->radius + unit->radius + D_004D7EE8;
+    r = ((UwamonoCollisionActor *)actor)->radius + unit->radius + 0.01f;
     tmp.x = unit->position.x - r * xglSin(ang);
     tmp.z = unit->position.z - r * xglCos(ang);
     actor->displacement.x = tmp.x - actor->position.x;
@@ -2422,8 +2399,6 @@ typedef struct NyuruMat44 {
     float m[4][4];
 } NyuruMat44;
 
-extern float D_004D7EEC;
-extern float D_004D7EF0;
 
 static int NyuruMatrix(UwamonoNyuruActor *actor, UwamonoCollisionUnit *unit, int mode) {
     UwamonoAlignedVector dim;
@@ -2468,7 +2443,7 @@ static int NyuruMatrix(UwamonoNyuruActor *actor, UwamonoCollisionUnit *unit, int
             s = nrm.x * m[0] + nrm.z * m[2];
             actor->displacement.x = s * m[0] * len;
             actor->displacement.z = s * m[2] * len;
-            if (__builtin_fabsf(actor->displacement.x) < D_004D7EEC && __builtin_fabsf(actor->displacement.z) < D_004D7EEC && mode == 0) {
+            if (__builtin_fabsf(actor->displacement.x) < 0.001f && __builtin_fabsf(actor->displacement.z) < 0.001f && mode == 0) {
                 if (dim.value.x < dot) {
                     actor->displacement.x = m[0] * len * 0.5f;
                     actor->displacement.z = m[2] * len * 0.5f;
@@ -2481,7 +2456,7 @@ static int NyuruMatrix(UwamonoNyuruActor *actor, UwamonoCollisionUnit *unit, int
             s = nrm.x * m[8] + nrm.z * m[10];
             actor->displacement.x = s * m[8] * len;
             actor->displacement.z = s * m[10] * len;
-            if (__builtin_fabsf(actor->displacement.x) < D_004D7EF0 && __builtin_fabsf(actor->displacement.z) < D_004D7EF0 && mode == 0) {
+            if (__builtin_fabsf(actor->displacement.x) < 0.001f && __builtin_fabsf(actor->displacement.z) < 0.001f && mode == 0) {
                 dot = (ddx * m[8]) + (ddz * m[10]);
                 if (dim.value.z < dot) {
                     actor->displacement.x = m[8] * len * 0.5f;
@@ -2563,7 +2538,6 @@ int NyuruBox(UwamonoCollisionActor *actor, UwamonoCollisionUnit *unit, int arg2)
     return 0;
 }
 
-extern float D_004D7EF4;
 typedef struct NyuruUnitCopy {
     UwamonoAlignedVector a[0x30];
 } NyuruUnitCopy;
@@ -2610,7 +2584,7 @@ static int NyuruCorner(UwamonoCollisionActor *arg0, UwamonoCollisionUnit *arg1) 
     local = *(NyuruUnitCopy *)arg1;
     radius = arg0->radius;
     r15 = radius * 1.5f;
-    arg0->radius = D_004D7EF4;
+    arg0->radius = 0.01f;
     local.a[1] = corner;
     local.a[11].value.z = r15;
     local.a[11].value.x = r15;
@@ -2627,7 +2601,6 @@ extern void Vibration_Set_Weak(int level);
 extern void Enemy_FindByEar(void *actor, void *pos);
 extern signed char dispflg;
 extern signed char collflg;
-extern char D_004CA260[];
 typedef struct ShootActor {
     unsigned char unmodeled_00[0x10];
     Vector4 pos;
@@ -2709,7 +2682,7 @@ void ShootMapUnit(void)
     }
     if (actor->motionTime > 0.36f && sub->found == 0) {
         if (printflg) {
-            printf(D_004CA260, G.shootUnit);
+            printf("Act Shoot MapUnit=%d\n", G.shootUnit);
         }
         Enemy_FindByEar(actor, (char *)MapUnit + 0x10 + no * 0x300);
         sub->found = 1;
@@ -2978,8 +2951,6 @@ void CheckNearPoint(const Vector4 *origin, const Vector4 *candA, const Vector4 *
         *out = *candB;
 }
 
-extern float D_004D7F10;
-extern float D_004D7F14;
 
 int UwamonoAreaCheck(Vector4 *arg0, char *arg1, float r) {
     char *p;
@@ -2990,10 +2961,10 @@ int UwamonoAreaCheck(Vector4 *arg0, char *arg1, float r) {
     p = arg1 + 0x1A0;
     top = *(float *)(arg1 + 0x14);
     y = arg0->y;
-    if (top + *(float *)(arg1 + 0xB4) * D_004D7F10 < y) {
+    if (top + *(float *)(arg1 + 0xB4) * 0.9f < y) {
         return 0;
     }
-    if (y < top - D_004D7F14) {
+    if (y < top - 1.8f) {
         return 0;
     }
     switch (p[0x2D]) {
@@ -3119,7 +3090,7 @@ int CrossCheckActor(UwamonoCrossActor *source, const Vector4 *to)
 {
     int index;
     for (index = 0; index < 64; ++index) {
-        if (!(D_004D7F18 < __builtin_fabsf(source->position.y - actor[index].position.y)) &&
+        if (!(0.3f < __builtin_fabsf(source->position.y - actor[index].position.y)) &&
             actor[index].resourceId >= 0 && !(actor[index].flags & 8) &&
             actor[index].collisionObject != 0 && index != source->actorIndex &&
             CheckCrossCircle(actor[index].radius, &source->position, to, &actor[index].position)) {
@@ -3179,7 +3150,6 @@ int CrossCheckMapUnitCircle(const Vector4 *from, const Vector4 *to, UwamonoColli
 
 extern int CheckCrossLine(const Vector4 *first_start, const Vector4 *first_end,
                           const Vector4 *second_start, const Vector4 *second_end);
-extern f32 D_004D7F20;
 
 int CrossCheckMapUnitBox(Vector4 *first, Vector4 *second, UwamonoCrossUnit *unit) {
     Vector4 c1;
@@ -3193,8 +3163,8 @@ int CrossCheckMapUnitBox(Vector4 *first, Vector4 *second, UwamonoCrossUnit *unit
     dim.words[0] = *(long long *)((char *)unit + 0xB0);
     dim.words[1] = zw;
     m = *(float **)((char *)unit + 0x80);
-    dim.value.x += D_004D7F20;
-    dim.value.z += D_004D7F20;
+    dim.value.x += 0.1f;
+    dim.value.z += 0.1f;
 
     c1.x = pos.value.x + (dim.value.x * m[0] + dim.value.z * m[8]);
     c1.y = pos.value.y;
@@ -3446,7 +3416,6 @@ int AimMapUnit(void)
     return candidates[0].unitIndex;
 }
 
-extern f32 D_004D7F28;
 typedef struct AimVec16 {
     long long a;
     long long b;
@@ -3496,10 +3465,10 @@ int AimMapUnitLookCheck(unsigned char *arg0)
     if (r == -1000.0f) {
         return 0;
     }
-    if (!(__builtin_fabsf(center.v.x - *(float *)(arg0 + 0x10)) < D_004D7F28)) {
+    if (!(__builtin_fabsf(center.v.x - *(float *)(arg0 + 0x10)) < 0.01f)) {
         return 0;
     }
-    if (__builtin_fabsf(center.v.z - *(float *)(arg0 + 0x18)) < D_004D7F28) {
+    if (__builtin_fabsf(center.v.z - *(float *)(arg0 + 0x18)) < 0.01f) {
         return 1;
     }
     return 0;
@@ -3826,9 +3795,17 @@ void DrawRadar(void) {
     } while (i < 0x40);
 }
 
-extern int sPoint_0[];
 
 void DrawSprite(int *pos, int *spr, int w, int h) {
+    static int sPoint_0[28] __asm__("sPoint.0") __attribute__((aligned(16))) = {
+        0x8001, 0x60234000, 0x5151EE, 0x0,
+        0x31003, 0x0, 0x47, 0x0,
+        0x44, 0x0, 0x42, 0x0,
+        0x0, 0x0, 0xFF, 0x0,
+        0x0, 0x0, 0x0, 0x0,
+        0x0, 0x0, 0xFF, 0x0,
+        0x0, 0x0, 0x0, 0x0
+    };
     union { long long d[2]; int w[4]; } v;
     union { long long d[2]; int w[4]; } *p = (void *)pos;
 
@@ -3853,12 +3830,15 @@ void DrawSprite(int *pos, int *spr, int w, int h) {
     xglPrimAddGifTagDirect(0, sPoint_0, 7);
 }
 
-extern UwamonoLinePacket sSortLine_1;
 extern signed char lineflg;
 
 void SortLine(const UwamonoAlignedScreenPointSL *from,
               const UwamonoAlignedScreenPointSL *to, int mode)
 {
+    static UwamonoLinePacket sSortLine_1 __asm__("sSortLine.1") __attribute__((aligned(16))) = {
+        {0x0, 0x0, 0x0, 0x51000005, 0x8001, 0x40014000, 0x5151, 0x0},
+        {0, 0, 255, 0}, {0, 0, 0, 0}, {0, 0, 255, 0}, {0, 0, 0, 0},
+    };
     UwamonoAlignedScreenPointSL first;
     UwamonoAlignedScreenPointSL second;
 
@@ -3900,3 +3880,136 @@ void SortLine(const UwamonoAlignedScreenPointSL *from,
         nmlModelDirectSend(5, (unsigned char *)&sSortLine_1, 6);
     }
 }
+
+int uwares_tbl[14] = {0};
+int xtxres_tbl[14] = {0};
+UwamonoWind uwaWind = {0};
+UwamonoKowareKind KowareKind_t[127] = {
+    {2, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, 0, {0}, 601, 0},
+    {2, {0}, {{0.5f, 2.0f, 0.5f, 0.0f}}, 0, {0}, 602, 0},
+    {2, {0}, {{0.5f, 3.0f, 0.5f, 0.0f}}, 0, {0}, 603, 0},
+    {2, {0}, {{1.0f, 1.0f, 1.0f, 0.0f}}, 0, {0}, 604, 0},
+    {2, {0}, {{1.0f, 2.0f, 1.0f, 0.0f}}, 0, {0}, 605, 0},
+    {2, {0}, {{1.0f, 3.0f, 1.0f, 0.0f}}, 0, {0}, 606, 0},
+    {2, {0}, {{1.5f, 1.0f, 1.5f, 0.0f}}, 0, {0}, 607, 0},
+    {2, {0}, {{1.5f, 2.0f, 1.5f, 0.0f}}, 0, {0}, 608, 0},
+    {2, {0}, {{3.0f, 3.0f, 1.5f, 0.0f}}, 0, {0}, 609, 0},
+    {1, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, 0, {0}, 628, 0},
+    {1, {0}, {{0.5f, 2.0f, 0.5f, 0.0f}}, 0, {0}, 629, 0},
+    {1, {0}, {{0.5f, 3.0f, 0.5f, 0.0f}}, 0, {0}, 630, 0},
+    {1, {0}, {{1.0f, 1.0f, 1.0f, 0.0f}}, 0, {0}, 631, 0},
+    {1, {0}, {{1.0f, 2.0f, 1.0f, 0.0f}}, 0, {0}, 632, 0},
+    {1, {0}, {{1.0f, 3.0f, 1.0f, 0.0f}}, 0, {0}, 633, 0},
+    {1, {0}, {{1.5f, 1.0f, 1.5f, 0.0f}}, 0, {0}, 634, 0},
+    {1, {0}, {{1.5f, 2.0f, 1.5f, 0.0f}}, 0, {0}, 635, 0},
+    {1, {0}, {{1.5f, 3.0f, 1.5f, 0.0f}}, 0, {0}, 636, 0},
+    {1, {0}, {{2.5f, 2.0f, 2.5f, 0.0f}}, 0, {0}, 637, 0},
+    {2, {0}, {{0.25f, 1.0f, 1.0f, 0.0f}}, 0, {0}, 658, 0},
+    {2, {0}, {{0.25f, 2.0f, 1.0f, 0.0f}}, 0, {0}, 659, 0},
+    {2, {0}, {{0.25f, 3.0f, 1.0f, 0.0f}}, 0, {0}, 660, 0},
+    {2, {0}, {{0.5f, 1.0f, 1.0f, 0.0f}}, 0, {0}, 661, 0},
+    {2, {0}, {{0.5f, 2.0f, 1.0f, 0.0f}}, 0, {0}, 662, 0},
+    {2, {0}, {{0.5f, 3.0f, 1.0f, 0.0f}}, 0, {0}, 663, 0},
+    {2, {0}, {{0.75f, 1.0f, 1.5f, 0.0f}}, 0, {0}, 664, 0},
+    {2, {0}, {{0.75f, 2.0f, 1.5f, 0.0f}}, 0, {0}, 665, 0},
+    {2, {0}, {{0.75f, 3.0f, 1.5f, 0.0f}}, 0, {0}, 666, 0},
+    {2, {0}, {{1.25f, 2.0f, 2.0f, 0.0f}}, 0, {0}, 667, 0},
+    {2, {0}, {{1.0f, 1.0f, 0.25f, 0.0f}}, 0, {0}, 688, 0},
+    {2, {0}, {{1.0f, 2.0f, 0.25f, 0.0f}}, 0, {0}, 689, 0},
+    {2, {0}, {{1.0f, 3.0f, 0.25f, 0.0f}}, 0, {0}, 690, 0},
+    {2, {0}, {{1.0f, 1.0f, 0.5f, 0.0f}}, 0, {0}, 691, 0},
+    {2, {0}, {{1.0f, 2.0f, 0.5f, 0.0f}}, 0, {0}, 692, 0},
+    {2, {0}, {{1.0f, 3.0f, 0.5f, 0.0f}}, 0, {0}, 693, 0},
+    {2, {0}, {{1.5f, 1.0f, 0.75f, 0.0f}}, 0, {0}, 694, 0},
+    {2, {0}, {{1.5f, 2.0f, 0.75f, 0.0f}}, 0, {0}, 695, 0},
+    {2, {0}, {{1.5f, 3.0f, 0.75f, 0.0f}}, 0, {0}, 696, 0},
+    {2, {0}, {{2.0f, 2.0f, 1.25f, 0.0f}}, 0, {0}, 697, 0},
+    {2, {0}, {{0.125f, 2.25f, 0.75f, 0.0f}}, 0, {0}, 718, 0},
+    {2, {0}, {{0.75f, 2.25f, 0.125f, 0.0f}}, 0, {0}, 719, 0},
+    {2, {0}, {{0.5f, 4.0f, 0.5f, 0.0f}}, 0, {0}, 601, 0},
+    {2, {0}, {{0.875f, 4.0f, 0.3f, 0.0f}}, 0, {0}, 601, 0},
+    {2, {0}, {{0.375f, 2.25f, 0.125f, 0.0f}}, 0, {0}, 601, 0},
+    {2, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, 1, {0}, 610, 0},
+    {2, {0}, {{0.5f, 2.0f, 0.5f, 0.0f}}, 1, {0}, 611, 0},
+    {2, {0}, {{0.5f, 3.0f, 0.5f, 0.0f}}, 1, {0}, 612, 0},
+    {2, {0}, {{1.0f, 1.0f, 1.0f, 0.0f}}, 1, {0}, 613, 0},
+    {2, {0}, {{1.0f, 2.0f, 1.0f, 0.0f}}, 1, {0}, 614, 0},
+    {2, {0}, {{1.0f, 3.0f, 1.0f, 0.0f}}, 1, {0}, 615, 0},
+    {2, {0}, {{1.5f, 1.0f, 1.5f, 0.0f}}, 1, {0}, 616, 0},
+    {2, {0}, {{1.5f, 2.0f, 1.5f, 0.0f}}, 1, {0}, 617, 0},
+    {2, {0}, {{3.0f, 3.0f, 1.5f, 0.0f}}, 1, {0}, 618, 0},
+    {1, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, 1, {0}, 638, 0},
+    {1, {0}, {{0.5f, 2.0f, 0.5f, 0.0f}}, 1, {0}, 639, 0},
+    {1, {0}, {{0.5f, 3.0f, 0.5f, 0.0f}}, 1, {0}, 640, 0},
+    {1, {0}, {{1.0f, 1.0f, 1.0f, 0.0f}}, 1, {0}, 641, 0},
+    {1, {0}, {{1.0f, 2.0f, 1.0f, 0.0f}}, 1, {0}, 642, 0},
+    {1, {0}, {{1.0f, 3.0f, 1.0f, 0.0f}}, 1, {0}, 643, 0},
+    {1, {0}, {{1.5f, 1.0f, 1.5f, 0.0f}}, 1, {0}, 644, 0},
+    {1, {0}, {{1.5f, 2.0f, 1.5f, 0.0f}}, 1, {0}, 645, 0},
+    {1, {0}, {{1.5f, 3.0f, 1.5f, 0.0f}}, 1, {0}, 646, 0},
+    {1, {0}, {{2.5f, 2.0f, 2.5f, 0.0f}}, 1, {0}, 647, 0},
+    {2, {0}, {{0.25f, 1.0f, 1.0f, 0.0f}}, 1, {0}, 668, 0},
+    {2, {0}, {{0.25f, 2.0f, 1.0f, 0.0f}}, 1, {0}, 669, 0},
+    {2, {0}, {{0.25f, 3.0f, 1.0f, 0.0f}}, 1, {0}, 670, 0},
+    {2, {0}, {{0.5f, 1.0f, 1.0f, 0.0f}}, 1, {0}, 671, 0},
+    {2, {0}, {{0.5f, 2.0f, 1.0f, 0.0f}}, 1, {0}, 672, 0},
+    {2, {0}, {{0.5f, 3.0f, 1.0f, 0.0f}}, 1, {0}, 673, 0},
+    {2, {0}, {{0.75f, 1.0f, 1.5f, 0.0f}}, 1, {0}, 674, 0},
+    {2, {0}, {{0.75f, 2.0f, 1.5f, 0.0f}}, 1, {0}, 675, 0},
+    {2, {0}, {{0.75f, 3.0f, 1.5f, 0.0f}}, 1, {0}, 676, 0},
+    {2, {0}, {{1.25f, 2.0f, 2.0f, 0.0f}}, 1, {0}, 677, 0},
+    {2, {0}, {{1.0f, 1.0f, 0.25f, 0.0f}}, 1, {0}, 698, 0},
+    {2, {0}, {{1.0f, 2.0f, 0.25f, 0.0f}}, 1, {0}, 699, 0},
+    {2, {0}, {{1.0f, 3.0f, 0.25f, 0.0f}}, 1, {0}, 700, 0},
+    {2, {0}, {{1.0f, 1.0f, 0.5f, 0.0f}}, 1, {0}, 701, 0},
+    {2, {0}, {{1.0f, 2.0f, 0.5f, 0.0f}}, 1, {0}, 702, 0},
+    {2, {0}, {{1.0f, 3.0f, 0.5f, 0.0f}}, 1, {0}, 703, 0},
+    {2, {0}, {{1.5f, 1.0f, 0.75f, 0.0f}}, 1, {0}, 704, 0},
+    {2, {0}, {{1.5f, 2.0f, 0.75f, 0.0f}}, 1, {0}, 705, 0},
+    {2, {0}, {{1.5f, 3.0f, 0.75f, 0.0f}}, 1, {0}, 706, 0},
+    {2, {0}, {{2.0f, 2.0f, 1.25f, 0.0f}}, 1, {0}, 707, 0},
+    {2, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, 2, {0}, 619, 0},
+    {2, {0}, {{0.5f, 2.0f, 0.5f, 0.0f}}, 2, {0}, 620, 0},
+    {2, {0}, {{0.5f, 3.0f, 0.5f, 0.0f}}, 2, {0}, 621, 0},
+    {2, {0}, {{1.0f, 1.0f, 1.0f, 0.0f}}, 2, {0}, 622, 0},
+    {2, {0}, {{1.0f, 2.0f, 1.0f, 0.0f}}, 2, {0}, 623, 0},
+    {2, {0}, {{1.0f, 3.0f, 1.0f, 0.0f}}, 2, {0}, 624, 0},
+    {2, {0}, {{1.5f, 1.0f, 1.5f, 0.0f}}, 2, {0}, 625, 0},
+    {2, {0}, {{1.5f, 2.0f, 1.5f, 0.0f}}, 2, {0}, 626, 0},
+    {2, {0}, {{3.0f, 3.0f, 1.5f, 0.0f}}, 2, {0}, 627, 0},
+    {1, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, 2, {0}, 648, 0},
+    {1, {0}, {{0.5f, 2.0f, 0.5f, 0.0f}}, 2, {0}, 649, 0},
+    {1, {0}, {{0.5f, 3.0f, 0.5f, 0.0f}}, 2, {0}, 650, 0},
+    {1, {0}, {{1.0f, 1.0f, 1.0f, 0.0f}}, 2, {0}, 651, 0},
+    {1, {0}, {{1.0f, 2.0f, 1.0f, 0.0f}}, 2, {0}, 652, 0},
+    {1, {0}, {{1.0f, 3.0f, 1.0f, 0.0f}}, 2, {0}, 653, 0},
+    {1, {0}, {{1.5f, 1.0f, 1.5f, 0.0f}}, 2, {0}, 654, 0},
+    {1, {0}, {{1.5f, 2.0f, 1.5f, 0.0f}}, 2, {0}, 655, 0},
+    {1, {0}, {{1.5f, 3.0f, 1.5f, 0.0f}}, 2, {0}, 656, 0},
+    {1, {0}, {{2.5f, 2.0f, 2.5f, 0.0f}}, 2, {0}, 657, 0},
+    {2, {0}, {{0.25f, 1.0f, 1.0f, 0.0f}}, 2, {0}, 678, 0},
+    {2, {0}, {{0.25f, 2.0f, 1.0f, 0.0f}}, 2, {0}, 679, 0},
+    {2, {0}, {{0.25f, 3.0f, 1.0f, 0.0f}}, 2, {0}, 680, 0},
+    {2, {0}, {{0.5f, 1.0f, 1.0f, 0.0f}}, 2, {0}, 681, 0},
+    {2, {0}, {{0.5f, 2.0f, 1.0f, 0.0f}}, 2, {0}, 682, 0},
+    {2, {0}, {{0.5f, 3.0f, 1.0f, 0.0f}}, 2, {0}, 683, 0},
+    {2, {0}, {{0.75f, 1.0f, 1.5f, 0.0f}}, 2, {0}, 684, 0},
+    {2, {0}, {{0.75f, 2.0f, 1.5f, 0.0f}}, 2, {0}, 685, 0},
+    {2, {0}, {{0.75f, 3.0f, 1.5f, 0.0f}}, 2, {0}, 686, 0},
+    {2, {0}, {{1.25f, 2.0f, 2.0f, 0.0f}}, 2, {0}, 687, 0},
+    {2, {0}, {{1.0f, 1.0f, 0.25f, 0.0f}}, 2, {0}, 708, 0},
+    {2, {0}, {{1.0f, 2.0f, 0.25f, 0.0f}}, 2, {0}, 709, 0},
+    {2, {0}, {{1.0f, 3.0f, 0.25f, 0.0f}}, 2, {0}, 710, 0},
+    {2, {0}, {{1.0f, 1.0f, 0.5f, 0.0f}}, 2, {0}, 711, 0},
+    {2, {0}, {{1.0f, 2.0f, 0.5f, 0.0f}}, 2, {0}, 712, 0},
+    {2, {0}, {{1.0f, 3.0f, 0.5f, 0.0f}}, 2, {0}, 713, 0},
+    {2, {0}, {{1.5f, 1.0f, 0.75f, 0.0f}}, 2, {0}, 714, 0},
+    {2, {0}, {{1.5f, 2.0f, 0.75f, 0.0f}}, 2, {0}, 715, 0},
+    {2, {0}, {{1.5f, 3.0f, 0.75f, 0.0f}}, 2, {0}, 716, 0},
+    {2, {0}, {{2.0f, 2.0f, 1.25f, 0.0f}}, 2, {0}, 717, 0},
+    {2, {0}, {{0.125f, 2.25f, 0.75f, 0.0f}}, 1, {0}, 601, 0},
+    {2, {0}, {{0.75f, 2.25f, 0.125f, 0.0f}}, 1, {0}, 601, 0},
+    {2, {0}, {{0.125f, 2.25f, 0.75f, 0.0f}}, 2, {0}, 601, 0},
+    {2, {0}, {{0.75f, 2.25f, 0.125f, 0.0f}}, 2, {0}, 601, 0},
+    {2, {0}, {{2.866f, 2.859f, 0.025f, 0.0f}}, 2, {0}, 601, 0},
+};

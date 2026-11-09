@@ -94,11 +94,11 @@ typedef struct UmnDataBasePasWork {
     UmnDataBasePasMessage messages[1];
     UmnDataBasePasBox box;
 } UmnDataBasePasWork;
-extern char *msg00_0_00A106F8;
 extern void endPrintExtFunc(int kind, int id, void *data);
 
 void tskUmnDataBasePas(UmnDataBaseTask *task, UmnDataBasePasWork *work)
 {
+    static char *msg00_0_00A106F8 __asm__("msg00.0") = "Database";
     int i;
 
     if (UmnWork.mode != 2) {
@@ -194,7 +194,6 @@ typedef struct UmnDataBaseInfoWork {
     UmnDataBaseInfoWindow window;       /* +0x0C */
     UmnDataBaseInfoText info;           /* +0x1A0 */
 } UmnDataBaseInfoWork;
-extern char *msg00_1_00A10700[3];
 void MenuInfoWindow(UmnDataBaseInfoWindow *window, UmnDataBaseInfoText *text);
 /*
  * The help line at the bottom of the U.M.N. database screen: the frame the
@@ -204,6 +203,7 @@ void MenuInfoWindow(UmnDataBaseInfoWindow *window, UmnDataBaseInfoText *text);
  */
 void tskUmnDataBaseInfo(UmnDataBaseTask *task, UmnDataBaseInfoWork *work)
 {
+    static char *msg00_1_00A10700[3] __asm__("msg00.1") = {"View data of all the Gnosis you have encountered.", "View keywords that you have come across.", "Cancel."};
     int state;
     short slideTarget;
 
@@ -311,8 +311,6 @@ typedef struct UmnDataBaseNameWork {
     UmnNameCursol cursol;
 } UmnDataBaseNameWork;
 extern unsigned short monster_folder[];
-extern char D_00A12F18[];
-extern char D_00A12F20[];
 void eCursolSet(void *cursol, int mode);
 void eCursolModeChange(void *cursol, int mode);
 void eCursolMain(void *cursol);
@@ -340,7 +338,7 @@ void tskUmnDataBaseName(UmnDataBaseTask *task, UmnDataBaseNameWork *work)
             WindowDXSet((UmnDataBaseInfoWindow *)&work->entries[i].window);
             work->entries[i].window.width = 0xDE;
             work->entries[i].window.color = work->color;
-            work->entries[i].window.title = D_00A12F18;
+            work->entries[i].window.title = "No.";
             work->entries[i].window.y = (i / 2) * 0x30 + 0x50;
             work->entries[i].window.height = 0x1E;
             work->entries[i].window.x = (work->entries[i].window.width + 0x220) * (i % 2) - work->entries[i].window.width - 0x10;
@@ -515,7 +513,7 @@ void tskUmnDataBaseName(UmnDataBaseTask *task, UmnDataBaseNameWork *work)
         work->cursol.y = work->entries[sel].window.y + 7;
         eCursolMain(&work->cursol);
     }
-    xglFontDebugPrintf(0x10, 0x60, D_00A12F20, work->state);
+    xglFontDebugPrintf(0x10, 0x60, "name_w %2d", work->state);
 }
 
 /* PadPrefix canonically covers [0x00, 0x2C). The original
@@ -685,12 +683,11 @@ typedef struct UmnDataBaseMenuWork {
     unsigned char unmodeled_1b8[0x79C - 0x1B8];
     UmnDataBaseMenuItem itemList[4];    /* +0x79C */
 } UmnDataBaseMenuWork;
-extern char *text2_2[];
-extern char D_00A13028[];
 extern char MenuSelectWindow[];
 
 void tskUmnDataBaseMenu(UmnDataBaseTask *task, UmnDataBaseMenuWork *work)
 {
+    static char *text2_2[3] __asm__("text2.2") = {"Gnosis", "Keywords", "Cancel"};
     int i;
     short target;
     short hideTarget;
@@ -711,7 +708,7 @@ void tskUmnDataBaseMenu(UmnDataBaseTask *task, UmnDataBaseMenuWork *work)
         work->window.width = 0x7D;
         work->window.height = 0x4E;
         work->selKind = 2;
-        work->window.title = D_00A13028;
+        work->window.title = "Menu";
         work->window.callback = MenuSelectWindow;
         work->window.callbackArg = &work->selUnk;
         work->items = 0;
@@ -833,7 +830,6 @@ typedef struct UmnDataBaseArrowSteps {
 } UmnDataBaseArrowSteps;
 extern const UmnDataBaseArrowSprites D_00A13138;
 extern const UmnDataBaseArrowSteps D_00A13140;
-extern char *text_3_00A10720[5];
 void eMessageModeChange(UmnDataBaseExWinMessage *message, int mode);
 void eSpriteSet(UmnDataBaseExWinSprite *sprite, short spriteId);
 void eSpriteMain(UmnDataBaseExWinSprite *sprite);
@@ -846,6 +842,7 @@ void eSpriteMain(UmnDataBaseExWinSprite *sprite);
  */
 void tskUmnDataBaseExWin(UmnDataBaseTask *task, UmnDataBaseExWinWork *work)
 {
+    static char *text_3_00A10720[5] __asm__("text.3") = {"\x1E""6\xA1\xA7Zoom out", "\x1E""5\xA1\xA7Zoom in", "\x1E""4\xA1\xA7Rotate", "\x1E\x00\xA1\xA7Turn menu off", "\x1E\x01\xA1\xA7""Analysis info"};
     UmnDataBaseArrowSprites arrowSprite;
     short lineTarget[5];
     short arrowTarget[2];
@@ -942,6 +939,9 @@ void tskUmnDataBaseExWin(UmnDataBaseTask *task, UmnDataBaseExWinWork *work)
     }
 }
 
+const UmnDataBaseArrowSprites D_00A13138 = {{0x112, 0x110}};
+const UmnDataBaseArrowSteps D_00A13140 = {{1, -1}};
+
 #define PAD_MARU 0x0020
 #define PAD_BATU 0x0040
 typedef struct UmnDataBaseDispParam {
@@ -1007,8 +1007,6 @@ typedef struct UmnDataBaseKeyWordWork {
     UmnKeyWordMessage message;              /* +0x96C */
 } UmnDataBaseKeyWordWork;
 #define UMN_KEYWORD_HIDDEN_X (-272)
-extern char D_00A13148[];
-extern char msg00_4[];
 int tyaUmlDispParamReset(UmnDataBaseDispParam *disp, int mode);
 int tyaUmlDatabaseMain(UmnDataBaseDispParam *disp);
 void eRibbonSet(UmnKeyWordRibbon *ribbon, int mode);
@@ -1023,6 +1021,7 @@ void eTagFontMain(UmnKeyWordTagFont *tag);
  */
 void tskUmnDataBaseKeyWord(UmnDataBaseTask *task, UmnDataBaseKeyWordWork *work)
 {
+    static char msg00_4[16] __asm__("msg00.4") = "\x1E\x00Index Search:";
     short slideTarget;
 
     if (UmnWork.mode != 2) {
@@ -1048,7 +1047,7 @@ void tskUmnDataBaseKeyWord(UmnDataBaseTask *task, UmnDataBaseKeyWordWork *work)
         eRibbonSet(&work->ribbon, 3);
         work->ribbon.width = 256;
         work->ribbon.height = 24;
-        eTagFontSet(&work->tag, D_00A13148);
+        eTagFontSet(&work->tag, "\x01Num");
         eNumberSet(&work->number, 0);
         eMessageSet(&work->message, msg00_4);
         work->message.mode = 32;
@@ -1129,6 +1128,8 @@ void tskUmnDataBaseKeyWord(UmnDataBaseTask *task, UmnDataBaseKeyWordWork *work)
         break;
     }
 }
+
+unsigned short monster_folder[128] = {0};
 
 typedef struct UmnDataBaseModelXform {
     float position[3];              /* +0x00 */
@@ -1217,10 +1218,6 @@ void UmnDataBaseModel(UmnDataBaseModelWork *work)
 extern int UmnWorkEnd;
 extern void *UmnModelSon;
 extern int UmnModelUkn;
-extern char D_00A13150[];
-extern char D_00A13158[];
-extern char D_00A13160[];
-extern char D_00A13170[];
 void UmnObjectTaskCreate(void (*task)(void *, void *), void *work);
 void UmnChangeTopLevel(int level);
 void xglFontDebugHex(int x, int y, int value, int digits);
@@ -1516,8 +1513,8 @@ void UmnDataBase(void)
         umnS()[0x10]--;
     }
     xglFontDebugHex(0, 0x40, umn()[3], 2);
-    xglFontDebugPrintf(0x10, 0x18, D_00A13150, umnS()[0x52]);
-    xglFontDebugPrintf(0x10, 0x20, D_00A13158, umnS()[0x50], umnS()[0x51]);
-    xglFontDebugPrintf(0x10, 0x28, D_00A13160, umnS()[0x40], umnS()[0x42], umnS()[0x43]);
-    xglFontDebugPrintf(0x10, 0x30, D_00A13170, umnS()[0x11]);
+    xglFontDebugPrintf(0x10, 0x18, "id %2d", umnS()[0x52]);
+    xglFontDebugPrintf(0x10, 0x20, "%2d/%2d", umnS()[0x50], umnS()[0x51]);
+    xglFontDebugPrintf(0x10, 0x28, "%2d/%2d/", umnS()[0x40], umnS()[0x42], umnS()[0x43]);
+    xglFontDebugPrintf(0x10, 0x30, "st=%2d", umnS()[0x11]);
 }

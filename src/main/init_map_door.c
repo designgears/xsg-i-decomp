@@ -58,10 +58,6 @@ float nearDir(float first, float second);
 void GetPartsPos();
 void GetPartsSize();
 void MAP_updateUnitDoor(DoorUnit *door);
-extern char D_004CA280[];
-extern char D_004CA2B8[];
-extern char D_004CA2D8[];
-extern char D_004CA2F8[];
 typedef struct UpDoorModel {
     float direction_x; /* +0x00 */
     unsigned char unmodeled_04[4];
@@ -192,12 +188,12 @@ void InitMapDoor(DoorUnit *door_in)
     if (!printflg) {
         return;
     }
-    printf(D_004CA280, door->door_number, params->kind,
+    printf("InitMapDoor id=%d kind=%d doorType=%d doorRange=%f\n", door->door_number, params->kind,
            params->door_type, params->travel_distance);
-    printf(D_004CA2B8, door->x, door->y, door->z);
-    printf(D_004CA2D8, door->resting_position.values.x,
+    printf("doorpos[X]=%f Y=%f Z=%f\n", door->x, door->y, door->z);
+    printf("hitsize[X]=%f Y=%f Z=%f\n", door->resting_position.values.x,
            door->resting_position.values.y, door->resting_position.values.z);
-    printf(D_004CA2F8, params->travel_distance,
+    printf("range=%f scope=%f spd=%d\n", params->travel_distance,
            params->trigger_distance, params->open_limit);
 }
 

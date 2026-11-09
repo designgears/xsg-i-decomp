@@ -62,7 +62,5 @@ typedef int (*MEfObjCtor)(void *self);
  * is every type's constructor (nonzero return means success), ntbl_1 the
  * instance count MEfCreate allocates for that type.
  */
-extern MEfObjCtor func_0[MEF_TYPE_COUNT];
-extern short ntbl_1[MEF_TYPE_COUNT];
 
 #endif /* SRC_OV01_M_EF_CREATE_H */

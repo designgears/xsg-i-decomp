@@ -32,7 +32,6 @@ void xglMatrixTrans(Matrix4 destination, const Matrix4 source,
 
 void xglRandSeedInit(void);
 
-extern unsigned long long iRandSeed;
 
 unsigned int xglLRand(void);
 

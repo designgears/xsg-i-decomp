@@ -21,13 +21,35 @@ typedef struct {
     int stack_size;
     void *gp_reg;
     int initial_priority;
+    int current_priority;
+    unsigned int attr;
+    unsigned int option;
+    int wait_type;
+    int wait_id;
+    int wakeup_count;
 } ee_thread_t;
 
-extern ee_thread_t sThreadParam;
+static unsigned int iCurrentThread;
+static int iRotateSignal;
+static active_thread_t asActiveThreadList[20];
+
+extern void xglRenderEntry(void);
+extern void xglCdControlThread(void);
+extern void xglStudioEntry(void);
+extern void ControlEntry(void);
+
+static system_thread_entry_t asSystemThreadList[4] = {
+    { (thread_entry_t)xglRenderEntry, 0, 0x1000, 9, 0 },
+    { (thread_entry_t)xglCdControlThread, 0, 0x1000, 10, 0 },
+    { (thread_entry_t)xglStudioEntry, 0, 0x1000, 12, 0 },
+    { (thread_entry_t)ControlEntry, 0, 0x10000, 11, 0 },
+};
 extern int CreateThread(ee_thread_t *thread);
 
 static int xglCreateSignal(void)
 {
+    static ee_sema_t sSemaParam __asm__("sSemaParam.0");
+
     sSemaParam.max_count = 1;
     sSemaParam.init_count = 0;
     return CreateSema(&sSemaParam);
@@ -62,6 +84,7 @@ void xglThreadInitial(void)
         (system_thread_tail_t *)((char *)system_record + 8);
     /* Keep an addressed reference to the real stack_size member. */
     int *stack_size_reference = &thread_config->stack_size;
+    static ee_thread_t sThreadParam __asm__("sThreadParam.1");
     ee_thread_t *thread = &sThreadParam;
     unsigned int count = 0;
     int active_offset = 0;

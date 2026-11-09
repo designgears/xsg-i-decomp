@@ -28,34 +28,23 @@ typedef struct RadarActor {
 
 
 
-extern u8 *image_004DC554;
-
-
-extern u8 rate;
+static u32 cnt_2 __asm__("cnt.2");
+static u8 *image_004DC554 __asm__("image");
+static u8 rate;
+static u8 ping;
 
 
 static const char D_004C0618[32] = "data\\yajima\\cf_rader00.xtx";
 
-extern u8 *image_004DC554;
 
-extern u8 rate;
-
-extern u8 ping;
-
-extern u32 cnt_2;
-
-extern u32 sPoint_3[28];
 
 
 extern float xglSin(float);
 
 extern float xglCos(float);
 
-extern const float D_004D7C7C;
 
-extern const float D_004D7C80;
 
-extern const float D_004D7C84;
 
 extern void nmlModelDirectSend(int, u8 *, int);
 
@@ -151,7 +140,15 @@ static inline void RadarSpritePacketInit(RadarSpritePacket **packet)
 
 void GameRadarDraw(RadarOrigin *origin)
 {
-    extern u32 TestEnv_0_00369BA0[28];
+    static u32 TestEnv_0_00369BA0[28] __asm__("TestEnv.0") __attribute__((aligned(16))) = {
+        0x0, 0x0, 0x0, 0x51000006,
+        0x8001, 0x50000000, 0xEEEEE, 0x0,
+        0x0, 0x0, 0x3F, 0x0,
+        0x70000, 0x0, 0x47, 0x0,
+        0x0, 0x0, 0x14, 0x0,
+        0x44, 0x0, 0x42, 0x0,
+        0x3FC000, 0x3FC, 0x8, 0x0
+    };
     RadarSpritePacket *packet;
     u64 secondSpritePrimitive;
     if (!SaveData[0x100a6] || !(GameLoopState[4] & 0x80000) || WIN_checkActiveWindow()) {
@@ -231,7 +228,12 @@ void GameRadarDraw(RadarOrigin *origin)
 
 static void DrawRadarPing(int *origin)
 {
-    extern u32 TestEnv_1_00369C10[16];
+    static u32 TestEnv_1_00369C10[16] __asm__("TestEnv.1") __attribute__((aligned(16))) = {
+        0x0, 0x0, 0x0, 0x51000003,
+        0x8001, 0x20000000, 0xEE, 0x0,
+        0x70000, 0x0, 0x47, 0x0,
+        0x44, 0x0, 0x42, 0x0
+    };
     RadarVertex *vertex = (RadarVertex *)0x70000040;
     RadarPingEnd *end;
     int segment = 0;
@@ -258,7 +260,7 @@ static void DrawRadarPing(int *origin)
     do {
         float innerRadius = I2F(ping) * 0.5f;
         float outerRadius = I2F(ping + 16) * 0.5f;
-        float angle = I2F(segment) * D_004D7C7C / 24.0f;
+        float angle = I2F(segment) * 6.2831855f / 24.0f;
         float sine;
         float cosine;
         innerRadius *= 16.0f; outerRadius *= 16.0f; segment++;
@@ -361,10 +363,19 @@ static void DrawRadarInfo(int *origin)
 
 static void DrawActorPoint(float angle, int *position, u32 *color)
 {
+    static u32 sPoint_3[28] __asm__("sPoint.3") __attribute__((aligned(16))) = {
+        0x0, 0x0, 0x0, 0x51000006,
+        0x8001, 0x50624000, 0x5551E, 0x0,
+        0x44, 0x0, 0x42, 0x0,
+        0x0, 0x0, 0x0, 0x0,
+        0x0, 0x0, 0x0, 0x0,
+        0x0, 0x0, 0x0, 0x0,
+        0x0, 0x0, 0x0, 0x0
+    };
 
 
 
-    if (angle > D_004D7C80 || angle < D_004D7C84) {
+    if (angle > 6.2831855f || angle < (-6.2831855f)) {
         return;
     }
 

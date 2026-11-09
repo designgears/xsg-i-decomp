@@ -401,3 +401,4 @@ void RgDispWpn1PDisp(RgDispWpn1P *pDisp)
         XrgPaint2DFlush(paint);
     }
 }
+

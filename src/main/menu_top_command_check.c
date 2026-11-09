@@ -1,6 +1,6 @@
 #include "common.h"
 
-extern unsigned short MenuTopCommandLock;
+static unsigned short MenuTopCommandLock;
 
 
 #include "menu_top_command_check.h"
@@ -97,6 +97,22 @@ void TopStatusWinMain(void)
     }
 }
 
+static const char *text[12] = {
+    "Use items. View your inventory of special items, weapons, and accessories.",
+    "Use, set, and evolve Ether. Transfer Ether to other characters.",
+    "Set and improve Tech Attacks.",
+    "Set skills and extract new skills from accessories.",
+    "Equip character weapons and accessories. Change on-screen characters.",
+    "Equip A.G.W.S. weapons and accessories. Assign pilots.",
+    "Select combatants and change battle formation.",
+    "Access the U.M.N. (Unus Mundus Network).",
+    "Set various game play options.",
+    "Save/Load data.",
+    "Items\nEther\nTech Attack\nSkills\nCharacters\nA.G.W.S.\nBattle Formation\nU.M.N.\nGame Options",
+    "Items\nEther\nTech Attack\nSkills\nCharacters\nA.G.W.S.\nBattle Formation\nU.M.N.\nGame Options",
+};
+static unsigned char MenuTopCommand[10] = { 1, 2, 9, 10, 3, 4, 5, 6, 7, 12 };
+
 void TopInfoMain(void)
 {
     MenuTopInfo *info = TopInfo;
@@ -137,7 +153,7 @@ void TopInfoMain(void)
         if (MenuWork.topCursor < 9) {
             info->panel.text = text[MenuWork.topCursor];
         } else {
-            info->panel.text = D_004DA890;
+            info->panel.text = "";
         }
         MoveSlide(&info->window.y, &slideTarget, 5.0f);
         WindowDXMain(&info->window);
@@ -151,6 +167,10 @@ void TopMenuWinMain(void)
     int menuState;
     short slideTarget;
     int i;
+    static MenuTopCommandEntry command_0[11] __asm__("command.0") = {
+        { "Items" }, { "Ether" }, { "Tech Attacks" }, { "Skills" }, { "Characters" },
+        { "A.G.W.S." }, { "Battle Formation" }, { "U.M.N." }, { "Game Options" }, { "" }, { 0 },
+    };
 
     switch (menu->state) {
     case 0:
@@ -170,7 +190,7 @@ void TopMenuWinMain(void)
         menu->window.height = 0xDE;
         menu->window.draw = MenuSelectWindow;
         menu->window.panel = &menu->panel;
-        menu->window.title = D_004DA8B8;
+        menu->window.title = "Menu";
         menu->panel.commands = command_0;
         menu->panel.cursor = 0;
         menu->panel.rows = 2;
@@ -204,6 +224,7 @@ void TopFaceExWinMain(void)
     int count;
     int i;
     int j;
+    static const char *msg_1_0036C360[3] __asm__("msg.1") = { "\001Reserve", "\001Time", "\001Money" };
 
     switch (face->state) {
     case 0:
@@ -389,13 +410,11 @@ void TopMenu(void)
     TopMenuWinMain();
     TopFaceExWinMain();
     if (debug_flag != 0) {
-        xglFontDebugPrintf(0, 0x38, D_004DA8D0);
+        xglFontDebugPrintf(0, 0x38, "topmemu");
         xglFontDebugHex(0, 0x40, MenuWork.topCursor, 2);
     }
 }
 
-extern unsigned char D_004C3640[] __attribute__((aligned(8)));
-extern unsigned char D_004C3650[] __attribute__((aligned(8)));
 extern int MenuTairetuModelLexAddr;
 extern unsigned char *MenuTairetuModelXtxAddr;
 extern const float D_004D7D64;
@@ -476,9 +495,14 @@ void nmlModelSetPlace(float matrix[4][4]);
 void nmlModelEntry(int model);
 void nmlModelFlush(void);
 
+typedef union MenuModelVector {
+    Vector4 vector;
+    unsigned long long words[2];
+} __attribute__((aligned(16))) MenuModelVector;
+
 static void tskMenuTai(MenuTaiTask *task)
 {
-    Vector4 targetRotation;
+    MenuModelVector targetRotation;
     MenuModelLighting light;
     MenuLightingSources sources;
     Vector4 grid[24];
@@ -538,18 +562,18 @@ static void tskMenuTai(MenuTaiTask *task)
                 task->initialized = task->enabled = 1;
             }
             model = task->model;
-            __builtin_memcpy(&targetRotation, D_004C3640, sizeof(targetRotation));
+            targetRotation = (MenuModelVector){ { 1.5707964f, 0.0f, 0.0f, 1.0f } };
             targetScale = 0.0f;
             if (MenuWork.state == 33) {
-                targetRotation.x = 0.785398185f;
-                targetRotation.y = 0.314159274f;
-                targetRotation.z = 0.196349546f;
+                targetRotation.vector.x = 0.785398185f;
+                targetRotation.vector.y = 0.314159274f;
+                targetRotation.vector.z = 0.196349546f;
                 targetScale = 0.077f;
             }
             model->scale.x += (targetScale - model->scale.x) * 0.2f;
-            model->rotation.x += (targetRotation.x - model->rotation.x) * 0.1f;
-            model->rotation.y += (targetRotation.y - model->rotation.y) * 0.1f;
-            model->rotation.z += (targetRotation.z - model->rotation.z) * 0.1f;
+            model->rotation.x += (targetRotation.vector.x - model->rotation.x) * 0.1f;
+            model->rotation.y += (targetRotation.vector.y - model->rotation.y) * 0.1f;
+            model->rotation.z += (targetRotation.vector.z - model->rotation.z) * 0.1f;
         } else {
             task->enabled = 0;
         }
@@ -566,7 +590,10 @@ static void tskMenuTai(MenuTaiTask *task)
         xglMatrixStackRotY(task->model->rotation.y);
         xglMatrixStackRotX(task->model->rotation.x);
         xglMatrixStackSave(task->model->place);
-        __builtin_memcpy(&sources, D_004C3650, sizeof(sources));
+        sources = (MenuLightingSources){
+            { 0.5f, 0.5f, 0.5f, 1.0f },
+            { { 0.8f, 0.8f, 0.8f, 1.0f }, { 0.8f, 0.8f, 0.8f, 1.0f }, { 0.8f, 0.8f, 0.8f, 1.0f } },
+            { { 1.0f, 1.0f, 0.5f, 1.0f }, { -1.0f, 1.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, -1.0f, 1.0f } } };
         xglLightIntensityAmbient(&light, sources.ambient);
         xglLightIntensityParallel(&light, 0, sources.intensity[0]);
         xglLightDirection(&light, 0, sources.direction[0]);
@@ -661,10 +688,6 @@ static void tskMenuTai(MenuTaiTask *task)
     }
 }
 
-typedef union MenuModelVector {
-    Vector4 vector;
-    unsigned long long words[2];
-} MenuModelVector;
 typedef union MenuFormationPositions {
     Vector4 vector[6];
     unsigned long long words[12];
@@ -692,13 +715,9 @@ typedef struct MenuTopPartyDataUp {
     unsigned short firstTechniqueWord;
     unsigned char unmodeled_3e[0x188 - 0x3e];
 } MenuTopPartyDataUp;
-extern const MenuFormationPositions D_004C36C0;
-extern const MenuLightingSourcesUp D_004C3720;
 extern unsigned char *MenuTairetuModelPointerXtxAddr;
 extern unsigned char *MenuTairetuModelPointerLexAddr;
-extern const float D_004D7D98;
 typedef struct MenuAmbientSet { MenuModelVector v[3]; } MenuAmbientSet;
-extern const MenuAmbientSet D_004C3790;
 extern void xglMatrixStackLoad(float matrix[4][4]);
 typedef struct MenuPointaTask {
     XglTaskPrefix link;
@@ -729,7 +748,9 @@ static void tskMenuTaiPointa(MenuPointaTask *task)
     MenuModelLighting light;
     MenuLightingSourcesUp sources;
 
-    __builtin_memcpy(positions.words, D_004C36C0.words, sizeof(positions.words));
+    positions = (MenuFormationPositions){ {
+        { -0.1f, 0.0f, 0.21000001f, 1.0f }, { -0.1f, 0.0f, 0.02f, 1.0f }, { -0.1f, 0.0f, -0.17f, 1.0f },
+        { 0.1f, 0.0f, 0.21000001f, 1.0f }, { 0.1f, 0.0f, 0.02f, 1.0f }, { 0.1f, 0.0f, -0.17f, 1.0f } } };
 
     if (MenuWork.command == 12 ||
         MenuPointaGuardWord(task) == 0 ||
@@ -798,9 +819,9 @@ static void tskMenuTaiPointa(MenuPointaTask *task)
             }
             targetScale.x = targetScale.y = targetScale.z = targetScale.w = 1.0f;
             scalePointer = task->pointer;
-            scalePointer->scale.x += (targetScale.x - scalePointer->scale.x) * D_004D7D98;
-            scalePointer->scale.y += (targetScale.y - scalePointer->scale.y) * D_004D7D98;
-            scalePointer->scale.z += (targetScale.z - scalePointer->scale.z) * D_004D7D98;
+            scalePointer->scale.x += (targetScale.x - scalePointer->scale.x) * 0.2f;
+            scalePointer->scale.y += (targetScale.y - scalePointer->scale.y) * 0.2f;
+            scalePointer->scale.z += (targetScale.z - scalePointer->scale.z) * 0.2f;
         } else {
             task->enabled = 0;
         }
@@ -813,11 +834,15 @@ static void tskMenuTaiPointa(MenuPointaTask *task)
             xglMatrixStackTrans(&task->pointer->position.vector.x);
             xglMatrixStackScale(&task->pointer->scale.x);
             xglMatrixStackSave(task->pointer->place);
-            sources = D_004C3720;
+            sources = (MenuLightingSourcesUp){ {
+                { 1.0f, 1.0f, 1.0f, 1.0f },
+                { { 0.8f, 0.8f, 0.8f, 1.0f }, { 0.8f, 0.8f, 0.8f, 1.0f }, { 0.8f, 0.8f, 0.8f, 1.0f } },
+                { { 1.0f, 1.0f, 0.5f, 1.0f }, { -1.0f, 1.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, -1.0f, 1.0f } } } };
             {
                 MenuAmbientSet ambient;
-                const MenuAmbientSet *src = &D_004C3790;
-                ambient = *src;
+                ambient = (MenuAmbientSet){ {
+                    { { 0.40499997f, 0.27f, 0.17999999f, 1.0f } }, { { 0.3f, 0.5f, 0.1f, 1.0f } },
+                    { { 1.0f, 0.3f, 0.3f, 1.0f } } } };
                 xglLightIntensityAmbient(&light, &ambient.v[task->paletteIndex].vector.x);
             }
             xglLightIntensityParallel(&light, 0, sources.value.intensity[0]);
@@ -847,7 +872,6 @@ static void tskMenuTaiPointa(MenuPointaTask *task)
 
 extern MenuModelTransform *MenuVecMat;
 extern XglTaskScheduler *MenuTask_XMX;
-extern const float D_004D7D9C;
 extern void xglCameraInit(StudioCamera *camera);
 
 unsigned char *MenuBackModelSet(unsigned char *allocationStart)
@@ -865,7 +889,7 @@ unsigned char *MenuBackModelSet(unsigned char *allocationStart)
     camera->rotation.y = 0.0f;
     camera->rotation.z = 0.0f;
     camera->rotation.w = 1.0f;
-    *((float *)((char *)camera + 0x94)) = D_004D7D9C;
+    *((float *)((char *)camera + 0x94)) = 0.078f;
     camera->state = 1;
     camera->active = 1;
 
@@ -1507,7 +1531,7 @@ int MenuInfoWindow(MenuStatusPanelWindow *window, MenuTopInfoPanel *panelIn)
         scan = panel->text;
         panel->lineCount = 1;
         if (scan == 0) {
-            scan = D_004DA890;
+            scan = "";
         }
         while (*scan != 0) {
             if (*scan == '\n') {
@@ -1891,3 +1915,9 @@ int MenuSelectWindow(MenuStatusPanelWindow *window, MenuTopMenuPanelSW *panel)
 void MenuPasWindow(void) {
 
 }
+
+MenuModelTransform *MenuVecMat = 0;
+MenuTopStatusWin *TopStatusWin = 0;
+MenuTopInfo *TopInfo = 0;
+MenuTopMenuWin *TopMenuWin = 0;
+MenuTopFaceEx *TopFaceExWin = 0;

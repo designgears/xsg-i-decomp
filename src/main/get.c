@@ -27,8 +27,6 @@ extern int Check_CrossingOver(const Vector4 *first_start, const Vector4 *first_e
                               const Vector4 *second_start, const Vector4 *second_end);
 extern int CrossPointUwamono(const Point4 *, const Point4 *, float, Point4 *);
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
-extern char D_004DB9A8[];
-extern char D_004DB9B0[];
 
 int Check_MoveSquare(Point4 *arg0, Point4 *arg1, Point4 *out, int mapIndex, float size)
 {
@@ -84,18 +82,18 @@ int Check_MoveSquare(Point4 *arg0, Point4 *arg1, Point4 *out, int mapIndex, floa
     hitC = crossC;
     hitD = crossD;
 
-    xglFontDebugPrintf(8, 100, D_004DB9A8);
+    xglFontDebugPrintf(8, 100, "\xA1\xDF\xA1\xDF");
     if (Check_CrossingOver((Vector4 *)arg1, (Vector4 *)&hitA, (Vector4 *)arg0, (Vector4 *)&hitD) == 1) {
         *out = hitA;
         ret = 1;
         out->z = arg1->z;
-        xglFontDebugPrintf(8, 100, D_004DB9B0);
+        xglFontDebugPrintf(8, 100, "\xCD\xBD\xC1\xDB");
     }
     if (Check_CrossingOver((Vector4 *)arg1, (Vector4 *)&hitB, (Vector4 *)arg0, (Vector4 *)&hitC) == 1) {
         *out = hitB;
         ret = 1;
         out->x = arg1->x;
-        xglFontDebugPrintf(8, 100, D_004DB9B0);
+        xglFontDebugPrintf(8, 100, "\xCD\xBD\xC1\xDB");
     }
     return ret;
 }
@@ -261,8 +259,6 @@ void Check_Octpus(Point4 *center, Point4 *out, short n, int mapIndex, int actor,
     *out = res[order[0]];
 }
 
-extern float D_004D81A0;
-extern float D_004D81A4;
 
 float Get_WallSpace(int unused, char *map, short n, float angle)
 {
@@ -270,7 +266,7 @@ float Get_WallSpace(int unused, char *map, short n, float angle)
   short half = n / 2;
   short i = 0;
   short result = 0;
-  short pos = (angle / (D_004D81A0 / n)) + half;
+  short pos = (angle / (6.2831855f / n)) + half;
   int lo;
   int hi;
   if (half > 0)
@@ -297,7 +293,7 @@ float Get_WallSpace(int unused, char *map, short n, float angle)
     }
     while (i < new_var);
   }
-  return result * (D_004D81A4 / n);
+  return result * (6.2831855f / n);
 }
 
 void Get_One_Step(float length, const Point4 *source,
@@ -473,10 +469,6 @@ int Check_CrossingOver(const Vector4 *first_start, const Vector4 *first_end,
     return 0;
 }
 
-extern float D_004D81B8;
-extern float D_004D81BC;
-extern float D_004D81C0;
-extern float D_004D81C4;
 extern int Check_Angle(float angle, float rangeStart, float rangeEnd);
 extern int CrossPointUwamono(const Point4 *, const Point4 *, float, Point4 *);
 
@@ -491,7 +483,7 @@ int Check_InsideFan(const Point4 *origin, const Point4 *target, int mapIndex,
     }
     {
         float angle = Get_Angle(origin, target);
-        float halfWidth = (fanWidthDegrees / 180.0f) * D_004D81B8 * 0.5f;
+        float halfWidth = (fanWidthDegrees / 180.0f) * 3.1415927f * 0.5f;
 
         if (Check_Angle(angle, facing - halfWidth, facing + halfWidth) == 0) {
             return 0;
@@ -503,14 +495,14 @@ int Check_InsideFan(const Point4 *origin, const Point4 *target, int mapIndex,
     if (Check_Undu(origin, target, mapIndex, &hit, 1, 0, 0x400) == 0) {
         return 0;
     }
-    if (D_004D81BC <= Get_Distance(target, &hit)) {
+    if (0.01f <= Get_Distance(target, &hit)) {
         return 0;
     }
     ty = target->y;
-    if (D_004D81C0 <= __builtin_fabsf(ty - hit.y)) {
+    if (0.1f <= __builtin_fabsf(ty - hit.y)) {
         return 0;
     }
-    if (D_004D81C4 < __builtin_fabsf(origin->y - ty)) {
+    if (3.2f < __builtin_fabsf(origin->y - ty)) {
         return 0;
     }
     return CrossPointUwamono(origin, target, height, &hit) != 1;
@@ -563,7 +555,6 @@ float Get_Cursol_by_Reduce_Speed_Angle_Loop(float current, float target,
     return cursor;
 }
 
-extern volatile float D_004D81EC;
 
 void Get_EnemyIDPos(Point4 *position, Point4 *result)
 {
@@ -591,7 +582,7 @@ void Get_EnemyIDPos(Point4 *position, Point4 *result)
         result->z = position->z;
     } else {
         for (i = 0; i < 8; i++) {
-            angle = (float)i * D_004D81EC * 0.125f;
+            angle = (float)i * 6.2831855f * 0.125f;
             probe.x = position->x + 2.0f * sinf(angle);
             probe.y = position->y;
             probe.z = position->z + 2.0f * cosf(angle);
@@ -679,7 +670,6 @@ int Get_Attr_NU(const Point4 *position, int mapIndex, int attrMask)
     return (int)UnduTest.attribute;
 }
 
-extern float D_004D81F0;
 typedef struct UnduParamExt {
     UnduParam base;
     unsigned char unmodeled_28[0x30 - 0x28];
@@ -708,7 +698,7 @@ int Check_Undu(const Point4 *position, const Point4 *target, int mapIndex,
     ((UnduParamExt *)&UnduTest)->arg38 = arg4;
     ((UnduParamExt *)&UnduTest)->arg30 = arg5;
     UnduCheck(output, &dir, &UnduTest);
-    return Get_Distance3D(target, output) <= D_004D81F0;
+    return Get_Distance3D(target, output) <= 0.05f;
 }
 
 int Get_Rnd(int min, int max)
@@ -740,7 +730,7 @@ void BSpline_Add(short frame, short count, short period,
     destination[index].w = 1.0f;
 }
 
-extern unsigned short *DataSpline;
+unsigned short *DataSpline = 0;
 typedef struct { float x, y, z, w; } BSplVec;
 
 void GetBSplineLoop(short t, short num, short div, int pts, float *out) {

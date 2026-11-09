@@ -161,11 +161,14 @@ end:
     entry->file_handle = result;
 }
 
-extern const char SoundDataPath[];
-extern const unsigned char ext_0[5];
+static char SoundDataPath[] = "data\\sound\\";
+struct SoundWork SoundWork = {0};
+static const char SoundEffectPath[5] = "sed\\";
+static const char SoundSequencePath[5] = "smd\\";
 
 int xglSoundLoadSwd(const char *file_name, void *buffer)
 {
+    static const unsigned char ext[5] __asm__("ext.0") = ".SWD";
     char path[256];
     char *destination = path;
     const char *source = SoundDataPath;
@@ -181,7 +184,7 @@ int xglSoundLoadSwd(const char *file_name, void *buffer)
         destination++;
         source++;
     }
-    source = (const char *) ext_0;
+    source = (const char *) ext;
     for (;;) {
         *destination = (unsigned char) *source;
         if (((int) (signed char) *destination << 24) == 0) {
@@ -205,11 +208,10 @@ void xglSoundSendEffect(void *swd, void *sed, int bank)
     xglSoundSendSed(sed, bank);
 }
 
-extern const char SoundEffectPath[5];
-extern const unsigned char ext_1[5];
 
 void xglSoundLoadEffect(const char *name, void *address, int bank)
 {
+    static const unsigned char ext[5] __asm__("ext.1") = ".SED";
     char path[256];
     char *destination;
     const char *source;
@@ -260,7 +262,7 @@ void xglSoundLoadEffect(const char *name, void *address, int bank)
         dst++;
         source++;
     }
-    source = (const char *) ext_1;
+    source = (const char *) ext;
     for (;;) {
         *dst = (unsigned char) *source;
         if (((int) (signed char) *dst << 24) == 0) {
@@ -274,12 +276,11 @@ void xglSoundLoadEffect(const char *name, void *address, int bank)
     }
 }
 
-extern const char SoundSequencePath[5];
-extern const unsigned char ext_2_004DC350[5];
 void xglSoundSequenceNormal2(int channel, int volume);
 
 void xglSoundLoadRequestSmd(const char *name, void *address)
 {
+    static const unsigned char ext[5] __asm__("ext.2") = ".SMD";
     char path[256];
     char *destination;
     const char *source;
@@ -329,7 +330,7 @@ void xglSoundLoadRequestSmd(const char *name, void *address)
         dst++;
         source++;
     }
-    source = (const char *) ext_2_004DC350;
+    source = (const char *) ext;
     for (;;) {
         *dst = (unsigned char) *source;
         if (((int) (signed char) *dst << 24) == 0) {
@@ -848,9 +849,6 @@ typedef struct SoundStreamMainState {
     unsigned char segment_index;
     int playback_buffer;
 } SoundStreamMainState;
-extern unsigned char count_3;
-extern char anim_4_004DC358[4];
-extern char D_004DC360[];
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 void SsdGetVagStreamStatusAll(void);
 int SsdGetResultParam(int *param);
@@ -860,13 +858,15 @@ void SsdSetVagStreamDataMono(int channel, int address, int size);
 int xglSoundStreamMain(void)
 {
     SoundStreamMainState *state = (SoundStreamMainState *) &SoundWork.effect_banks[16];
+    static unsigned char count_3 __asm__("count.3");
+    static char anim[4] __asm__("anim.4") = { '-', 0x7F, '|', '/' };
     int param[8];
     int result;
     int ret;
 
     if (state->type != 0) {
         count_3++;
-        xglFontDebugPrintf(0xF4, 8, D_004DC360, anim_4_004DC358[(count_3 >> 3) & 3]);
+        xglFontDebugPrintf(0xF4, 8, "%c", anim[(count_3 >> 3) & 3]);
     }
     ret = -1;
     switch (state->type) {
@@ -1007,7 +1007,7 @@ void xglSoundReset(void)
     memset(SoundWork.packet_buffer, 0, 0x800U);
 }
 
-extern unsigned char StreamBuffer[];
+static unsigned char StreamBuffer[0x4000];
 void SsdInit(int size);
 
 void xglSoundInitial(void)

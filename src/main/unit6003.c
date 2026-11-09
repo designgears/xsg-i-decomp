@@ -147,9 +147,9 @@ typedef struct Unit6003DrawVertex {
 } Unit6003DrawVertex;
 
 typedef struct Unit6003DrawEnvironment {
-    unsigned char unmodeled_00[0x40];
+    u64 unmodeled_00[8];
     u64 texture;
-    unsigned char unmodeled_48[0x48];
+    u64 unmodeled_48[9];
     Unit6003DrawVertex vertices[4];
 } Unit6003DrawEnvironment;
 
@@ -191,26 +191,25 @@ extern void nmlModelDirectSendXtx(int mode, void *texture);
 extern float xglRotTransPers(int *result, float matrix[4][4],
                              float *position, int camera);
 
-extern const char D_004D2170[24];
-
-static const char D_004D2188[24] =
-    "fm%04d \244\362\306\311\244\337\271\376\244\337\244\336\244\271\n";
-
-static const char D_004D21A0[24] =
-    "mvs%04d \244\362\306\311\244\337\271\376\244\337\244\336\244\271\n";
-
-static const char D_004D21B8[24] = "movie work broken!\n";
-
-static const char D_004D21D0[16] = "%08x->%08x\n";
-
-extern Unit6003DrawEnvironment TestEnv_0_00490520;
 
 
-extern unsigned char clut_1[32];
+
 
 
 static void unit6003_draw(void *object)
 {
+    static Unit6003DrawEnvironment TestEnv __attribute__((aligned(16))) = {
+        { 0, 0x5100001400000000ULL, 0x1000000000000006ULL, 0xE, 0, 0x3F, 0x60, 0x14 },
+        0,
+        { 6, 0, 8, 0x70000, 0x47, 0x44, 0x42, 0xC02E400000008001ULL,
+          0x0000512512512512ULL },
+    };
+    static unsigned char clut[32] = {
+        0x00, 0x04, 0x10, 0x14, 0x20, 0x24, 0x30, 0x34,
+        0x40, 0x44, 0x50, 0x54, 0x60, 0x64, 0x70, 0x74,
+        0x08, 0x0C, 0x18, 0x1C, 0x28, 0x2C, 0x38, 0x3C,
+        0x48, 0x4C, 0x58, 0x5C, 0x68, 0x6C, 0x78, 0x7C,
+    };
     Unit6003Work *unit = object;
     Unit6003Scratch *scratch = (Unit6003Scratch *)0x70000000;
     Unit6003DrawVertex *vertex;
@@ -231,25 +230,25 @@ static void unit6003_draw(void *object)
         break;
     }
     default:
-        printf(D_004D2170, unit->frame_type);
+        printf("frame_type error(%d)\n", unit->frame_type);
         break;
     }
 
     switch (unit->frame_type) {
     case 0:
         texture_page = sRender.texture_page << 5;
-        TestEnv_0_00490520.texture =
+        TestEnv.texture =
             (0x25320000 | texture_page) |
-            ((u64)(texture_page + clut_1[unit->frame_index] + 0x380) << 37) |
+            ((u64)(texture_page + clut[unit->frame_index] + 0x380) << 37) |
             0x2000000640000000ULL;
         break;
     case 1:
-        TestEnv_0_00490520.texture =
+        TestEnv.texture =
             (0x20010000 | (sRender.texture_page << 5)) |
             0x2000000600000000ULL;
         break;
     }
-    vertex = TestEnv_0_00490520.vertices;
+    vertex = TestEnv.vertices;
     for (camera_index = 0; camera_index < 8; ++camera_index) {
         if (xglStudioGetCamera2(camera_index)->active != 0)
             break;
@@ -335,7 +334,7 @@ static void unit6003_draw(void *object)
         vertex->texture_q = perspective;
         vertex->alpha = scratch->alpha;
     }
-    nmlModelDirectSend(draw_mode, (unsigned char *)&TestEnv_0_00490520, 0x15);
+    nmlModelDirectSend(draw_mode, (unsigned char *)&TestEnv, 0x15);
 }
 
 static MoviePlaybackWork *movie_work_setup(void *source_data, int source_size)
@@ -375,7 +374,7 @@ void unit6003_update(Unit6003Work *unit)
             UNIT6003_RESOURCE_GROUP_SIZE) {
             unsigned int resource_file_id =
                 resource_index % UNIT6003_RESOURCE_GROUP_SIZE;
-            printf(D_004D2188, resource_file_id);
+            printf("fm%04d \244\362\306\311\244\337\271\376\244\337\244\336\244\271\n", resource_file_id);
             resource_index = GameResourceGetIndex(
                 RES_loadFile(-1, 11, resource_file_id, 0));
             unit->resource_id = resource_index;
@@ -383,7 +382,7 @@ void unit6003_update(Unit6003Work *unit)
                    UNIT6003_RESOURCE_GROUP_SIZE) {
             unsigned int resource_file_id =
                 resource_index % UNIT6003_RESOURCE_GROUP_SIZE;
-            printf(D_004D21A0, resource_file_id);
+            printf("mvs%04d \244\362\306\311\244\337\271\376\244\337\244\336\244\271\n", resource_file_id);
             resource_index = GameResourceGetIndex(
                 RES_loadFile(-1, 10, resource_file_id, 0));
             unit->resource_id = resource_index;
@@ -482,11 +481,11 @@ void unit6003_update(Unit6003Work *unit)
                 UNIT6003_XTX_SIGNATURE) {
             MoviePlaybackWork *repaired_work;
 
-            printf(D_004D21B8);
+            printf("movie work broken!\n");
             repaired_work = movie_work_setup(
                 (void *)GameResource[unit->resource_id].address,
                 GameResource[unit->resource_id].size);
-            printf(D_004D21D0, (u32)unit->movie_work,
+            printf("%08x->%08x\n", (u32)unit->movie_work,
                    (u32)repaired_work);
             unit->movie_work = repaired_work;
         }

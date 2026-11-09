@@ -300,7 +300,6 @@ typedef struct UnitScaleVector {
 } UnitScaleVector;
 
 extern SceneClass *classJava_xeno_util_Vector4f;
-extern UnitScaleVector scale_0_007C0A58;
 
 /*
  * The interpreter value slot a native's return value goes into, the third

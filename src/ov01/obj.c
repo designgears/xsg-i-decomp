@@ -15,7 +15,9 @@ typedef union ObjectTaskStorage {
 } ObjectTaskStorage;
 
 
-extern unsigned char taskBuf[];
+static ObjectWork objWork[60];
+static TaskManager taskMan;
+static unsigned char taskBuf[0x1900];
 extern void *memset(void *destination, int value, unsigned int size);
 extern void *xglTaskInitial(void *manager, int capacity, int flags);
 extern void objWorkInit(void);
@@ -76,8 +78,6 @@ ObjectTask *objEntry2(void *argument, ObjectTaskCallback callback) {
 }
 
 extern ObjectWork *objWorkGet(void);
-extern char D_00A437E0[];
-
 ObjectTask *objEntrySub(void *manager, void *argument, int reverse) {
 
     XglTaskScheduler *scheduler = manager;
@@ -96,7 +96,7 @@ ObjectTask *objEntrySub(void *manager, void *argument, int reverse) {
     }
     work = objWorkGet();
     if (allocated == 0 || work == 0) {
-        printf(D_00A437E0);
+        printf("** objEntry: Error\n");
         return 0;
     }
     ((ObjectTaskNode *)allocated)->exec = 0;
@@ -121,7 +121,7 @@ ObjectTask *objEntry2Rev(void *argument, ObjectTaskCallback callback) {
 void objRemove(ObjectTask *task)
 {
     if (task == 0) {
-        printf(objRemoveError);
+        printf("** objRemove: Error\n");
         return;
     }
 
@@ -152,14 +152,14 @@ ObjectTask *objEntryPure(ObjectTaskCallback callback)
     if (task != 0) {
         return task;
     }
-    printf(D_00A43810);
+    printf("** objEntryPure: Error\n");
     return 0;
 }
 
 void objRemovePure(ObjectTask *task)
 {
     if (task == 0) {
-        printf(objRemovePureError);
+        printf("** objRemovePure: Error\n");
         return;
     }
     xglTaskRemove(&task->task);
@@ -189,7 +189,7 @@ ObjectWork *objWorkGet(void)
         count++;
         slot++;
     } while (count < 60);
-    printf(D_00A43848);
+    printf("** objWorkGet: Error\n");
     return 0;
 }
 
@@ -198,7 +198,7 @@ void objWorkFree(void *work) {
 
     slot = work;
     if (slot < objWork || &objWork[60] < slot) {
-        printf(D_00A43860, work);
+        printf("** objWorkFree: Error %x\n", work);
         return;
     }
     slot->used = 0;
@@ -350,7 +350,7 @@ void *objCmdPush(ObjectTask *task) {
     queue->readIndex = index + 1;
     if (queue->readIndex >= 5) {
         queue->readIndex = 4;
-        printf(D_00A43880);
+        printf("** objCmdPush: buff over\n");
         return 0;
     }
     return &queue->entries[index];
@@ -367,7 +367,7 @@ void *objCmdPop(ObjectTask *task) {
     queue->readIndex = index - 1;
     if (queue->readIndex < 0) {
         queue->readIndex = 0;
-        OBJ_DEBUG_PRINT((D_00A438A0, queue));
+        OBJ_DEBUG_PRINT(("** objCmdPop: buff over\n", queue));
         return 0;
     }
     return &queue->entries[index];
@@ -406,7 +406,7 @@ int fifoPush(Fifo *fifo) {
     count = fifo->count;
     capacity = (fifo->maxIndex - fifo->base) + 1;
     if (count >= capacity) {
-        printf(D_00A438C0);
+        printf("** fifoPush error\n");
         return -1;
     }
     writeIndex = fifo->writeIndex + 1;
@@ -426,7 +426,7 @@ int fifoPop(Fifo *fifo) {
     count = fifo->count;
     newCount = count - 1;
     if (count <= 0) {
-        printf(D_00A438D8, newCount);
+        printf("** fifoPop error\n", newCount);
         return -1;
     }
     readIndex = fifo->readIndex + 1;

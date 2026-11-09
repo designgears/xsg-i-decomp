@@ -80,7 +80,7 @@ typedef struct EnemyActionGameLoopState {
     unsigned char unmodeled_2a018[0x18];
 } EnemyActionGameLoopState;
 extern EnemyActionGameLoopState GameLoopState;
-extern const float D_004D8150;
+
 extern short Get_DefaultMotion(EnemyActionActor *actor, short motion_number);
 extern void Set_Motion(EnemyActionActor *actor, short motion_id, short blend);
 extern void EnemySound(EnemyActionActor *actor, short sound_index,
@@ -166,7 +166,7 @@ void Enemy_ActionReady(EnemyActionActor *actor, signed char action)
                 random_direction = xglSRand() % available_count;
                 work->motion_id = work->action_motion_id;
                 actor->target_angle = wall_directions[random_direction] *
-                                      D_004D8150 * ENEMY_RANDOM_DIRECTION_SCALE;
+                                      6.2831855f * ENEMY_RANDOM_DIRECTION_SCALE;
                 Set_Motion(actor, 11, ENEMY_MOTION_BLEND);
                 break;
             }

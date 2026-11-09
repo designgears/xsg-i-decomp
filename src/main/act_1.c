@@ -6,6 +6,8 @@ extern void *memset(void *destination, int value, unsigned int count);
 extern void *RSRC_alloc(MatrixHeap *heap, int size, int tag);
 extern void ACT_resetMatrix(void *actor);
 
+static MatrixHeap *actMatrixHeap = 0;
+
 int ACT_allocMatrix(char *actor, int count)
 {
     int size64;
@@ -84,6 +86,10 @@ void *ACT_allocBlock(int tag, int blockCount)
  * Later MatrixHeap fields past offset 0x14 remain unknown; this private type
  * intentionally stops at the six evidenced offsets.
  */
+
+static MatrixHeap matrixHeap;
+static unsigned char actMatrix[0xC0000] __attribute__((aligned(16)));
+static unsigned char matrixHeapBlock[0x400];
 
 void ACT_matrixInit(void)
 {
@@ -169,7 +175,6 @@ void ACT_init(void)
     EXM_InitWind();
 }
 
-extern float D_004D8450;
 extern void EXM_InitMovedHair(ActRecord *self);
 
 ActRecord *ACT_create(int id, int code)
@@ -220,7 +225,7 @@ ActRecord *ACT_create(int id, int code)
         a->unmodeled_88[0x91 - 0x88] = 0x50;
     }
     *(int *)&a->unmodeled_900[0x9f4 - 0x900] = 0;
-    *(float *)&a->unmodeled_900[0x9e8 - 0x900] = D_004D8450;
+    *(float *)&a->unmodeled_900[0x9e8 - 0x900] = 0.35f;
     *(int *)&a->unmodeled_900[0x9f8 - 0x900] = 0;
     EXM_InitMovedHair(a);
     *(int *)&a->unmodeled_900[0xa60 - 0x900] = 0;
@@ -357,13 +362,9 @@ void ACT_pauseUpdate(void)
 typedef struct { char pad[0x28]; unsigned short held; unsigned short pressed; unsigned short sh; } ActInfoPad;
 typedef struct { int on; int idx; int page; } ActInfoState;
 extern ActInfoPad PadData;
-extern ActInfoState actInfo;
-extern float D_004D8454;
-extern float D_004D8458;
-extern char D_004DC218[];
-extern char D_004DC220[];
-extern char D_004DC228[];
-extern char D_004D1708[];
+static ActInfoState actInfo;
+/* DB_params style block: 0x0D,0x02 / 0x0E,0x02 / 0x02, zero-filled to 16. */
+static const unsigned char D_004D1708[16] = {0x0D, 0x02, 0x0E, 0x02, 0x02};
 extern void DB_params(char *);
 extern void DB_println(const char *format, ...);
 typedef struct {
@@ -401,25 +402,25 @@ static void ACT_info(void)
     if (st->page >= 3) st->page = 0;
     a = &actor[st->idx];
     DB_reset(0x70, 0x20);
-    DB_params(D_004D1708);
+    DB_params((char *)D_004D1708);
     DB_println("ACT[%02x] %04x", st->idx, a->inUseId);
     do {
     switch (st->page) {
     case 0:
-        f = D_004D8454;
+        f = 3.1415927f;
         DB_println("FLAGS %08x", a->flags);
         DB_println("     POS      ROT");
         DB_println("%8.3f %8.3f", (double)*(float *)((char *)a + 0x10), (double)(*(float *)((char *)a + 0x50) / f * 180.0f));
         DB_println("%8.3f %8.3f", (double)*(float *)((char *)a + 0x14), (double)(*(float *)((char *)a + 0x54) / f * 180.0f));
         DB_println("%8.3f %8.3f", (double)*(float *)((char *)a + 0x18), (double)(*(float *)((char *)a + 0x58) / f * 180.0f));
         DB_println("     SCL");
-        DB_println(D_004DC218, (double)*(float *)((char *)a + 0x60));
-        DB_println(D_004DC218, (double)*(float *)((char *)a + 0x64));
-        DB_println(D_004DC218, (double)*(float *)((char *)a + 0x68));
-        DB_println(D_004DC220);
+        DB_println("%8.3f", (double)*(float *)((char *)a + 0x60));
+        DB_println("%8.3f", (double)*(float *)((char *)a + 0x64));
+        DB_println("%8.3f", (double)*(float *)((char *)a + 0x68));
+        DB_println("ANIM");
         DB_println("NO    %4d", *(unsigned short *)((char *)a + 0x704));
         DB_println("FLAGS %08x", a->runtimeFlags);
-        DB_println("SPEED %8.3f", (double)(*(float *)((char *)a + 0x6f8) / D_004D8458));
+        DB_println("SPEED %8.3f", (double)(*(float *)((char *)a + 0x6f8) / 0.033333335f));
         break;
     case 1:
         for (i = 0; i < 11; i++) {
@@ -429,17 +430,17 @@ static void ACT_info(void)
         }
         m = *(ActInfoMdl **)((char *)a + 0x8d0);
         if (m != 0) {
-            DB_println(D_004DC228);
+            DB_println("MDL");
             DB_println("numParts %d", m->numParts);
             DB_println("     MIN      MAX");
             DB_println("%8.3f %8.3f", (double)m->min[0], (double)m->max[0]);
             DB_println("%8.3f %8.3f", (double)m->min[1], (double)m->max[1]);
             DB_println("%8.3f %8.3f", (double)m->min[2], (double)m->max[2]);
             DB_println("  CENTER");
-            DB_println(D_004DC218, (double)m->center[0]);
-            DB_println(D_004DC218, (double)m->center[1]);
-            DB_println(D_004DC218, (double)m->center[2]);
-            DB_println(D_004DC218, (double)m->center[3]);
+            DB_println("%8.3f", (double)m->center[0]);
+            DB_println("%8.3f", (double)m->center[1]);
+            DB_println("%8.3f", (double)m->center[2]);
+            DB_println("%8.3f", (double)m->center[3]);
         }
         break;
     case 2:

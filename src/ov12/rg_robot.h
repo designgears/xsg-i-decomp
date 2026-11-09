@@ -119,6 +119,7 @@ typedef struct RgRobotSpec {
     float rotResist;                 /* +0x2c */
     unsigned char unmodeled_30[4];   /* +0x30 */
     float attackAdvanceRate;          /* +0x34 */
+    unsigned char unmodeled_38[0xB8 - 0x38]; /* RgRobotDBLoad allocates 0xB8 */
 } RgRobotSpec;
 
 /*

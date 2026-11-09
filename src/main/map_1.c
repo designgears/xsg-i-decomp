@@ -61,7 +61,7 @@ const char D_004BE308[16] = "data\\map\\";
 const char D_004BE318[16] = "data\\map\\test\\";
 const char D_004BE328[16] = "data\\map\\check\\";
 static void taskMapChange(void *task);
-MapTaskState tsk = { { 0 }, 0, { 0, 0, 0 } };
+extern MapTaskState tsk;
 extern MapRenderState sRender;
 
 const char *MAP_getPath(void)
@@ -83,10 +83,22 @@ const char *MAP_getPath(void)
 extern void sceVif1PkCnt(void *packet, int count);
 extern void sceVif1PkAddDataN(void *packet, const void *data, int count);
 extern void nmlModelSendBackBufferSignal(void);
-extern u64 TestPrim_0_00362790[];
 
 static void taskMapChange(void *task)
 {
+    static u64 TestPrim_0_00362790[22] __asm__("TestPrim.0") __attribute__((aligned(16))) = {
+        0x0000000000000000ULL, 0x5100000A00000000ULL,
+        0x90AB400000008001ULL, 0x000000053531EEEEULL,
+        0x0000004000000064ULL, 0x0000000000000042ULL,
+        0x000006FC007FC005ULL, 0x0000000000000008ULL,
+        0x0000000000073001ULL, 0x0000000000000047ULL,
+        0x0000000000000000ULL, 0x0000000000000006ULL,
+        0x0000008000000080ULL, 0x0000008000000080ULL,
+        0x0000000000000000ULL, 0x0000000000000000ULL,
+        0x000071F700006FF8ULL, 0x00000000FFFFFFFFULL,
+        0x00001C0000002000ULL, 0x0000000000000000ULL,
+        0x00008DF700008FF8ULL, 0x00000000FFFFFFFFULL
+    };
     MapRenderState *r = &sRender;
 
     TestPrim_0_00362790[4] = ((u64)tsk.state << 32) | 100;
@@ -99,6 +111,8 @@ static void taskMapChange(void *task)
         r->callback = 0;
     }
 }
+
+MapTaskState tsk = { { 0 }, 0, { 0, 0, 0 } };
 
 void MapChangeFadeSet(void)
 {
@@ -264,3 +278,4 @@ void MapInit(void)
 {
     UseTestPath = 0;
 }
+

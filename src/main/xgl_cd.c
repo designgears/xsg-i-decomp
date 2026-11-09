@@ -46,13 +46,31 @@ extern const char D_004DC2E0[];
 #define CD_READ_CONTROL ((CdReadControl *)LW)
 
 /* Twelve month lengths followed by twelve cumulative month offsets. */
-extern unsigned short monthday[24];
+/*
+ * Days in each month (non-leap), then the cumulative day offset at the start
+ * of each month.
+ */
+static unsigned short monthday[24] = {
+    31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
+    0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
+};
 
 static int StreamReadRingCoreSub(CdStreamParam *stream, void *buffer, int sectors);
 static void StreamReadRingCoreNormal(CdStreamParam *stream);
 static void StreamReadRingCoreXss(CdStreamParam *stream);
 
 typedef void CdCompletionCallback(int event, int value);
+
+/* File-local work areas (LOCAL in the original symbol table), in original address order. */
+static CdCompletionCallback *callback;
+static signed char ReadClockInterval;
+static unsigned char PresentTime[8];
+static CdStreamParam *StrList;
+static unsigned char loaded_overlay;
+/* CdReadControl (0x40-byte header + 32 0x80-byte requests); ArcHeader: four 0x18-byte archive slots. */
+static unsigned char LW[0x1040];
+static unsigned char ArcHeader[0x60];
+#define ARC_ENTRY(i) (*(CdArchiveEntry *)(ArcHeader + (i) * 0x18))
 
 /*
  * The queue entries occupy 0x80 bytes; only their used prefix is named.
@@ -342,9 +360,6 @@ void xglClockUInt2DayTime(XglClock *clock_time, unsigned int elapsed)
 extern int sceCdStatus(void);
 extern int sceCdDiskReady(int mode);
 extern int sceCdGetDiskType(void);
-extern const char D_004D2468[];
-extern const char D_004D2478[];
-extern const char D_004D2488[];
 
 int xglCdDiskCheck(void)
 {
@@ -370,11 +385,11 @@ int xglCdDiskCheck(void)
         if (type != 0x14)
             return -1;
         LW[0x1D] = 0;
-        if (xglCdGetFileSize(D_004D2468) > 0)
+        if (xglCdGetFileSize("xenosaga.10") > 0)
             LW[0x1D] |= 1;
-        if (xglCdGetFileSize(D_004D2478) > 0)
+        if (xglCdGetFileSize("xenosaga.20") > 0)
             LW[0x1D] |= 2;
-        if (xglCdGetFileSize(D_004D2488) > 0)
+        if (xglCdGetFileSize("xenosaga.30") > 0)
             LW[0x1D] |= 4;
         LW[0x1C] = 1;
     } else if (sceCdStatus() == state) {
@@ -396,7 +411,6 @@ static void xglCdDummyCallback(int event, int value)
     (void)value;
 }
 
-extern CdCompletionCallback *callback;
 
 void xglCdReset(void)
 {
@@ -431,7 +445,6 @@ CdCompletionCallback *xglCdSetCallback(int callback_address)
     return old_callback;
 }
 
-extern unsigned char root_0[6];
 typedef struct CdPathPos {
     unsigned char unmodeled_00;
     unsigned char unmodeled_01;
@@ -446,6 +459,7 @@ typedef struct CdPathPos {
 
 static int xglCdGetFilePosSub(CdPathPos *fp, signed char *arg1)
 {
+    static unsigned char root_0[6] __asm__("root.0") = "data\\";
     char path[0x100];
     char *ptrs[0x10];
     char *root;
@@ -577,18 +591,6 @@ typedef struct CdArcView {
     int stored_bytes;
     int size_bytes;
 } CdArcView;
-extern CdArchiveEntry D_0093DC58;
-extern char arcname_1[12];
-extern char arcname_2[12];
-extern char arcname_3[12];
-extern char arcname_4[12];
-extern unsigned char vcd_head_5[0x18];
-extern unsigned char hdd_head_6[7];
-typedef struct SearchLayerBytes {
-    unsigned char byte;
-    unsigned char unmodeled_01[0x10];
-} SearchLayerBytes;
-extern SearchLayerBytes D_0093CC32;
 extern int sceCdSync(int mode);
 extern int sceCdLayerSearchFile(CdFilePosition *position, signed char *name, unsigned char layer);
 extern int sceOpen(const char *path, int flags, ...);
@@ -597,6 +599,12 @@ extern int xglHddCheck(void);
 static int xglCdGetFilePos(CdFilePosition *file_position, const char *name,
                                        void (*callback)(int event, int value))
 {
+    static char arcname_1[12] __asm__("arcname.1") = "xenosaga.00";
+    static char arcname_2[12] __asm__("arcname.2") = "xenosaga.10";
+    static char arcname_3[12] __asm__("arcname.3") = "xenosaga.20";
+    static char arcname_4[12] __asm__("arcname.4") = "xenosaga.30";
+    static unsigned char vcd_head_5[0x18] __asm__("vcd_head.5") = "host0:/home/xeno/vcd-u/";
+    static unsigned char hdd_head_6[7] __asm__("hdd_head.6") = "pfs0:/";
     char buffer[256];
     const char *path = name;
     CdArcView *entry;
@@ -627,7 +635,7 @@ static int xglCdGetFilePos(CdFilePosition *file_position, const char *name,
             position->source = entry->state;
             break;
         }
-        entry = (CdArcView *)&D_0093DC58;
+        entry = (CdArcView *)&ARC_ENTRY(1);
         if (entry->state != 0xff && xglCdGetFilePosSub((CdPathPos *)entry, (signed char *)name) != 0) {
             name = arcname_2;
             position->source = entry->state;
@@ -710,7 +718,7 @@ resolved:
         } else {
             sceCdSync(0);
             sceCdDiskReady(0);
-            if (sceCdLayerSearchFile((CdFilePosition *)position, (signed char *)buffer, D_0093CC32.byte) == 0)
+            if (sceCdLayerSearchFile((CdFilePosition *)position, (signed char *)buffer, LW[0x32]) == 0)
                 return 0;
             position->packed = 1;
             position->size_bytes = position->stored_bytes;
@@ -1303,7 +1311,6 @@ void xglCdStreamParamInit(CdStreamParam *param)
     param->ring.buffer = 0;
 }
 
-extern char listname_7[];
 typedef struct FileSelectList {
     char pad0[0x10];
     char path[0x100];
@@ -1313,6 +1320,7 @@ typedef struct FileSelectList {
 
 static void FileSelectListReload(FileSelectList *list)
 {
+    static char listname_7[10] __asm__("listname.7") = ".filelist";
     char name[256];
     unsigned int i;
     unsigned char *q;
@@ -1504,11 +1512,6 @@ typedef struct PadDataXgl {
     unsigned short repeated;                       /* +0x2c */
 } PadDataXgl;
 extern PadDataXgl PadData;
-extern const char D_004D2498[];
-extern const char D_004DC2F8[];
-extern const char D_004DC300[];
-extern const char D_004DC308[];
-extern const char D_004DC310[];
 
 int xglCdFileSelect(CdFileSelect *select)
 {
@@ -1586,7 +1589,7 @@ int xglCdFileSelect(CdFileSelect *select)
     x = select->x;
     y = select->y;
     list = (unsigned char *)select->list_position;
-    select->print(x, y, D_004D2498, path);
+    select->print(x, y, "PATH:/%s", path);
     count = select->entry_count;
     rows = select->rows;
     if (rows < count)
@@ -1597,16 +1600,16 @@ int xglCdFileSelect(CdFileSelect *select)
     index = select->path[0] != 0;
     y += 12;
     if (select->first_row > 0)
-        select->print(x, y, D_004DC2F8);
+        select->print(x, y, "^");
     for (; index < select->first_row; index++) {
         while (*list++ != 0)
             ;
     }
     for (index = select->first_row; index < end_row; index++) {
         if (index == select->cursor)
-            select->print(x + 8, y, D_004DC300);
+            select->print(x + 8, y, ">");
         if (index == 0 && select->path[0] != 0) {
-            select->print(x + 16, y, D_004DC308);
+            select->print(x + 16, y, "..");
         } else {
             select->print(x + 16, y, list);
             while (*list++ != 0)
@@ -1617,15 +1620,15 @@ int xglCdFileSelect(CdFileSelect *select)
         y += 8;
     }
     if (*list != 0)
-        select->print(x, y - 8, D_004DC310);
+        select->print(x, y - 8, "v");
     return 0;
 }
 
 extern int sceSifLoadModule(const char *filename, int args, const char *argp);
-extern char head_8[13];
-extern char tail_9[7];
 
 void xglCdSifLoadModule(char *name, char *argp) {
+    static char head_8[13] __asm__("head.8") = "cdrom0:\\IOP\\";
+    static char tail_9[7] __asm__("tail.9") = ".IRX;1";
     char buf[256];
     char *s;
     char *d;
@@ -1662,12 +1665,11 @@ void xglCdSifLoadModule(char *name, char *argp) {
 
 extern void FlushCache(int);
 extern int sceSifLoadElf(char *, void *);
-extern unsigned char loaded_overlay;
-extern unsigned char head_10[9];
-extern unsigned char tail_11[7];
 
 void xglCdLoadOverlay(int arg0)
 {
+    static unsigned char head_10[9] __asm__("head.10") = "cdrom0:\\";
+    static unsigned char tail_11[7] __asm__("tail.11") = ".OVL;1";
     char tmp[16];
     unsigned char path[0x100];
     unsigned char *src;
@@ -1807,13 +1809,6 @@ static unsigned char *xglCdArcInitSub2(unsigned char *archive_data)
     return cursor;
 }
 
-extern const char D_004D24A8[];
-extern const char D_004D24C0[];
-extern const char D_004D2468[];
-extern const char D_004D2478[];
-extern const char D_004D2488[];
-extern CdArchiveEntry D_0093DC58;
-extern CdArchiveEntry D_0093DC70;
 
 static void xglCdArcInit(void)
 {
@@ -1823,7 +1818,7 @@ static void xglCdArcInit(void)
     CdArchiveEntry *e;
     u8 *p;
 
-    while (xglHddActivate(-1) != 0 && (fd = sceOpen(D_004D24A8, 1)) >= 0) {
+    while (xglHddActivate(-1) != 0 && (fd = sceOpen("pfs0:/xenosaga.00", 1)) >= 0) {
         ArcHeader[0] = 2;
         *(u8 **)(ArcHeader + 4) = base;
         *(int *)(ArcHeader + 8) = 0;
@@ -1834,27 +1829,27 @@ static void xglCdArcInit(void)
         break;
     }
     if (count == 0) {
-        if (xglCdArcInitSub1((CdArchiveEntry *)ArcHeader, D_004D24C0, base) == 0)
+        if (xglCdArcInitSub1((CdArchiveEntry *)ArcHeader, "xenosaga.00", base) == 0)
             return;
         xglHddActivate(0x100);
     }
     if (LW[0x33] != 0) {
         unsigned char *(*sub2)(unsigned char *) = xglCdArcInitSub2;
         base = sub2(base);
-        while (xglCdArcInitSub1(&D_0093DC58, D_004D2468, base) <= 0)
+        while (xglCdArcInitSub1(&ARC_ENTRY(1), "xenosaga.10", base) <= 0)
             ;
         base = xglCdArcInitSub2(base);
         LW[0x32] = 1;
-        while (xglCdArcInitSub1(&D_0093DC70, D_004D2478, base) <= 0)
+        while (xglCdArcInitSub1(&ARC_ENTRY(2), "xenosaga.20", base) <= 0)
             ;
         LW[0x32] = 0;
         p = xglCdArcInitSub2(base);
         base += ((int)(p - base) + 0x7FF) & -0x800;
     } else {
-        while ((base += 0x2D000, xglCdArcInitSub1(&D_0093DC58, D_004D2468, base) <= 0) &&
-               xglCdArcInitSub1(&D_0093DC58, D_004D2478, base) <= 0) {
-            if (xglCdArcInitSub1(&D_0093DC58, D_004D2488, base) <= 0) {
-                D_0093DC58.state = -1;
+        while ((base += 0x2D000, xglCdArcInitSub1(&ARC_ENTRY(1), "xenosaga.10", base) <= 0) &&
+               xglCdArcInitSub1(&ARC_ENTRY(1), "xenosaga.20", base) <= 0) {
+            if (xglCdArcInitSub1(&ARC_ENTRY(1), "xenosaga.30", base) <= 0) {
+                ARC_ENTRY(1).state = -1;
                 base[0] = 0;
                 base[1] = 0;
             }
@@ -1886,8 +1881,7 @@ void xglCdArcCheck(void)
 }
 
 extern int sceCdReadDvdDualInfo(int *on_dual);
-extern const char D_004D24D0[];
-extern u8 system_cnf[];
+u8 system_cnf[80] = {0};
 
 void xglCdInitial(void)
 {
@@ -1915,10 +1909,16 @@ void xglCdInitial(void)
     ArcHeader[0x48] = -1;
     src = WorkEnd;
     dst = system_cnf;
-    xglCdReadFile(D_004D24D0, src, 0, 1);
+    xglCdReadFile("system.cnf", src, 0, 1);
     for (i = 0x4F; i >= 0; i--)
         *dst++ = *src++;
     xglHddActivate(0x100);
     xglHddMount();
     xglCdArcInit();
 }
+
+/*
+ * Labels for the alignment fill after the local tables (splat pad items), so
+ * the data carve owns the whole sections, and the zero fill that ends the
+ * original .data and .sdata.
+ */

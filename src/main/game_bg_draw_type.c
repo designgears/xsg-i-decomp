@@ -1,11 +1,18 @@
 #include "common.h"
 #include "shared.h"
 
-extern unsigned char TestEnv_0_00367AA0[];
 
 static void clear(void)
 {
-    sceVif1PkRef(xglPacketGetCurrent(), TestEnv_0_00367AA0, 6, 0, 0, 0);
+    static u64 TestEnv[12] __asm__("TestEnv.0") __attribute__((aligned(16))) = {
+        0x0ULL, 0x5100000500000000ULL,
+        0x4003400000008001ULL, 0x551EULL,
+        0x71001ULL, 0x47ULL,
+        0x0ULL, 0x0ULL,
+        0x71F700006FF8ULL, 0x40000000ULL,
+        0x8DF700008FF8ULL, 0x40000000ULL
+    };
+    sceVif1PkRef(xglPacketGetCurrent(), TestEnv, 6, 0, 0, 0);
 }
 
 /* Background draw type 0 draws nothing; Game calls it directly. */
@@ -306,7 +313,6 @@ typedef struct GameBgBandScratch {
 } GameBgBandScratch;
 extern void xglRenderClearColor(unsigned int color);
 extern unsigned int xglLRand(void);
-extern unsigned char TestEnv_1_00367B00[];
 extern void xglRotTransPersN(GameBgProjectedPoint *destination, Matrix4 *matrix,
                            const Vector4 *source, int count, int mode);
 typedef struct GameBgBand {
@@ -332,6 +338,19 @@ typedef struct GameBgBandParameters {
 
 void GameBgDrawType2(void)
 {
+    static u64 TestEnv[22] __asm__("TestEnv.1") __attribute__((aligned(16))) = {
+        0x0ULL, 0x5100000A00000000ULL,
+        0x1000000000008009ULL, 0xEULL,
+        0x48ULL, 0x42ULL,
+        0x71001ULL, 0x47ULL,
+        0x2000000594023800ULL, 0x6ULL,
+        0x60ULL, 0x14ULL,
+        0x0ULL, 0x8ULL,
+        0x8380000000000ULL, 0x50ULL,
+        0x0ULL, 0x51ULL,
+        0x4000000020ULL, 0x52ULL,
+        0x0ULL, 0x53ULL
+    };
     float point_component;
     unsigned long vif_command;
     XglPacket *packet = xglPacketGetCurrent();
@@ -446,7 +465,7 @@ void GameBgDrawType2(void)
         color = xglLRand();
         star &= 31;
         destination_pixel[star] = (color & 0xBFBFBF) + 0x80404040;
-        sceVif1PkRef(packet, TestEnv_1_00367B00, 11, 0, 0, 0);
+        sceVif1PkRef(packet, TestEnv, 11, 0, 0, 0);
         sceVif1PkCnt(packet, 0);
         ((void (*)(XglPacket *, const void *, int))sceVif1PkAddDataN)(packet, param->texture_packet, 2056);
         scratch = (GameBgBandScratch *)0x70000000;
@@ -597,6 +616,12 @@ void GameBgDrawType2(void)
         return;
     }
 }
+
+GameBgDrawType1Parameters GameBgDrawType1Param = {0};
+GameBgDrawType2Parameters GameBgDrawType2Param = {0};
+typedef unsigned int GameIdLightQuadword __attribute__((mode(TI)));
+/* 16 studio light blocks of 0xF0 bytes (IdLightSet, game_id_light_set.c). */
+GameIdLightQuadword GameIdLight[16][15] = {{0}};
 
 extern float xglFRand(void);
 void GameBgDrawType2(void);

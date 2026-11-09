@@ -59,6 +59,7 @@ typedef struct SsdDriverState {
     int lfoRandom;
 } SsdDriverState;
 
+
 extern int (*WaveformTable[])(SsdLfoState *, void *);
 
 void SsdInitLfoWork(SsdLfoWork *work);
@@ -329,3 +330,25 @@ int SsdGetRSLFORandom(SsdDriverState *work)
     work->lfoRandom = random;
     return random & 0x7fff;
 }
+
+typedef int (*SsdLfoProcess)(SsdLfoState *, void *);
+
+/* LFO waveform procedures, indexed by waveform number. */
+SsdLfoProcess WaveformTable[16] = {
+    (SsdLfoProcess)SsdLfoRectangularSingleProc,
+    (SsdLfoProcess)SsdLfoRectangularDoubleProc,
+    (SsdLfoProcess)SsdLfoTriangularSingleProc,
+    (SsdLfoProcess)SsdLfoTriangularDoubleProc,
+    (SsdLfoProcess)SsdLfoSawtoothSingleProc,
+    (SsdLfoProcess)SsdLfoSawtoothSingleProc,
+    SsdLfoNoiseSingleProc,
+    SsdLfoNoiseDoubleProc,
+    (SsdLfoProcess)SsdLfoOffProc,
+    (SsdLfoProcess)SsdLfoOffProc,
+    (SsdLfoProcess)SsdLfoOffProc,
+    (SsdLfoProcess)SsdLfoOffProc,
+    (SsdLfoProcess)SsdLfoOffProc,
+    (SsdLfoProcess)SsdLfoOffProc,
+    (SsdLfoProcess)SsdLfoOffProc,
+    (SsdLfoProcess)SsdLfoOffProc
+};

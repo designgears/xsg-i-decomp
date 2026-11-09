@@ -3,13 +3,6 @@
 #include "main/xgl_cd.h"
 
 #include "enemy_system_init.h"
-
-extern const char D_004CAE30[];
-extern const char D_004CAE48[];
-extern const char D_004CAE68[];
-extern const char D_004CAE88[];
-extern const char D_004CAEA8[];
-extern const char D_004CAEC0[];
 typedef struct EnemyPresetPathPrefix {
     char bytes[15];
 } EnemyPresetPathPrefix;
@@ -21,41 +14,37 @@ typedef union EnemyPresetPathStorage {
     EnemyPresetPathParts parts;
     char bytes[256];
 } EnemyPresetPathStorage;
-extern const EnemyPresetPathPrefix D_004CAEE0;
-extern const char D_004DB858[];
 extern char *strcat(char *destination, const char *source);
 
 void Enemy_SystemInit(void) {
     AdrsEnemyPreset = WorkEnd;
     GameLoopState[0x1c / sizeof(unsigned int)] = 0;
-    WorkEnd += xglCdReadFile(D_004CAE30, WorkEnd, 0, 0);
+    WorkEnd += xglCdReadFile("data\\matumoto\\enemy.dat", WorkEnd, 0, 0);
 
     AdrsEnemySpline = WorkEnd;
-    WorkEnd += xglCdReadFile(D_004CAE48, WorkEnd, 0, 0);
+    WorkEnd += xglCdReadFile("data\\matumoto\\spline.dat", WorkEnd, 0, 0);
 
     AdrsEnemyExclamation = WorkEnd;
-    WorkEnd += xglCdReadFile(D_004CAE68, WorkEnd, 0, 0);
+    WorkEnd += xglCdReadFile("data\\matumoto\\bikkuri.lex", WorkEnd, 0, 0);
 
     AdrsEnemyQuestion = WorkEnd;
-    WorkEnd += xglCdReadFile(D_004CAE88, WorkEnd, 0, 0);
+    WorkEnd += xglCdReadFile("data\\matumoto\\hatena.lex", WorkEnd, 0, 0);
 
     AdrsEnemySphere = WorkEnd;
-    WorkEnd += xglCdReadFile(D_004CAEA8, WorkEnd, 0, 0);
+    WorkEnd += xglCdReadFile("data\\matumoto\\maru.lex", WorkEnd, 0, 0);
 
     AdrsEnemySquare = WorkEnd;
-    WorkEnd += xglCdReadFile(D_004CAEC0, WorkEnd, 0, 0);
+    WorkEnd += xglCdReadFile("data\\matumoto\\sikaku.lex", WorkEnd, 0, 0);
 }
 
 int Enemy_LoadPreset(void *buffer, const char *preset_name)
 {
-    EnemyPresetPathStorage path;
+    char path[256] = "data\\matumoto\\";
 
-    path.parts.prefix = D_004CAEE0;
-    memset(path.parts.suffix, 0, sizeof(path.parts.suffix));
-    strcat(path.bytes, preset_name);
-    strcat(path.bytes, D_004DB858);
+    strcat(path, preset_name);
+    strcat(path, ".dat");
     AdrsEnemyPreset = buffer;
-    return xglCdReadFile(path.bytes, buffer, 0, 0);
+    return xglCdReadFile(path, buffer, 0, 0);
 }
 
 typedef struct {

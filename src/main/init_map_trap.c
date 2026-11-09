@@ -87,14 +87,9 @@ typedef struct {
     unsigned char unmodeled_30[0x80];
     TrapVectorUp dimensions;
 } TrapMapUnitVectorsUp;
-extern TrapKindEntry TrapKind_t_0[];
 extern KowareKindEntry KowareKind_t[127];
 extern int uwares_tbl[14];
 extern int xtxres_tbl[14];
-extern const char D_004CA3F8[16];
-extern const char D_004CA408[16];
-extern const char D_004CA418[0x30];
-extern float D_004D7F54;
 extern signed char printflg;
 extern int printf(const char *, ...);
 extern void MAP_updateUnitTrap();
@@ -115,6 +110,14 @@ void InitMapTrap(TrapMapUnitUp *unit)
     int index;
     int xtxres;
     int uwares;
+    /* Per-kind wind state, size (x/y packed: 0.25,1 / 0.5,0.8 / 0.5,1), flags, effect. */
+    static TrapKindEntry TrapKind_t[5] = {
+        {2, {0}, {0x3F8000003E800000ULL, 0.25f, 0.0f}, 0x00400000, 0x2DA, {0}},
+        {1, {0}, {0x3F8000003E800000ULL, 0.25f, 0.0f}, 0x00800000, 0x2DB, {0}},
+        {2, {0}, {0x3F8000003E800000ULL, 0.25f, 0.0f}, 0x04000000, 0x2DC, {0}},
+        {2, {0}, {0x3F4CCCCD3F000000ULL, 0.5f, 0.0f}, 0x02000000, 0x2DD, {0}},
+        {2, {0}, {0x3F8000003F000000ULL, 0.5f, 0.0f}, 0x00200000, 0x259, {0}},
+    };
 
     unit->update = MAP_updateUnitTrap;
     if ((unsigned short)(unit->trapId - 0x7001) < 4) {
@@ -124,41 +127,41 @@ void InitMapTrap(TrapMapUnitUp *unit)
         unit->uwaresId = uwares;
         unit->xtxresId = xtxres;
         if (trap->windState == -1) {
-            trap->windState = TrapKind_t_0[index].windState;
+            trap->windState = TrapKind_t[index].windState;
         }
-        unit->flags |= TrapKind_t_0[index].flags;
-        unit->dimensions = TrapKind_t_0[index].dimensions;
+        unit->flags |= TrapKind_t[index].flags;
+        unit->dimensions = TrapKind_t[index].dimensions;
         trap->damageRadius = 3.0f;
         if (trap->target == -1) {
             trap->target = 0;
         }
         if (trap->effectId == -1) {
-            trap->effectId = TrapKind_t_0[index].effectId;
+            trap->effectId = TrapKind_t[index].effectId;
         }
     } else if ((unsigned short)(unit->trapId - 0x7014) < 31) {
         SetContainerParam(unit);
     } else {
-        unit->flags |= TrapKind_t_0[4].flags;
-        unit->dimensions = TrapKind_t_0[4].dimensions;
+        unit->flags |= TrapKind_t[4].flags;
+        unit->dimensions = TrapKind_t[4].dimensions;
         trap->damageRadius = 3.0f;
         if (trap->kindIndex != -1) {
             if (trap->windState == -1) {
                 trap->windState = KowareKind_t[trap->kindIndex].shape;
             } else {
-                trap->windState = TrapKind_t_0[4].windState;
+                trap->windState = TrapKind_t[4].windState;
             }
             unit->dimensions = KowareKind_t[trap->kindIndex].dimensions;
             if (trap->effectId == -1) {
-                trap->effectId = TrapKind_t_0[trap->kindIndex].effectId;
+                trap->effectId = TrapKind_t[trap->kindIndex].effectId;
             }
         } else if (trap->windState == -1) {
-            trap->windState = TrapKind_t_0[4].windState;
+            trap->windState = TrapKind_t[4].windState;
         }
         if (trap->target == -1) {
             trap->target = KowareKind_t[trap->kindIndex].target;
         }
         if (trap->effectId == -1) {
-            trap->effectId = TrapKind_t_0[4].effectId;
+            trap->effectId = TrapKind_t[4].effectId;
         }
     }
     if (trap->sizeX > 0.0f) {
@@ -166,8 +169,8 @@ void InitMapTrap(TrapMapUnitUp *unit)
         view->dimensions.y = trap->sizeY;
         view->dimensions.z = trap->sizeZ * 0.5f;
         if (printflg) {
-            printf(D_004CA3F8);
-            printf(D_004CA408, trap->sizeX, trap->sizeY, trap->sizeZ);
+            printf("SetTrapSize\n");
+            printf("x=%f y=%f z=%f\n", trap->sizeX, trap->sizeY, trap->sizeZ);
         }
     }
     view->dimensions.x += trap->offsetX * 0.5f;
@@ -195,8 +198,8 @@ void InitMapTrap(TrapMapUnitUp *unit)
     unit->matrixRef = unit->matrix;
     SetHideObject(unit);
     if (printflg) {
-        printf(D_004CA418, view->position.x, view->position.y, view->position.z,
-               view->rotation.y / D_004D7F54 * 180.0f);
+        printf("Create Trap pos=x=%f, y=%f, z=%f, rotY=%f\n", view->position.x, view->position.y, view->position.z,
+               view->rotation.y / 3.1415927f * 180.0f);
     }
 }
 
@@ -241,8 +244,6 @@ typedef struct {
 } TrapGameLoopState;
 extern TrapGameLoopState GameLoopState;
 extern signed char printflg;
-extern const char D_004DB728[];
-extern const char D_004CA448[];
 extern void DrawActiveCursol(void *);
 extern void UwamonoCommonFunc(void *);
 extern void UwamonoBrokenSe(void *);
@@ -304,7 +305,7 @@ void MAP_updateUnitTrap(TrapUpdateUnit *unit)
             ClearUwamonoEffect(unit);
             SetUwaWind(unit);
             if (t->methodArg != -1) {
-                CallMethod_I(D_004DB728, t->methodArg);
+                CallMethod_I("broken", t->methodArg);
             }
         }
         if (t->state == 2) {
@@ -322,7 +323,7 @@ void MAP_updateUnitTrap(TrapUpdateUnit *unit)
             SetUwaWind(unit);
             if (t->methodArg != -1) {
                 GameLoopState.unk1C = 0;
-                CallMethod_I(D_004DB728, t->methodArg);
+                CallMethod_I("broken", t->methodArg);
             }
             Vibration_Set_Strong(0xFF, 0x20, 0x1E);
         }
@@ -337,7 +338,7 @@ void MAP_updateUnitTrap(TrapUpdateUnit *unit)
             GivesEnemyDamage(unit);
         } else if (unit->counter > t->life) {
             if (printflg) {
-                printf(D_004CA448, unit->id, unit->serial);
+                printf("unit trap delete id=0x%x serial=%d\n", unit->id, unit->serial);
             }
             unit->active = 0;
             unit->id = -1;
@@ -349,7 +350,7 @@ void MAP_updateUnitTrap(TrapUpdateUnit *unit)
         if (unit->counter >= 5) {
             t->wind = 0;
             if (printflg) {
-                printf(D_004CA448, unit->id, unit->serial);
+                printf("unit trap delete id=0x%x serial=%d\n", unit->id, unit->serial);
             }
             unit->active = 0;
             unit->id = -1;
@@ -480,3 +481,15 @@ int GivesEnemyDamage(TrapMapUnit *unit)
     }
     return 0;
 }
+
+/* Digit strings kept in this TU's .sdata; no code here refers to them. */
+const char D_004DB730[] = "9";
+const char D_004DB738[] = "8";
+const char D_004DB740[] = "7";
+const char D_004DB748[] = "6";
+const char D_004DB750[] = "5";
+const char D_004DB758[] = "4";
+const char D_004DB760[] = "3";
+const char D_004DB768[] = "2";
+const char D_004DB770[] = "1";
+const char D_004DB778[] = "0";

@@ -12,21 +12,18 @@
  * memset; no function this TU claims establishes any member layout for it
  * yet, so it stays a byte range. Scaffold-owned data (docs/naming.md).
  */
-extern unsigned char processBuf[0x240];
 
 /*
  * The AI work area thinkSysInit (0x00a1d348) clears with a 0x1D0-byte memset,
  * immediately after processBuf. No function this TU claims establishes any
  * member layout for it either. Scaffold-owned data (docs/naming.md).
  */
-extern unsigned char context[0x1D0];
 
 /*
  * AI script data-segment base address: thinkTopSet (0x00a1d380) installs it
  * and thinkAdrGet (0x00a1d3a0) adds a script offset to it. Scaffold-owned
  * data (docs/naming.md).
  */
-extern int pDataTop;
 
 /*
  * AI execution-context value that thinkContextSet (0x00a1d390) installs
@@ -34,14 +31,12 @@ extern int pDataTop;
  * use beyond storage is not yet evidenced. Scaffold-owned data
  * (docs/naming.md).
  */
-extern int pContext;
 
 /*
  * AI script data-segment base thinkMonsTblGet (0x00a1d790) installs through
  * thinkTopSet before it looks up a monster-set entry. Scaffold-owned data
  * (docs/naming.md).
  */
-extern int pThinkTop;
 
 /*
  * One entry of the monster-set table pMonsSetTop below indexes. thinkMonsTblGet
@@ -74,7 +69,6 @@ typedef struct MonsTblEntry {
  * Monster-set table base thinkMonsTblGet (0x00a1d790) indexes by monster-set
  * number. Scaffold-owned data (docs/naming.md).
  */
-extern MonsTblEntry *pMonsSetTop;
 
 /*
  * The current map's camera-control table entry. camInitExec (0x00a1d820) is
@@ -91,7 +85,6 @@ typedef struct CamTopEntry {
  * Camera-control table entry the map's own init data selects. Scaffold-owned
  * data (docs/naming.md).
  */
-extern CamTopEntry *pCamTop;
 
 typedef struct MessageTask MessageTask;
 
@@ -145,7 +138,6 @@ void MCamSet(int mode, void *params);
  * unitNoChk hands to printf when its argument is out of the zero-to-seven
  * unit range. */
 extern int printf(const char *format, ...);
-extern const char D_00A46578[];
 
 /*
  * Camera reference/view mode selector. cmdCamRefMode/cmdCamCamMode/
@@ -153,26 +145,22 @@ extern const char D_00A46578[];
  * turn; scaffold-owned data under its original ELF symbol name
  * (docs/naming.md).
  */
-extern int camMode;
 
 /*
  * Perspective-camera mode selector. cmdCamPersMode/cmdCamPersMoveMode below
  * write 3 and -3 to it; scaffold-owned data (docs/naming.md).
  */
-extern int persMode;
 
 /*
  * Bank-camera mode selector. cmdCamBankMode/cmdCamBankMoveMode below write 2
  * and -4 to it; scaffold-owned data (docs/naming.md).
  */
-extern int bankMode;
 
 /*
  * The current AI unit. thinkUnitPtrGetReg (0x00a1f348) substitutes it for
  * unitNoGet when a script register holds the self-reference sentinel 0x7FFF.
  * Scaffold-owned data under its original ELF symbol name (docs/naming.md).
  */
-extern ObjectTask *pThinkUnit;
 
 /*
  * unitNoGet/unitPtrGet (src/ov01/unit_cmd.c, still asm) search and index the
@@ -339,7 +327,6 @@ extern int thinkProcessKindChk(int kind);
 /* "** reg err %d\n" at 0x00a461e8 (ov01 .rodata), the format string regChk
  * (0x00a1dfc8) hands to printf when the operand's high bit (0x8000) is not
  * set. */
-extern const char D_00A461E8[];
 
 /*
  * dataVPadSet (src/ov01/data_unit_org_get.c, still asm) installs the
@@ -380,7 +367,6 @@ extern int thinkNoGet(void);
  * count; scaffold-owned data under its original ELF symbol name
  * (docs/naming.md).
  */
-extern short camTblIdx;
 
 /*
  * thinkCamTblNumGet (this TU, still asm) returns the camera-table entry
@@ -406,20 +392,17 @@ extern void dataVPadModeSet(int enable);
  * when the decoded register index requests indirect addressing (bit 0x4000
  * set).
  */
-extern const char D_00A46300[];
 
 /*
  * "R%02d = %d\n" at 0x00a46308 (ov01 .rodata), the format string cmdRput
  * (0x00a1ead8) hands to printf with the register index and its value.
  */
-extern const char D_00A46308[];
 
 /*
  * Script command-trace flag. cmdCmdputon/cmdCmdputoff (0x00a1ed10,
  * 0x00a1ed28) set and clear it; scaffold-owned data under its original ELF symbol
  * name (docs/naming.md).
  */
-extern int cmdPutFlag;
 
 /*
  * thinkExec (this TU, still asm) runs the AI script at the given offset;
@@ -435,22 +418,18 @@ extern int unitLiveNumGet(int side);
 /* "** thinkTurnStart ** %X\n" at 0x00a46160 (ov01 .rodata), the format
  * string thinkTurnStartExec (0x00a1dab0) hands to printf with the script
  * offset it is about to run. */
-extern const char D_00A46160[];
 
 /* "** thinkTurnEnd ** %X\n" at 0x00a46180 (ov01 .rodata), the format string
  * thinkTurnEndExec (0x00a1db78) hands to printf with the script offset it is
  * about to run. */
-extern const char D_00A46180[];
 
 /* "** think Atk (%d) ** %X\n" at 0x00a46198 (ov01 .rodata), the format
  * string thinkUnitAtkExec (0x00a1dc40) hands to printf with the acting
  * unit's number and the script offset it is about to run. */
-extern const char D_00A46198[];
 
 /* "** think Dmg (%d) ** %X\n" at 0x00a461b8 (ov01 .rodata), the format
  * string thinkUnitDmgExec (0x00a1dd28) hands to printf with the damaged
  * unit's number and the script offset it is about to run. */
-extern const char D_00A461B8[];
 
 /*
  * cmdUnitpara (this TU, still asm) reads (mode 0) or writes (mode 1) one of
@@ -501,6 +480,7 @@ typedef struct McamParams {
     unsigned char unmodeled_74[0x80 - 0x74];
     Vector4 offset;                   /* +0x80: x/y/z scaled by 0.01, w fixed at 1.0 */
     McamAngleOffset angleOffset;      /* +0x90: cmdCamOffsAng */
+    unsigned char unmodeled_9c[0xB0 - 0x9C]; /* 0xB0-byte camera block (CamMoveBlk) */
 } McamParams;
 
 extern McamParams *mcamPtrGet(void);

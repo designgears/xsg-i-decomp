@@ -85,7 +85,11 @@ def validate_manifest(root, manifest, profile_path):
             require(digest(source) == group["source_sha256"],
                     "published IOP source hash differs: " + group["source"])
             require(group["float_mode"] in ("soft", "hard"), "unsupported IOP float mode")
-            require(group["functions"], "source group has no original functions")
+            # A data-only group (an original FDR with no procedures) must own
+            # at least one generated-data span instead of functions.
+            require(isinstance(group.get("functions"), list) and
+                    (group["functions"] or group.get("generated_data")),
+                    "source group has neither original functions nor generated data")
             for function in group["functions"]:
                 function_count += 1
                 identity = (unit, function["offset"], function["name"])
@@ -136,6 +140,8 @@ def compile_group(root, profile_path, unit, group, module, build_root, expected_
     packet = dict(unit=unit, binaries={unit: dict(path="game/extracted-iso/" + module["path"],
                                                   sha256=module["sha256"])},
                   functions=functions)
+    if not functions:
+        packet["fdr"] = dict(index=group["fdr_index"], filename=group["fdr_filename"])
     profile, lock, lock_path, compiler, tools, assembler_flags, pins = contract(
         root, profile_path, packet)
     original = module["original_elf"]

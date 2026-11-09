@@ -168,8 +168,6 @@ typedef struct UmnTopShortSet {
 typedef struct UmnTopIntSet {
     int value[4];
 } UmnTopIntSet;
-extern const char *moji00_0[];
-extern const char *moji01_1[];
 extern const char menuCursorDebugFormat[];
 void eWindowSet(void *window);
 void eSpriteSet(UmnTopESprite *sprite, int texture);
@@ -184,6 +182,18 @@ extern int UmnTexAddr;
 
 void taskUmnTopWin(void *taskArg, void *data)
 {
+    static const char *moji00[] = {
+        "Mail",
+        "Database",
+        "EVS (Environmental Simulator)",
+        "Plug-in Module",
+    };
+    static const char *moji01[] = {
+        "Read and reply to emails.\nDownload attachments.",
+        "View database relating to the\ncharacters and the Gnosis.",
+        "Simulate places that you have\nbeen to previously.",
+        "View list of Plug-ins currently\nequipped.",
+    };
     UmnObjectTask *task = taskArg;
     UmnTopWinWork *work;
     UmnTopOption *option;
@@ -223,11 +233,11 @@ void taskUmnTopWin(void *taskArg, void *data)
         work->window.width = 576;
         work->window.height = 102;
         index = UmnTopW.option_ids[UmnTopW.menu_cursor] - 1;
-        eMessageSet(&work->top_message, moji00_0[index]);
+        eMessageSet(&work->top_message, moji00[index]);
         eMessageModeChange(&work->top_message, EMESSAGE_MODE_LINE_START);
         graphicsTemp = work->graphics;
         work->top_message.draw_parameter = graphicsTemp + 6;
-        eMessageSet(&work->bottom_message, moji01_1[index]);
+        eMessageSet(&work->bottom_message, moji01[index]);
         eMessageModeChange(&work->bottom_message, EMESSAGE_MODE_LINE_START);
         graphicsTemp = work->graphics;
         work->bottom_message.draw_parameter = graphicsTemp + 6;
@@ -283,9 +293,9 @@ void taskUmnTopWin(void *taskArg, void *data)
                 if (UmnTopW.option_ids[UmnTopW.menu_cursor] != 0) {
                     int message = UmnTopW.option_ids[UmnTopW.menu_cursor] - 1;
 
-                    eMessageTextChange(&work->top_message, moji00_0[message]);
+                    eMessageTextChange(&work->top_message, moji00[message]);
                     eMessageModeChange(&work->top_message, EMESSAGE_MODE_LINE_START);
-                    eMessageTextChange(&work->bottom_message, moji01_1[message]);
+                    eMessageTextChange(&work->bottom_message, moji01[message]);
                     eMessageModeChange(&work->bottom_message, EMESSAGE_MODE_LINE_START);
                 }
                 waiting = 0;
@@ -421,7 +431,6 @@ void taskUmnTopWin(void *taskArg, void *data)
 
 extern unsigned char UmnWork[];
 extern unsigned char D_4A1A0C[];
-extern const char D_00A12050[];
 extern int UmnWorkEnd;
 extern unsigned char PadData[];
 void taskUmnTopWin(void *, void *);
@@ -429,6 +438,10 @@ void UmnObjectTaskCreate(void (*task)(void *, void *), void *work);
 void UmnChangeTopLevel(int level);
 void xglSoundEffectNormalID(int sound_id, int variant);
 void xglFontDebugPrintf(int x, int y, const char *format, ...);
+
+short *UmnManzaiText = 0;
+unsigned int UmnManzaiFlag = 0;
+unsigned char UmnManzaiWin[2][0xA4] = { { 0 } }; /* UmnManzaiWinTask[2], umn_procurator.h */
 
 void UmnTopMenu(void)
 {
@@ -515,5 +528,5 @@ void UmnTopMenu(void)
     if ((signed char)UmnWork[0x10] != 0) {
         UmnWork[0x10] = (signed char)UmnWork[0x10] - 1;
     }
-    xglFontDebugPrintf(0, 0x40, D_00A12050, UmnWork[0x31]);
+    xglFontDebugPrintf(0, 0x40, "%d", UmnWork[0x31]);
 }

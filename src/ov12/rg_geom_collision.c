@@ -6,7 +6,9 @@
 #include "ov12/xrg_rand_int.h"
 
 /* Referenced original data recovered from this translation unit. */
+const char D_00A552E8[] = "pRobot1 != NIL";
 const char D_00A552F8[32] = "../rg_geom_collision.euc.c";
+const char D_00A55318[] = "pPoly2 != NIL";
 const char D_00A55328[16] = "pArg != NIL";
 
 extern int RgGeomGetType(RgGeom *pGeom);
@@ -228,8 +230,6 @@ static void _PolyVsBall(unsigned int *pArg)
 }
 
 extern void assert_prog(const char *expression, const char *source_file, int line);
-extern const char D_00A552E8[];
-extern const char D_00A55318[];
 extern void __RgGeomPointGetPos(RgGeomPoint *point, RgVector destination,
                                 const char *file, int line);
 extern float RgGeomBallGetRadius(RgGeomPoint *pBall);
@@ -682,7 +682,15 @@ typedef struct {
     RgGeomColiHdr *geomB;
     void *funcB;
 } RgGeomColiJobArg;
-extern int (*s_apJobFuncTbl[])(RgGeomColiJobArg *);
+typedef int (*RgGeomColiJobFunc)(RgGeomColiJobArg *);
+static RgGeomColiJobFunc s_apJobFuncTbl[36] = {
+    0, 0, 0, 0, 0, 0,
+    0, (RgGeomColiJobFunc)_BallVsBall, (RgGeomColiJobFunc)_BallVsBall, (RgGeomColiJobFunc)_BallVsPoly, (RgGeomColiJobFunc)_BallVsTray, (RgGeomColiJobFunc)_BallVsPillar,
+    0, (RgGeomColiJobFunc)_BallVsBall, (RgGeomColiJobFunc)_BallVsBall, (RgGeomColiJobFunc)_RobotVsPoly, (RgGeomColiJobFunc)_RobVsTray, (RgGeomColiJobFunc)_RobVsPillar,
+    0, (RgGeomColiJobFunc)_PolyVsBall, (RgGeomColiJobFunc)_PolyVsRobot, 0, 0, 0,
+    0, (RgGeomColiJobFunc)_TrayVsBall, (RgGeomColiJobFunc)_TrayVsRob, 0, 0, 0,
+    0, (RgGeomColiJobFunc)_PillarVsBall, (RgGeomColiJobFunc)_PillarVsRob, 0, 0, 0
+};
 
 int RgGeomCollisionJob(RgGeomColiJobArg *pArg)
 {

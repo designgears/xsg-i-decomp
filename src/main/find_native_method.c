@@ -71,43 +71,6 @@ void *classFromSig(const char **cursor, void *classLoader);
 
 static int sizeofDescripter(u8 **cursor);
 
-typedef struct JavaMethod JavaMethod;
-
-typedef struct JavaFieldEntry FieldEntry;
-
-typedef struct DispatchTable DispatchTable;
-
-typedef union ConstantPoolEntry ConstantPoolEntry;
-
-/*
- * The full layout of the VM class record (include/shared.h's SceneClass is
- * the shared view of the same 0x40 bytes).
- */
-struct JavaClass {
-    ObjectHeader header;
-    ClassNameKey *name;
-    u16 accessFlags;
-    u16 flags;
-    void *classLoader;
-    JavaClass *superClass;
-    ConstantPoolEntry *constants;
-    DispatchTable *classPointer;
-    FieldEntry *fields;
-    JavaMethod *methods;
-    JavaClass **interfaces;
-    u16 constantCount;
-    u16 dispatchSize;
-    u16 methodCount;
-    u16 interfaceCount;
-    u16 fieldCount;
-    u16 staticFieldCount;
-    u16 declaredInterfaceCount;
-    s16 state;
-    int instanceSize;
-    ElementType *elementClass;
-};
-
-extern JavaClass _dummyClass;
 
 
 char *strcpy(char *, const char *);
@@ -738,22 +701,19 @@ ClassCacheEntry *lookupClassEntry(ClassNameKey *name, void *classLoader)
 
 JavaClass *lookupArray(ElementType *elementType)
 {
-    extern const char D_004DC050[];
-    extern const char D_004DC058[];
-    extern const char D_004DC060[];
     char name[1024];
     ClassCacheEntry *entry;
     ClassNameKey *key;
 
     if (elementType->flags & 0x100) {
-        sprintf(name, D_004DC050, elementType->typeCode);
+        sprintf(name, "[%c", elementType->typeCode);
     } else {
         const char *typeName = elementType->name->bytes;
 
         if (typeName[0] == '[') {
-            sprintf(name, D_004DC058, typeName);
+            sprintf(name, "[%s", typeName);
         } else {
-            sprintf(name, D_004DC060, typeName);
+            sprintf(name, "[L%s;", typeName);
         }
     }
     key = loadConstString2(name, -1);

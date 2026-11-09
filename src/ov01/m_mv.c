@@ -13,7 +13,7 @@
  * handle at 0x00a5b630/0x00a5b6d0 have no ledger entry and keep the splat
  * default.
  */
-extern int mvFlags_00A43720;
+static int mvFlags_00A43720;
 
 #define MV_FLAG_INITIALIZED 0x1
 #define MV_FLAG_PLAYING 0x2
@@ -30,17 +30,25 @@ typedef struct MvParams {
     short currentTime; /* +0xe6 */
 } MvParams;
 
-extern MvParams D_00A5B630;
 
-/* Movie playback handle MMvPlay opens and MMvStop closes; still opaque. */
-extern unsigned char D_00A5B6D0[];
 
+/* GS environment packet sent through DMA channel 2 (9 qwords). */
 typedef struct MvGifEnvironment {
-    unsigned char unmodeled_00[0x30];
-    u64 transfer_tag;
+    u64 setup[6];      /* GIFtag + A+D register writes */
+    u64 transfer_tag;  /* +0x30 */
+    u64 registers[11];
 } MvGifEnvironment;
 
-extern MvGifEnvironment mvEnv;
+MvGifEnvironment mvEnv = {
+    { 0x808B400000008001ULL, 0x53531EEEULL, 0, 0x3F, 0x007FFFF0, 0x8 },
+    0,
+    {
+        0x6, 0x0000008000000080ULL, 0x0000008000000080ULL, 0, 0,
+        0x000071F700006FF8ULL, 0x80000000, 0x00001C0000002000ULL, 0,
+        0x00008DF700008FF8ULL, 0x80000000,
+    },
+};
+static int mvFlags_00A43720 = 0;
 
 typedef struct MvRenderControl {
     unsigned char unmodeled_00[0x14];
@@ -65,53 +73,6 @@ typedef struct MvPlayOptions {
     int frame_width;
     int frame_height;
 } MvPlayOptions;
-
-int MMvPlay2(MvPlayOptions *options);
-
-int MMvInit(void)
-{
-    mvFlags_00A43720 = MV_FLAG_INITIALIZED | MV_FLAG_SKIP_ENABLED;
-    return 1;
-}
-
-extern MvRenderControl sRender;
-
-void MMvExec(void)
-{
-    int done;
-
-    if (mvFlags_00A43720 & MV_FLAG_PLAYING)
-    {
-        if ((mvFlags_00A43720 & MV_FLAG_SKIP_ENABLED) && (PadData.half_28 & 0x100) && (PadData.half_2a & 0x40))
-        {
-            MMvStop();
-            return;
-        }
-        done = xglMoviePlay(D_00A5B6D0);
-        mvEnv.transfer_tag = 0x24020000 | (sRender.movie_gif_control << 5) | 0x2000000640000000ULL;
-        FlushCache(0);
-        xglDmaDirectNormal(2, (u32)&mvEnv, 9);
-        if (done != 0)
-        {
-            xglMovieClose(D_00A5B6D0);
-            mvFlags_00A43720 &= ~MV_FLAG_PLAYING;
-        }
-    }
-}
-
-int MMvPlay(const char *filename)
-{
-    MvPlayOptions options;
-
-    options.flags = 2;
-    options.filename = filename;
-    return MMvPlay2(&options);
-}
-
-extern void MOutputDebugStringWarn(const char *format, ...);
-extern char *strncpy(char *dest, const char *src, unsigned int n);
-extern void xglMovieInfoInit(void *info);
-extern int xglMovieOpen(void *info, char *name);
 typedef struct MvMovieHandle {
     unsigned char unmodeled_00[0x40];
     short width;              /* +0x40 */
@@ -138,6 +99,56 @@ typedef struct MvPlayState {
     void *buf1;               /* +0x178 */
     unsigned char unmodeled_17c[4];
 } MvPlayState;
+
+/* .bss: the one playback state block (MMvPlay fills it, MMvGetTime reads it) */
+static MvPlayState D_00A5B630;
+
+int MMvPlay2(MvPlayOptions *options);
+
+int MMvInit(void)
+{
+    mvFlags_00A43720 = MV_FLAG_INITIALIZED | MV_FLAG_SKIP_ENABLED;
+    return 1;
+}
+
+extern MvRenderControl sRender;
+
+void MMvExec(void)
+{
+    int done;
+
+    if (mvFlags_00A43720 & MV_FLAG_PLAYING)
+    {
+        if ((mvFlags_00A43720 & MV_FLAG_SKIP_ENABLED) && (PadData.half_28 & 0x100) && (PadData.half_2a & 0x40))
+        {
+            MMvStop();
+            return;
+        }
+        done = xglMoviePlay(((unsigned char *)&D_00A5B630.movie));
+        mvEnv.transfer_tag = 0x24020000 | (sRender.movie_gif_control << 5) | 0x2000000640000000ULL;
+        FlushCache(0);
+        xglDmaDirectNormal(2, (u32)&mvEnv, 9);
+        if (done != 0)
+        {
+            xglMovieClose(((unsigned char *)&D_00A5B630.movie));
+            mvFlags_00A43720 &= ~MV_FLAG_PLAYING;
+        }
+    }
+}
+
+int MMvPlay(const char *filename)
+{
+    MvPlayOptions options;
+
+    options.flags = 2;
+    options.filename = filename;
+    return MMvPlay2(&options);
+}
+
+extern void MOutputDebugStringWarn(const char *format, ...);
+extern char *strncpy(char *dest, const char *src, unsigned int n);
+extern void xglMovieInfoInit(void *info);
+extern int xglMovieOpen(void *info, char *name);
 typedef struct MvEnvView {
     unsigned char unmodeled_00[0x60];
     int x0 : 32;      /* +0x60 */
@@ -220,7 +231,7 @@ void MMvStop(void)
 {
     if (mvFlags_00A43720 & MV_FLAG_PLAYING)
     {
-        xglMovieClose(D_00A5B6D0);
+        xglMovieClose(((unsigned char *)&D_00A5B630.movie));
         mvFlags_00A43720 &= ~MV_FLAG_PLAYING;
     }
 }
@@ -237,8 +248,8 @@ int MMvGetTime(int *currentTime, int *totalTime)
 
     if (mvFlags_00A43720 & MV_FLAG_PLAYING)
     {
-        movieCurrentTime = D_00A5B630.currentTime;
-        movieTotalTime = D_00A5B630.totalTime;
+        movieCurrentTime = ((MvParams *)&D_00A5B630)->currentTime;
+        movieTotalTime = ((MvParams *)&D_00A5B630)->totalTime;
     }
 
     if (currentTime != 0)

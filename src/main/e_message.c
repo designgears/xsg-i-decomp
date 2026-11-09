@@ -1,7 +1,7 @@
 #include "common.h"
 
 /* Number of message sprites currently allocated by the print routines. */
-extern int msg_spr_count;
+static int msg_spr_count = 0;
 
 void eMessageSpriteReset(void)
 {
@@ -168,11 +168,13 @@ typedef struct EMessageIconKinds {
 typedef struct EMessageIconCode {
     char code[3];
 } EMessageIconCode;
-extern unsigned char moji[];
-extern unsigned char otb[];
-extern EMessageSprite msg_spr[];
-extern short D_004DA920[];
-extern char D_004DA928[];
+static unsigned char moji[0x1000];
+static unsigned char otb[28] = {
+    0x0B, 0x0C, 0x80, 0x80, 0x80, 0x0D, 0x02, 0x0E, 0x02, 0x02, 0x00, 0x00,
+    0x00, 0x0F, 0x44, 0x00, 0x7F, 0x18, 0x00, 0x19, 0x03, 0x15, 0x02, 0x01,
+    0x0C, 0x00, 0x00, 0x00,
+};
+static EMessageSprite msg_spr[16];
 extern int xglFontGetStringWidth(const char *text);
 extern void xglFontPrint(int x, int y, int color, const char *text);
 extern void endSpriteSet(void *sprite, int flags);
@@ -379,8 +381,8 @@ draw:
             } else if ((signed char)c == 0x1E) {
                 text++;
                 if (msg_spr_count < 16) {
-                    EMessageIconKinds kinds = *(EMessageIconKinds *)D_004DA920;
-                    EMessageIconCode code = *(EMessageIconCode *)D_004DA928;
+                    EMessageIconKinds kinds = { { 0x0201, 0x0200, 0x0202, 0x0203 } };
+                    EMessageIconCode code = { "\241\241" };
                     EMessageSprite *spr = &msg_spr[msg_spr_count];
                     signed char *k = (signed char *)text;
 
@@ -669,7 +671,7 @@ void eMessageDraw(EMessageParam *message)
 }
 
 /* Current write position of the message text being built. */
-extern char *MessageCpyEnd;
+static char *MessageCpyEnd;
 
 extern void eMessageCat(char *src);
 

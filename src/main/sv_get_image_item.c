@@ -8,22 +8,31 @@ typedef unsigned int Quadword __attribute__((mode(TI)));
 
 typedef struct Matrix { float elements[16]; } Matrix;
 
-extern int _draw3D;
+static const Matrix4 _svUnitMatrix = {
+    {1.0f, 0.0f, 0.0f, 0.0f},
+    {0.0f, 1.0f, 0.0f, 0.0f},
+    {0.0f, 0.0f, 1.0f, 0.0f},
+    {0.0f, 0.0f, 0.0f, 1.0f}
+};
+
+/* GIF tag + register list (Quadword _svRegData), stored as words. */
+static const unsigned int _svRegDataWords[4] __asm__("_svRegData") __attribute__((aligned(16))) = {
+    0x8000, 0xB02A4000, 0x252521EE, 0x525
+};
+
+static int _draw3D;
 
 
-extern int _nEffect2D;
+static int _nEffect2D;
 
 
-extern int eft_5;
 
 
-extern int charID_3;
 
 
-extern int eftCate_4;
 
 
-extern int _nowImage;
+static int _nowImage;
 
 
 /*
@@ -870,25 +879,68 @@ out:
     ;
 }
 
-extern int top_1[];
-extern int siz_0[];
+/* GS ALPHA register values indexed by particle blend mode. */
+static const unsigned long long alphaTbl_004CBE78[4] __asm__("alphaTbl") = {
+    0x44, 0x48, 0x8000000042ULL, 0x6A
+};
+
+/* Quad texture coordinates (S, T, Q, 0) per corner (Quadword stqTbl_004CBEA0[4]). */
+static const float stqTblWords_004CBEA0[16] __asm__("stqTbl") __attribute__((aligned(16))) = {
+    0.0f, 0.0f, 1.0f, 0.0f,
+    1.0f, 0.0f, 1.0f, 0.0f,
+    0.0f, 1.0f, 1.0f, 0.0f,
+    1.0f, 1.0f, 1.0f, 0.0f
+};
+
 
 void svInitImageMapper(void) {
+    static int siz[40] = {
+        0x6000, 0x2000, 0x4000, 0x4000, 0x4000, 0x4000,
+        0x4000, 0x4000, 0x4000, 0x4000, 0x4000, 0x4000,
+        0x4000, 0x4000, 0x10000, 0x20000, 0x20000, 0x20000,
+        0x20000, 0x20000, 0x20000, 0x20000, 0x20000, 0x20000,
+        0x20000, 0x20000, 0x20000, 0x20000, 0x20000, 0x20000,
+        0x20000, 0x20000, 0x20000, 0x20000, 0x20000, 0x20000,
+        0x20000, 0x20000, 0x20000, 0x20000
+    };
+    static int top[40] = {
+        0xE0000, 0xE6000, 0xE8000, 0xED500, 0xF2A00, 0xEC000,
+        0xF1500, 0xF6A00, 0xF0000, 0xF5500, 0xFAA00, 0xF4000,
+        0xF8000, 0xFC000, 0xE8000, 0xE8000, 0xE8000, 0xE8000,
+        0xE8000, 0xE8000, 0xE8000, 0xE8000, 0xE8000, 0xE8000,
+        0xE8000, 0xE8000, 0xE8000, 0xE8000, 0xE8000, 0xE8000,
+        0xE8000, 0xE8000, 0xE8000, 0xE8000, 0xE8000, 0xE8000,
+        0xE8000, 0xE8000, 0xE8000, 0xE8000
+    };
     unsigned char *p = (unsigned char *)&_imageMapper;
     int i;
     memset(p, 0, 0x5A5A0);
     p += 0x10;
     for (i = 0; i < 0x28; i++) {
-        int t = top_1[i];
+        int t = top[i];
         *(int *)(p - 0xC) = t;
         *(int *)(p - 4) = t;
-        *(int *)(p - 8) = siz_0[i];
+        *(int *)(p - 8) = siz[i];
         *(short *)(p + 4) = 0;
         *(short *)p = 0;
         *(short *)(p + 2) = 0;
         p += 0x241C;
     }
 }
+
+SvImageMapperStorage _imageMapper = {0};
+
+SGsPacket _packet = {0};
+Matrix _defMatLcMod = {{0}};
+Matrix _defMatLc = {{0}};
+Matrix _defMatLn = {{0}};
+Matrix4 _svViewMtx = {{0}};
+Matrix4 _svScreenMtx = {{0}};
+Matrix4 _svViewScreenMtx = {{0}};
+SvImageList _imageList __attribute__((aligned(64))) = {{0}};
+
+/* Unreferenced zero fill that ends the original .data (to its 8-byte end). */
+static int D_00410AC4 __attribute__((section(".data"))) = 0;
 
 static void svInitRefImage(void)
 {
@@ -1288,7 +1340,6 @@ int sefClipViewVolume(void *scheduler, void *effect)
     return sefClipViewVolumeA(scheduler);
 }
 
-extern unsigned long long alphaTbl_004CBE78[4];
 typedef struct SvSpriteParticle {
     unsigned char unmodeled_00[0xC0];
     float centerX;
@@ -1493,7 +1544,6 @@ typedef struct SvModelDrawItem {
     unsigned char unmodeled_190[0x280 - 0x190];
 } SvModelDrawItem;
 
-extern unsigned long long alphaTbl_2[];
 extern void nmlModelSetSortOffset(float offset);
 extern void nmlModelSetFogCancel(void);
 extern void nmlModelSetLight(void *colorMod, void *normal);
@@ -1508,6 +1558,10 @@ extern void nmlModelEntryEffect(void *effect);
 
 void svDrawModel(SvModelDrawItem *model, void *place)
 {
+    /* GS ALPHA register values indexed by model blend mode. */
+    static const unsigned long long alphaTbl_2[3] __asm__("alphaTbl.2") = {
+        0x64, 0x68, 0x62
+    };
     unsigned long long alpha;
     int a;
 
@@ -2085,9 +2139,9 @@ typedef struct SvParticleEffect {
     unsigned short flags;
 } SvParticleEffect;
 extern Matrix4 _invView;
-extern Matrix4 _svUnitMatrix;
-extern const Quadword stqTbl_004CBEA0[4];
-extern const Quadword _svRegData;
+extern const Matrix4 _svUnitMatrix;
+extern const Quadword stqTbl_004CBEA0[4] __asm__("stqTbl");
+extern const Quadword _svRegData __asm__("_svRegData");
 void svDrawModel(SvModelDrawItem *item, void *place);
 
 void sefDrawParticleList(SvParticleEffect *effect)
@@ -2489,8 +2543,16 @@ static void sefDrawSchedulerEffect(int schedulerIndex)
     }
 }
 
+static int _draw3D = 0;
+static int _nEffect2D = 0;
+const char D_004DBA50[8] = {'%', 's', '.', 'b', 'm', 'p', '\0', '\0'};
+const char D_004DBA58[8] = {'%', 's', '.', 'c', 'l', 't', '\0', '\0'};
+
 static void svDrawSchedulerBlk(int eftCate, int eftNo)
 {
+    static int charID_3 __asm__("charID.3");
+    static int eftCate_4 __asm__("eftCate.4");
+    static int eft __asm__("eft.5") = -1;
     short effectId;
     int schedulerIndex;
     SchedulerRecord *record;
@@ -2502,12 +2564,12 @@ static void svDrawSchedulerBlk(int eftCate, int eftNo)
     do {
         if (record->inUse != 0) {
             effectId = record->effectId;
-            if (eft_5 != effectId) {
-                eft_5 = effectId;
+            if (eft != effectId) {
+                eft = effectId;
                 srsAnalyzeEftNo(effectId, &charID_3, &eftCate_4);
             }
             if (eftCate_4 == eftCate &&
-                (eftNo == 0 || (eftNo > 0 && eftNo == eft_5))) {
+                (eftNo == 0 || (eftNo > 0 && eftNo == eft))) {
                 SGsSetZTestEnv(((record->flags >> 2) ^ 1) & 1);
                 sefDrawSchedulerEffect(schedulerIndex);
             }
@@ -2748,6 +2810,4 @@ void SGsAddGifUV(SGsPacket *packet, int u_coordinate, int v_coordinate)
     packet->count++;
 }
 
-const char D_004DBA50[8] = {'%', 's', '.', 'b', 'm', 'p', '\0', '\0'};
 
-const char D_004DBA58[8] = {'%', 's', '.', 'c', 'l', 't', '\0', '\0'};

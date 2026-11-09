@@ -315,6 +315,13 @@ def piece_lines(items, start):
     a block (padding that is not an item) is left as it was."""
     room = (start & -start).bit_length() - 1 if start else 30
     out = []
+    if start and start % 4:
+        # A piece at an odd/halfword address (the pad after a C run that ends
+        # unaligned): MIPS gas aligns each `.half`/`.word` to its size and so
+        # raises the section to 2**2, and the linker would move the piece. Every
+        # byte is written out at its original offset, so `.align 0` (gas: no
+        # automatic alignment of the data that follows) changes no byte.
+        out.append('.align 0')
     for it in items:
         lead = True
         for line in it['block']['lines']:
@@ -776,6 +783,12 @@ def section_items(ctx, sec):
 COMMENT = re.compile(r'/\*.*?\*/')
 
 
+def _is_pad(item):
+    """splat marks the fill between two objects it found no reference to."""
+    return any('Automatically generated and unreferenced pad' in line
+               for line in item['block']['lines'])
+
+
 def item_references(item):
     """Identifiers an item's own data names (the labels a pointer table points at)."""
     names = set()
@@ -793,7 +806,9 @@ def run_specs(items, spans):
         its = [it for it in items if lo <= it['start'] < hi]
         if not its or its[0]['start'] != lo:
             raise CarveError(f'the run {h8(lo)}-{h8(hi)} does not start at an item')
-        out.append(dict(lo=lo, hi=hi, last=its[-1]['start'], first_end=its[0]['end'],
+        # trailing splat pads (alignment fill) need not come from the C object
+        real = [it for it in its if 'block' not in it or not _is_pad(it)] or its
+        out.append(dict(lo=lo, hi=hi, last=real[-1]['start'], first_end=its[0]['end'],
                         items=[(it['start'], it['end']) for it in its]))
     return out
 
@@ -839,6 +854,7 @@ def section_references(elf, csec):
         tdata = elf.section_bytes(tgt)
         entries = _rel_entries(elf, rs)
         paired = {}
+        last_hi = {}
         for i, (off, rtype, symi, add) in enumerate(entries):
             if symi >= len(syms) or syms[symi].shndx != csec.index:
                 continue
@@ -861,8 +877,14 @@ def section_references(elf, csec):
                     low = struct.unpack_from('<I', tdata, entries[j][0])[0]
                     addend = ((word & 0xffff) << 16) + _sext16(low)
                     paired[j] = addend
+                    last_hi[symi] = word & 0xffff
                 elif rtype == 6:                                 # R_MIPS_LO16
                     addend = paired.get(i)
+                    if addend is None and csec.size >= 0x10000 and symi in last_hi:
+                        # GCC loads several fields through one `lui`: the later
+                        # LO16s take the high half of the latest HI16 of the
+                        # same symbol (the MIPS ABI rule gas and ld apply).
+                        addend = (last_hi[symi] << 16) + _sext16(word)
                     if addend is None:
                         if csec.size >= 0x10000:
                             raise CarveError(f'unpaired R_MIPS_LO16 at {where}: {csec.name} is 64 KiB or larger')
@@ -875,7 +897,9 @@ def section_references(elf, csec):
                     raise CarveError(f'relocation type {rtype} at {where} against {csec.name} is not supported '
                                      f'by the split')
             target = base + addend
-            if not 0 <= target <= csec.size:
+            # `array[i - 1]` reaches a little before the section (GCC folds the
+            # -4 into the address); the linked address is still inside the object
+            if not -0x100 <= target <= csec.size:
                 raise CarveError(f'relocation at {where} reaches {csec.name}+{target:#x}, outside the section '
                                  f'(0x{csec.size:x} bytes)')
             refs.append(dict(rel=rs.index, entry=i, offset=off, type=rtype, sym=symi, target=target))
@@ -961,6 +985,15 @@ def plan_split(elf, csec, specs, want, check_items=False):
                 f'(anchors {[hex(a) for a in cands]} in +0x{low:x}..+0x{high:x}; none holds the bytes of its '
                 f'first item): the C functions do not emit the items of that run where the original has them')
         if len(fit) > 1:
+            # Bytes alone cannot place an all-zero first item: a field
+            # reference inside the previous object (`State+0xc8`) fits too.
+            # Prefer an offset where a C object starts and that lies inside no
+            # other C object.
+            starts = {s.value for s in own if s.size}
+            inside = lambda a: any(s.value < a < s.value + s.size for s in own if s.size)
+            better = [a for a in fit if a in starts and not inside(a)]
+            if better and not ref:          # first item all zero: bytes decide nothing
+                fit = better + [a for a in fit if a not in better]
             notes.append(f'run {h8(cur["lo"])}: offsets {[hex(a) for a in fit]} fit; +0x{fit[0]:x} taken')
         offsets.append(fit[0])
         if check_items:
@@ -999,6 +1032,16 @@ def plan_split(elf, csec, specs, want, check_items=False):
                                  f'runs {h8(r["lo"])}-{h8(r["hi"])} and {h8(specs[k + 1]["lo"])}; it is neither '
                                  f'unreferenced zero fill nor the original bytes that follow the run')
             length = cap
+        elif k + 1 == len(specs) and length > cap and length - cap < 16:
+            # The section's last run: the assembler pads the C section to its
+            # alignment (9 bytes -> 0x10) where the original continues with a
+            # trailing pad piece. Unreferenced zero fill only.
+            fill = range(o + cap, end)
+            if not any(data[o + cap:end]) and not any(x in relocated for x in fill) \
+                    and not any(s.value in fill for s in own) \
+                    and not any(o + cap <= ref['target'] < end for ref in refs):
+                notes.append(f'run {h8(r["lo"])}: C section fill +0x{o + cap:x}..+0x{end:x} left out')
+                length = cap
         if not r['last'] - r['lo'] < length <= cap:
             raise CarveError(
                 f'{csec.name}: the C object gives the run {h8(r["lo"])}-{h8(r["hi"])} 0x{length:x} bytes '
@@ -1227,7 +1270,12 @@ def derive(root, unit, unit_dir, tu_id, source, obj):
         gen, also = set(), set()
         for i, it in enumerate(items):
             labels = set(it['labels'])
-            if labels & names_def:
+            # GCC names a function-local static `name.N`; splat spells that
+            # label `name_N`, address-suffixed when duplicated (`anim_4_004DC358`).
+            # A C-defined local static owns its item even when the original
+            # code reaches it only through an unnamed gp offset.
+            labels |= {re.sub(r'_[0-9A-F]{8}$', '', lab) for lab in labels}
+            if labels & (names_def | {n.replace('.', '_') for n in names_def if '.' in n}):
                 gen.add(i)
             elif labels & c_refs:
                 (also if labels & extern else gen).add(i)
@@ -1273,6 +1321,29 @@ def derive(root, unit, unit_dir, tu_id, source, obj):
                            and set(items[i]['labels']) & x['refs'][j]})
         if shared:
             detail['shared_with_scaffold'] = shared
+        # splat's "unreferenced pad" items are the fill cc1's alignment leaves
+        # between (or after) the C object's own items: no code names them, so
+        # the reference walk above never reaches them. A zero pad right after a
+        # C-generated item and followed by another one belongs to that C run
+        # (a trailing pad stays a scaffold piece: cc1 emits no trailing fill,
+        # and the next piece is placed right after the run) (plan_split's item check still
+        # places every following item against the C object).
+        if orig is None:
+            orig = Elf(Path(ctx['orig']).read_bytes())
+        gset = set(gen)
+        for i in range(len(items)):
+            if i in gset or i - 1 not in gset:
+                continue
+            j = i
+            while j < len(items) and j not in gset and _is_pad(items[j]) and not any(
+                    va_bytes(orig, items[j]['start'], items[j]['end'] - items[j]['start']) or b''):
+                j += 1
+            if j > i and j in gset:
+                gset.update(range(i, j))
+        absorbed = sorted(gset - set(gen))
+        if absorbed:
+            detail['pads_in_runs'] = [items[i]['name'] for i in absorbed]
+        gen = sorted(gset)
         groups = []
         for i in gen:
             if groups and groups[-1][-1] == i - 1:

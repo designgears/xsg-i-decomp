@@ -171,20 +171,28 @@ typedef struct {
     unsigned short framebuffer_page;
 } GameSnapShotRenderState;
 extern GameSnapShotRenderState sRender;
-extern unsigned long long TestPrim_0_00366EA0[];
 extern void SyncDCache(void *start, void *end);
 extern int sceGsSyncPath(int mode, int timeout);
 extern void xglDmaDirectNormal(unsigned int channel, unsigned int address, unsigned int count);
 
 unsigned int GameSnapShotSaveThumbnail(int quality, unsigned int buffer) {
+    /* GIF packet: thumbnail framebuffer download (16-byte qword aligned). */
+    static unsigned long long TestPrim[24] __attribute__((aligned(16))) = {
+        0x0000000000000000ULL, 0x5100000B00000000ULL, 0xA08B400000008001ULL, 0x000000E53531EEEEULL,
+        0x0000000000071001ULL, 0x0000000000000047ULL, 0x0000000000000060ULL, 0x0000000000000014ULL,
+        0x0000000000000000ULL, 0x000000000000004CULL, 0x0000000000000000ULL, 0x0000000000000006ULL,
+        0x0000008000000080ULL, 0x0000000000000080ULL, 0x0000000000000000ULL, 0x0000000000000000ULL,
+        0x000071F700006FF8ULL, 0x00000000FFFFFFFFULL, 0x00001C0000002000ULL, 0x0000000000000000ULL,
+        0x000078F7000077F8ULL, 0x00000000FFFFFFFFULL, 0x0000000000000000ULL, 0x000000000000003FULL,
+    };
     GameSnapShotJpegParams params;
 
-    TestPrim_0_00366EA0[8] = 0x801C0;
-    TestPrim_0_00366EA0[10] = 0x24020000 | (sRender.framebuffer_page << 5) |
+    TestPrim[8] = 0x801C0;
+    TestPrim[10] = 0x24020000 | (sRender.framebuffer_page << 5) |
                               ((unsigned long long)0xc800 << 0x13);
-    SyncDCache(TestPrim_0_00366EA0, TestPrim_0_00366EA0 + 24);
+    SyncDCache(TestPrim, TestPrim + 24);
     sceGsSyncPath(0, 0);
-    xglDmaDirectNormal(2, (unsigned int) TestPrim_0_00366EA0, 12);
+    xglDmaDirectNormal(2, (unsigned int) TestPrim, 12);
     sceGsSyncPath(0, 0);
     memset(&params, 0, 0x20);
     params.output_buffer = buffer;

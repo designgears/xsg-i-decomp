@@ -52,25 +52,28 @@ JSClassRecord *classes;
 
 int numPrimitive;
 
-extern JSPrimitive js_type_int;
+static JSPrimitive js_type_int = { 3 };
 
 
-extern JSPrimitive js_type_float;
+static JSPrimitive js_type_float = { 4 };
 
 
-extern JSPrimitive js_type_string;
+static JSPrimitive js_type_string = { 5 };
+
+/* Unreferenced zero fill that ends the original .data (to its 16-byte end). */
+static int D_0036B1A4 __attribute__((section(".data"))) = 0;
 
 
 extern char D_004DA590[];
 char D_004DA590[8] = ".[](),";
 
-extern char *tokenCurrent;
+static char *tokenCurrent;
 
 
-extern char *tokenLimit;
+static char *tokenLimit;
 
 
-extern int tokenType;
+static int tokenType;
 
 
 extern int strcmp(const char *left, const char *right);
@@ -118,8 +121,10 @@ typedef struct JSClass {
 } JSClass;
 
 extern char D_004DA598[];
+char D_004DA598[8] = ",()";
 
 extern char D_004DA5A0[];
+char D_004DA5A0[8] = ".[]";
 
 extern double atof(const char *text);
 

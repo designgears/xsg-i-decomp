@@ -3,8 +3,6 @@
 
 #include "shared.h"
 
-extern u16 defaultStage[];
-
 void *STAGE_create(u16 stage_id);
 
 #endif

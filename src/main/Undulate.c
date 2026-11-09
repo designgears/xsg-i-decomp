@@ -182,12 +182,11 @@ typedef struct UnduQuery {
 #endif /* SRC_MAIN_UNDULATE_H */
 
 
-extern unsigned char *CurrentColiHead;
+static unsigned char *CurrentColiHead;
 
 
-int StudioEntrySkip = 0;
-
-signed char FLAG_FRAME_60 = 0;
+extern int StudioEntrySkip;
+extern signed char FLAG_FRAME_60;
 
 static float UnduCheckSub(UnduWork *work, int subOffset);
 
@@ -584,7 +583,6 @@ static int CheckWallAttr(UnduWork *work, const unsigned short *wallAttribute)
 extern float atan2f(float y, float x);
 extern float xglSin(float x);
 extern float xglCos(float x);
-extern const float D_004DC3B4[];
 extern float D_004D8804;
 extern float D_004D8808;
 extern float D_004D880C;
@@ -924,7 +922,7 @@ static void UnduCheckSubCrossCheck(UnduWorkUp *work, UnduQuery *query, int subOf
                 if (moveDx > nearZeroMin && moveDx < nearZeroMax)
                     moveSlope = 0.0f;
                 else if (nearZeroMin < moveDz && moveDz < nearZeroMax)
-                    moveSlope = D_004DC3B4[0];
+                    moveSlope = -0.0f;
                 else
                     moveSlope = moveDz / moveDx;
                 edgeDx = edgeEnd->x - startX;
@@ -932,7 +930,7 @@ static void UnduCheckSubCrossCheck(UnduWorkUp *work, UnduQuery *query, int subOf
                 if (nearZeroMin < edgeDx && edgeDx < nearZeroMax)
                     edgeSlope = 0.0f;
                 else if (nearZeroMin < edgeDz && edgeDz < nearZeroMax)
-                    edgeSlope = D_004DC3B4[0];
+                    edgeSlope = -0.0f;
                 else
                     edgeSlope = edgeDz / edgeDx;
                 if (unduSlopeBits(&moveSlope) == 0) {
@@ -1017,6 +1015,10 @@ static void UnduCheckSubCrossCheck(UnduWorkUp *work, UnduQuery *query, int subOf
     }
 }
 
+int StudioEntrySkip = 0;
+
+signed char FLAG_FRAME_60 = 0;
+
 static float UnduCheckResultCheck(UnduWork *work, UnduResult *result, float *point)
 {
     result->flags &= ~0x1000;
@@ -1067,11 +1069,6 @@ typedef struct UnduQueryParameters {
 } UnduQueryParameters;
 
 extern int printf(const char *format, ...);
-extern const char D_004D26F8[];
-extern const char D_004D2718[];
-extern const char D_004D2730[];
-extern const char D_004D2790[];
-extern const char D_004D27B0[];
 #define DEBUG_BREAK() __asm__ __volatile__("break 0")
 
 float UnduCheck(float *sample, void *output, UnduQuery *query)
@@ -1140,9 +1137,9 @@ float UnduCheck(float *sample, void *output, UnduQuery *query)
         attribute = query->prefix.parameters.previousAttribute;
     if ((unsigned int)attribute < (unsigned int)work->subListOffset
         && (unsigned int)attribute >= work->subListOffset + work->subCount * 0x18) {
-        printf(D_004D26F8, caller);
-        if (D_004D2718 != 0) {
-            printf(D_004D2730, D_004D2790, D_004D27B0, 1269);
+        printf("\nUnduCheck() call from %08x\n", caller);
+        if ("sUnduParam->undu error" != 0) {
+            printf("\n\n************************\n\nAssert(%s)\n    file = %s  line = %d\n\n************************\n\n\n", "!\"sUnduParam->undu error\"", "../Undulate.euc.c", 1269);
             DEBUG_BREAK();
         }
     }

@@ -11,6 +11,7 @@ const char D_00A55348[] = "../rg_geom_group.euc.c";
 const char D_00A55360[] = "pGroup != NIL && pElm != NIL";
 const char D_00A55380[] = "RgVectorFind(pGroup->m_pList,pElm) < 0";
 const char D_00A553A8[] = "pGeom != NIL";
+const char D_00A553B8[] = "pArg != NIL";
 
 static void _InitGroup(RgGeomGroup *pGroup)
 {
@@ -360,7 +361,6 @@ void InitRgGeomGroupColiArg(RgGameColiArg *pArg)
     pArg->unmodeled_10 = 0;
 }
 
-extern const char D_00A553B8[];
 typedef struct RgGeomColiArg {
     unsigned int data[4];
 } RgGeomColiArg;

@@ -16,13 +16,9 @@ typedef struct MatrixHeap {
 
 void ACT_matrixInit(void);
 
-extern MatrixHeap matrixHeap;
 
-extern unsigned char actMatrix[];
 
-extern unsigned char matrixHeapBlock[];
 
-extern MatrixHeap *actMatrixHeap;
 
 /*
  * The engine's actor record: the 64-entry array at main 0x0043c1e0, 0xa70-byte

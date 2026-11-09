@@ -76,6 +76,16 @@
    [
     "ov02/title_hdd_install",
     "0x00a0fe10",
+    "0x00a0fef0"
+   ],
+   [
+    "ov02/tsk_umn_object_task_main",
+    "0x00a0fef0",
+    "0x00a104a0"
+   ],
+   [
+    "ov02/umn_interface2",
+    "0x00a104a0",
     "0x00a104a8"
    ],
    [

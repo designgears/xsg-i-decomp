@@ -6,7 +6,7 @@ typedef struct ExHairTypeBuf {
     unsigned int flags;
 } ExHairTypeBuf;
 
-extern ExHairTypeBuf htypebuf[];
+static ExHairTypeBuf htypebuf[24];
 
 static signed char GetLastWord(signed char *text)
 {
@@ -35,13 +35,14 @@ typedef struct HairSelectionActor {
     signed char *hair_joint_name;
 } HairSelectionActor;
 
-extern int humancol[];
-extern int shelleycol[];
-extern int kosmoscol[];
-extern float skirtColliSize;
-extern float skirtColliSizeB;
-extern float skirtColliSizeS;
-extern float skirtColliFootRad;
+static void *collibuf[1] = {0};
+static int ibuf = 0;
+static int startjnt = 0x4A;
+static float skirtColliSize = 1.0f;
+static float skirtColliSizeB = 1.0f;
+static float skirtColliSizeS = 1.0f;
+static float skirtColliFootRad = 0.05f;
+static int rootBorn = 0;
 typedef unsigned int XglQuadword_XP __attribute__((mode(TI)));
 typedef union Matrix_XP {
     float elements[16];
@@ -97,73 +98,154 @@ typedef struct ExMotionJointWork_XP {
     unsigned char unmodeled_814[0x820 - 0x814];
     struct Actor_XP *owner;
 } ExMotionJointWork_XP;
-extern void *collibuf[1];
-extern int ibuf;
-extern int startjnt;
-extern unsigned char abelcol[];
-extern unsigned char albeltcol[];
-extern unsigned char allencol[];
-extern unsigned char chaoscol[];
-extern unsigned char ellycol[];
-extern unsigned char gaignuncol[];
-extern unsigned char helmercol[];
-extern unsigned char hyakucol[];
-extern unsigned char kebincol[];
-extern unsigned char kebinhcol[];
-extern unsigned char mamcol[];
-extern unsigned char miyukicol[];
-extern unsigned char momo1col[];
-extern unsigned char momo4col[];
-extern unsigned char momocol[];
-extern unsigned char offcol[];
-extern unsigned char robotcol[];
-extern unsigned char shionchcol[];
-extern unsigned char shioncol[];
-extern unsigned char shitancol[];
-extern unsigned char tonnycol[];
-extern const float D_004D8614;
-extern const float D_004D8618;
-extern const float D_004D861C;
-extern const float D_004D8620;
-extern const float D_004D8624;
-extern const float D_004D8628;
-extern const float D_004D862C;
-extern const float D_004D8630;
-extern const float D_004D8634;
-extern const float D_004D8638;
-extern const float D_004D863C;
-extern const float D_004D8640;
-extern const float D_004D8644;
-extern const float D_004D8648;
-extern const float D_004D864C;
-extern const float D_004D8650;
-extern const float D_004D8654;
-extern const float D_004D8658;
-extern const float D_004D865C;
-extern const float D_004D8660;
-extern const float D_004D8664;
-extern const float D_004D8668;
-extern const float D_004D866C;
-extern const float D_004D8670;
-extern const float D_004D8674;
-extern const float D_004D8678;
-extern const float D_004D867C;
-extern const float D_004D8680;
-extern const float D_004D8684;
-extern const float D_004D8688;
-extern const float D_004D868C;
-extern const float D_004D869C;
-extern const float D_004D86A0;
-extern const float D_004D86AC;
-extern const float D_004D86B0;
-extern const float D_004D86B4;
-extern const float D_004D86B8;
-extern const float D_004D86BC;
-extern const float D_004D86C0;
-extern const float D_004D86C4;
-extern const float D_004D86C8;
-extern const float D_004D86CC;
-extern const float D_004D86D0;
+/* Joint collision entries: joint number, shape kind, then two float[4]
+ * shape parameters; a zero joint ends the table. */
+typedef struct ExCollisionEntry {
+    s16 joint;
+    s16 kind;
+    unsigned char unmodeled_04[12];
+    float a[4];
+    float b[4];
+} ExCollisionEntry;
+
+static ExCollisionEntry shioncol[5] = {
+    {48, 1, {0}, {0.03f, -0.1f, 0.0f, 0.11f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {51, 2, {0}, {-0.05f, 0.01f, 0.01f, 0.075f}, {0.14f, -0.01f, -0.01f, 0.06f}},
+    {45, 4, {0}, {0.0f, 0.48f, 0.0f, 0.6f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {42, 6, {0}, {0.0f, 0.26f, 0.0f, 0.4f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry kosmoscol[7] = {
+    {48, 1, {0}, {0.025f, -0.07f, 0.0f, 0.125f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {48, 5, {0}, {-0.035f, -0.1f, 0.0f, 0.13f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {51, 2, {0}, {0.0f, 0.0f, 0.0f, 0.09f}, {0.1f, 0.0f, 0.0f, 0.07f}},
+    {63, 2, {0}, {0.0f, 0.0f, 0.0f, 0.09f}, {0.1f, 0.0f, 0.0f, 0.07f}},
+    {39, 4, {0}, {0.1f, 0.45f, 0.0f, 0.55f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {13, 4, {0}, {0.1f, -0.37f, 0.0f, 0.5f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry chaoscol[2] = {
+    {48, 1, {0}, {0.01f, -0.09f, 0.0f, 0.115f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry momocol[4] = {
+    {48, 1, {0}, {0.04f, -0.1f, 0.0f, 0.09f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {51, 2, {0}, {0.0f, 0.0f, 0.0f, 0.09f}, {0.1f, 0.0f, 0.0f, 0.07f}},
+    {63, 2, {0}, {0.0f, 0.0f, 0.0f, 0.09f}, {0.1f, 0.0f, 0.0f, 0.07f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry momo1col[8] = {
+    {48, 1, {0}, {0.04f, -0.1f, 0.0f, 0.09f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {51, 2, {0}, {0.0f, 0.0f, 0.0f, 0.09f}, {0.1f, 0.0f, 0.0f, 0.07f}},
+    {63, 2, {0}, {0.0f, 0.0f, 0.0f, 0.09f}, {0.1f, 0.0f, 0.0f, 0.07f}},
+    {16, 2, {0}, {0.0f, 0.0f, -0.0f, 0.13f}, {0.4f, 0.0f, 0.0f, 0.13f}},
+    {26, 2, {0}, {0.0f, 0.0f, 0.0f, 0.13f}, {0.4f, 0.0f, 0.0f, 0.13f}},
+    {17, 2, {0}, {0.0f, 0.0f, -0.0f, 0.1f}, {0.4f, 0.0f, 0.0f, 0.13f}},
+    {27, 2, {0}, {0.0f, 0.0f, 0.0f, 0.1f}, {0.4f, 0.0f, 0.0f, 0.13f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry momo4col[5] = {
+    {48, 1, {0}, {0.04f, -0.1f, 0.0f, 0.09f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {51, 2, {0}, {0.0f, 0.0f, 0.0f, 0.09f}, {0.1f, 0.0f, 0.0f, 0.07f}},
+    {63, 2, {0}, {0.0f, 0.0f, 0.0f, 0.09f}, {0.1f, 0.0f, 0.0f, 0.07f}},
+    {39, 4, {0}, {0.12f, 0.4f, 0.0f, 0.55f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry hyakucol[4] = {
+    {48, 1, {0}, {0.04f, -0.1f, 0.0f, 0.09f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {51, 2, {0}, {0.0f, 0.0f, 0.0f, 0.08f}, {0.05f, 0.0f, 0.0f, 0.06f}},
+    {63, 2, {0}, {0.0f, 0.0f, 0.0f, 0.08f}, {0.05f, 0.0f, 0.0f, 0.06f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry shitancol[4] = {
+    {48, 1, {0}, {0.04f, -0.05f, 0.0f, 0.07f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {42, 4, {0}, {-0.1f, 0.63f, 0.0f, 0.8f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {42, 1, {0}, {0.05f, -0.15f, 0.0f, 0.3f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry ellycol[5] = {
+    {48, 1, {0}, {0.01f, -0.08f, 0.0f, 0.1f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {51, 2, {0}, {0.0f, 0.0f, 0.0f, 0.08f}, {0.08f, 0.0f, 0.0f, 0.06f}},
+    {63, 2, {0}, {0.0f, 0.0f, 0.0f, 0.08f}, {0.08f, 0.0f, 0.0f, 0.06f}},
+    {42, 4, {0}, {-0.08f, 0.3f, 0.0f, 0.4f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry tonnycol[4] = {
+    {48, 1, {0}, {0.04f, -0.1f, 0.0f, 0.09f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {16, 2, {0}, {-0.1f, 0.0f, -0.02f, 0.15f}, {0.4f, 0.0f, 0.0f, 0.14f}},
+    {26, 2, {0}, {-0.1f, 0.0f, 0.02f, 0.15f}, {0.4f, 0.0f, 0.0f, 0.14f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry shelleycol[7] = {
+    {48, 1, {0}, {0.03f, -0.08f, 0.0f, 0.08f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {51, 2, {0}, {-0.02f, 0.0f, 0.0f, 0.1f}, {0.1f, 0.0f, 0.0f, 0.075f}},
+    {63, 2, {0}, {-0.02f, 0.0f, 0.0f, 0.1f}, {0.1f, 0.0f, 0.0f, 0.075f}},
+    {39, 1, {0}, {0.1f, 0.01f, 0.05f, 0.08f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {39, 1, {0}, {0.1f, 0.01f, -0.05f, 0.08f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {39, 4, {0}, {0.1f, 0.52f, 0.0f, 0.65f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry albeltcol[3] = {
+    {48, 1, {0}, {0.05f, -0.08f, 0.0f, 0.08f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {36, 4, {0}, {-0.05f, 0.2f, 0.0f, 0.4f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry kebincol[3] = {
+    {48, 1, {0}, {0.04f, -0.06f, 0.0f, 0.1f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {48, 3, {0}, {0.042f, -0.06f, 0.0f, 0.11f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry kebinhcol[2] = {
+    {48, 1, {0}, {0.015f, -0.07f, 0.0f, 0.1f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry shionchcol[3] = {
+    {48, 1, {0}, {0.01f, -0.08f, 0.0f, 0.1f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {42, 4, {0}, {-0.08f, 0.3f, 0.0f, 0.4f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry helmercol[3] = {
+    {55, 6, {0}, {0.35f, 0.0f, -0.22f, 0.3f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {67, 7, {0}, {0.35f, 0.0f, 0.22f, 0.3f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry allencol[2] = {
+    {48, 1, {0}, {0.03f, -0.09f, 0.0f, 0.09f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry abelcol[3] = {
+    {48, 1, {0}, {0.01f, -0.07f, 0.0f, 0.1f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {42, 4, {0}, {0.0f, 0.2f, 0.0f, 0.3f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry mamcol[4] = {
+    {48, 1, {0}, {0.01f, -0.07f, 0.0f, 0.1f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {42, 4, {0}, {0.05f, 0.15f, 0.0f, 0.28f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {42, 6, {0}, {0.05f, -0.15f, 0.0f, 0.28f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry gaignuncol[2] = {
+    {48, 6, {0}, {0.01f, -0.07f, 0.0f, 0.1f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry offcol[2] = {
+    {42, 4, {0}, {0.05f, 0.18f, 0.0f, 0.3f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry miyukicol[3] = {
+    {48, 1, {0}, {0.04f, -0.1f, 0.0f, 0.09f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {39, 4, {0}, {0.12f, 0.3f, 0.0f, 0.4f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry robotcol[2] = {
+    {39, 4, {0}, {0.08f, -0.2f, 0.0f, 0.4f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry humancol[3] = {
+    {48, 1, {0}, {0.01f, -0.07f, 0.0f, 0.1f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {42, 4, {0}, {0.05f, 0.15f, 0.0f, 0.3f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
 typedef struct JntMatrix_XP {
     Matrix4 transform;
 } JntMatrix_XP;
@@ -235,9 +317,9 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
                 return;
             }
             case 'D': {
-                float size = D_004D8614;
+                float size = 1.1f;
                 float unitSize = 1.0f;
-                float footRadius = D_004D8618;
+                float footRadius = 0.05f;
                 collibuf[0] = humancol;
                 skirtColliSizeB = skirtColliSize = size;
                 skirtColliSizeS = unitSize;
@@ -256,7 +338,7 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
             }
             break;
         case 'B': {
-            float footRadius = D_004D861C;
+            float footRadius = 0.05f;
             collibuf[0] = abelcol;
             skirtColliSizeS = skirtColliSizeB = skirtColliSize = 1.0f;
             skirtColliFootRad = footRadius;
@@ -273,8 +355,8 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
         }
         case 'S': {
             float unitSize = 1.0f;
-            float backSize = D_004D8620;
-            float footRadius = D_004D8624;
+            float backSize = 0.8f;
+            float footRadius = 0.05f;
             skirtColliSizeB = backSize;
             skirtColliSizeS = skirtColliSize = unitSize;
             skirtColliFootRad = footRadius;
@@ -291,9 +373,9 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
         switch (name[1]) {
         case 'R':
             if (lastLetter == 'D') {
-                skirtColliSize = D_004D8628;
+                skirtColliSize = 1.3f;
                 skirtColliSizeS = skirtColliSizeB = 1.0f;
-                skirtColliFootRad = D_004D862C;
+                skirtColliFootRad = 0.05f;
                 htypebuf[0].flags = 0x10c00;
                 htypebuf[0].kind = 16;
                 break;
@@ -310,10 +392,10 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
         case 'O':
             switch (name[5]) {
             case '2':
-                skirtColliSize = D_004D8630;
+                skirtColliSize = 1.4f;
                 startjnt = 136;
                 skirtColliSizeS = skirtColliSizeB = 1.0f;
-                skirtColliFootRad = D_004D8634;
+                skirtColliFootRad = 0.05f;
                 htypebuf[0].flags = 0x1480;
                 htypebuf[1].flags = 0x2480;
                 htypebuf[2].flags = 0x4480;
@@ -370,9 +452,9 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
             }
             break;
         case 'L': {
-            float size = D_004D8638;
+            float size = 1.1f;
             float unitSize = 1.0f;
-            float footRadius = D_004D863C;
+            float footRadius = 0.07f;
             skirtColliSizeB = skirtColliSize = size;
             skirtColliSizeS = unitSize;
             skirtColliFootRad = footRadius;
@@ -384,9 +466,9 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
         }
         break;
     case 'E': {
-        float size = D_004D8640;
+        float size = 1.1f;
         float unitSize = 1.0f;
-        float footRadius = D_004D8644;
+        float footRadius = 0.07f;
         collibuf[0] = ellycol;
         skirtColliSizeB = skirtColliSize = size;
         skirtColliSizeS = unitSize;
@@ -412,10 +494,10 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
             htypebuf[0].kind = htypebuf[1].kind = 5;
             break;
         case 'E':
-            skirtColliSize = D_004D8648;
-            skirtColliSizeB = D_004D864C;
+            skirtColliSize = 1.4f;
+            skirtColliSizeB = 1.1f;
             skirtColliSizeS = 1.0f;
-            skirtColliFootRad = D_004D8650;
+            skirtColliFootRad = 0.05f;
             htypebuf[0].flags = 0x5400;
             htypebuf[1].flags = 0x6400;
             htypebuf[2].flags = 0x11c00;
@@ -442,9 +524,9 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
             htypebuf[5].kind = 8;
             break;
         case 'I':
-            skirtColliSize = D_004D8654;
+            skirtColliSize = 1.4f;
             skirtColliSizeS = skirtColliSizeB = 1.0f;
-            skirtColliFootRad = D_004D8658;
+            skirtColliFootRad = 0.05f;
             htypebuf[0].flags = 0x25400;
             htypebuf[1].flags = 0x26400;
             htypebuf[2].flags = 0x11c00;
@@ -461,10 +543,10 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
             break;
         case 'E':
             collibuf[0] = helmercol;
-            skirtColliSize = D_004D865C;
-            skirtColliSizeB = D_004D8660;
+            skirtColliSize = 1.7f;
+            skirtColliSizeB = 1.1f;
             skirtColliSizeS = 1.0f;
-            skirtColliFootRad = D_004D8664;
+            skirtColliFootRad = 0.1f;
             htypebuf[0].flags = 0x5400;
             htypebuf[1].flags = 0x6400;
             htypebuf[2].flags = 0x11c00;
@@ -489,10 +571,10 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
         }
         break;
     case 'I':
-        skirtColliSize = D_004D8668;
-        skirtColliSizeB = D_004D866C;
+        skirtColliSize = 1.4f;
+        skirtColliSizeB = 0.8f;
         skirtColliSizeS = 1.0f;
-        skirtColliFootRad = D_004D8670;
+        skirtColliFootRad = 0.05f;
         htypebuf[0].flags = 0x25400;
         htypebuf[1].flags = 0x26400;
         htypebuf[2].flags = 0x11c00;
@@ -507,9 +589,9 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
                 htypebuf[0].flags = 0;
                 return;
             }
-            skirtColliSize = D_004D8674;
+            skirtColliSize = 1.4f;
             skirtColliSizeS = skirtColliSizeB = 1.0f;
-            skirtColliFootRad = D_004D8678;
+            skirtColliFootRad = 0.05f;
             htypebuf[0].flags = 0x4400;
             htypebuf[1].flags = 0x1400;
             htypebuf[2].flags = 0x2400;
@@ -569,9 +651,9 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
                 collibuf[0] = defaultPalette;
                 if (lastLetter == 'N') {
                     skirtColliSize = 2.0f;
-                    skirtColliSizeB = D_004D867C;
-                    skirtColliSizeS = D_004D8680;
-                    skirtColliFootRad = D_004D8684;
+                    skirtColliSizeB = 0.4f;
+                    skirtColliSizeS = 0.6f;
+                    skirtColliFootRad = 0.05f;
                     htypebuf[0].flags = 0x4400;
                     htypebuf[1].flags = 0x9400;
                     htypebuf[2].flags = 0xa400;
@@ -615,9 +697,9 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
                     htypebuf[10].kind = 8;
                     return;
                 }
-                skirtColliSize = D_004D8688;
+                skirtColliSize = 1.1f;
                 skirtColliSizeS = skirtColliSizeB = 1.0f;
-                skirtColliFootRad = D_004D868C;
+                skirtColliFootRad = 0.06f;
                 htypebuf[0].flags = 0x4400;
                 htypebuf[1].flags = 0xc00;
                 htypebuf[1].kind = htypebuf[0].kind = 16;
@@ -693,9 +775,9 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
     case 'O':
         switch (name[1]) {
         case 'B':
-            skirtColliSize = D_004D869C;
+            skirtColliSize = 1.3f;
             skirtColliSizeS = skirtColliSizeB = 1.0f;
-            skirtColliFootRad = D_004D86A0;
+            skirtColliFootRad = 0.05f;
             htypebuf[0].flags = 0x5400;
             htypebuf[1].flags = 0x6400;
             htypebuf[2].flags = 0x1c00;
@@ -746,9 +828,9 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
                     if (lastLetter == 'H') {
                         if (name[6] == 'C') {
                             collibuf[0] = shionchcol;
-                            skirtColliSize = D_004D86AC;
+                            skirtColliSize = 1.3f;
                             skirtColliSizeS = skirtColliSizeB = 1.0f;
-                            skirtColliFootRad = D_004D86B0;
+                            skirtColliFootRad = 0.05f;
                             htypebuf[0].flags = 0x5400;
                             htypebuf[1].flags = 0x6400;
                             htypebuf[2].flags = 0x11c00;
@@ -824,9 +906,9 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
             }
             break;
         case 'E':
-            skirtColliSize = D_004D86B4;
+            skirtColliSize = 1.4f;
             skirtColliSizeS = skirtColliSizeB = 1.0f;
-            skirtColliFootRad = D_004D86B8;
+            skirtColliFootRad = 0.05f;
             htypebuf[0].flags = 0x5400;
             htypebuf[1].flags = 0x6400;
             htypebuf[2].flags = 0x1c00;
@@ -860,9 +942,9 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
         break;
     case 'V':
         skirtColliSize = 2.0f;
-        skirtColliSizeB = D_004D86BC;
-        skirtColliSizeS = D_004D86C0;
-        skirtColliFootRad = D_004D86C4;
+        skirtColliSizeB = 0.4f;
+        skirtColliSizeS = 0.6f;
+        skirtColliFootRad = 0.05f;
         htypebuf[0].flags = 0x4400;
         htypebuf[1].flags = 0x9400;
         htypebuf[2].flags = 0xa400;
@@ -873,9 +955,9 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
         break;
     case 'W':
         skirtColliSize = 1.5f;
-        skirtColliSizeB = D_004D86C8;
+        skirtColliSizeB = 0.8f;
         skirtColliSizeS = 1.0f;
-        skirtColliFootRad = D_004D86CC;
+        skirtColliFootRad = 0.05f;
         htypebuf[0].flags = 0x5400;
         htypebuf[1].flags = 0x6400;
         htypebuf[2].flags = 0x11c00;
@@ -884,7 +966,7 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
         break;
     case 'Y':
         skirtColliSizeS = skirtColliSizeB = skirtColliSize = 1.0f;
-        skirtColliFootRad = D_004D86D0;
+        skirtColliFootRad = 0.05f;
         htypebuf[0].flags = 0x5400;
         htypebuf[1].flags = 0x6400;
         htypebuf[2].flags = 0x1c00;
@@ -900,17 +982,6 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
     }
 }
 
-extern const float D_004D86D4;
-extern const float D_004D86D8;
-extern const float D_004D86DC;
-extern const float D_004D86E0;
-extern int humancol[];
-extern int shelleycol[];
-extern int kosmoscol[];
-extern float skirtColliSize;
-extern float skirtColliSizeB;
-extern float skirtColliSizeS;
-extern float skirtColliFootRad;
 
 static int GetHairTypeSelection(unsigned int *flag, int **col, char *obj)
 {
@@ -925,10 +996,10 @@ static int GetHairTypeSelection(unsigned int *flag, int **col, char *obj)
     case 'P': {
         short type = *(short *)(obj + 0x4C2);
         *col = humancol;
-        skirtColliSize = D_004D86D4;
+        skirtColliSize = 0.8f;
         skirtColliSizeB = 1.0f;
         skirtColliSizeS = 1.0f;
-        skirtColliFootRad = D_004D86D8;
+        skirtColliFootRad = 0.05f;
         switch (type) {
         case 0x4A:
             ret = 0x10;
@@ -956,7 +1027,7 @@ static int GetHairTypeSelection(unsigned int *flag, int **col, char *obj)
         skirtColliSize = 1.0f;
         skirtColliSizeB = 1.0f;
         skirtColliSizeS = 1.0f;
-        skirtColliFootRad = D_004D86DC;
+        skirtColliFootRad = 0.05f;
         switch (type) {
         case 0x4A:
             ret = 0x10;
@@ -984,7 +1055,7 @@ static int GetHairTypeSelection(unsigned int *flag, int **col, char *obj)
         skirtColliSize = 1.0f;
         skirtColliSizeB = 1.0f;
         skirtColliSizeS = 1.0f;
-        skirtColliFootRad = D_004D86E0;
+        skirtColliFootRad = 0.15f;
         switch (type) {
         case 0x71:
             ret = 0x10;
@@ -1131,7 +1202,6 @@ typedef struct ExCollisionRequest_XC {
 typedef struct JntMatrix_XC {
     Matrix4 transform;
 } JntMatrix_XC;
-extern float vel_0[4];
 
 static int EXM_CheckExCollision(ExMotionJointWork_XC *work, const float position[3],
                                const Matrix4 jointMatrix, ExCollisionRequest_XC *request_XC)
@@ -1139,6 +1209,7 @@ static int EXM_CheckExCollision(ExMotionJointWork_XC *work, const float position
     JntMatrix_XC startMatrix;
     Vector4 difference;
     float correctionScale;
+    static float vel_0[4] __asm__("vel.0");
     int count = 0;
     int index;
     vel_0[0] = vel_0[1] = vel_0[2] = 0.0f;
@@ -1407,7 +1478,6 @@ typedef struct JntMatrix_XS {
     Matrix4 transform;
 } JntMatrix_XS;
 void xglVectorNormal(Vector4 *destination, const Vector4 *source);
-extern int rootBorn;
 
 static void CheckSkirtCollisionSub(ExMotionJointWork_XS *work, float position[4],
                             float referencePosition[4], u32 flags)
@@ -1867,7 +1937,6 @@ static void CheckSkirtCollisionSub(ExMotionJointWork_XS *work, float position[4]
     }
 }
 
-extern int rootBorn;
 void CheckSkirtCollisionSub();
 
 static void EXM_CheckSkirtCollision(int arg0, int arg1, int arg2, int arg3)
@@ -1982,8 +2051,6 @@ typedef struct ExHairTypeSelection_XM {
     int kind;
     unsigned int flags;
 } ExHairTypeSelection_XM;
-extern void *collibuf[1];
-extern int ibuf;
 typedef struct ExCollisionPrimitive_XM {
     unsigned short joint;
     unsigned short kind;
@@ -2030,8 +2097,31 @@ typedef struct ExGroundQuery_XM {
     unsigned char unmodeled_0a[0x40 - 10];
 } ExGroundQuery_XM;
 float UnduCheck(const void *position, void *velocity, ExGroundQuery_XM *query);
-extern ExHairParameters_XM hairpara[];
-extern float JR_coatAdjust[];
+static ExHairParameters_XM hairpara[22] = {
+    {0.02f, 1.0f, {0}, {0.9f, 0.9f, 0.9f}, {0}, 0.5f, {0}},
+    {0.0f, 1.0f, {0}, {1.0f, 1.0f, 1.0f}, {0}, 1e+02f, {0}},
+    {0.02f, 1.0f, {0}, {0.9f, 0.9f, 0.9f}, {0}, 0.5f, {0}},
+    {0.03f, 1.0f, {0}, {0.7f, 0.7f, 0.7f}, {0}, 0.6f, {0}},
+    {0.02f, 1.0f, {0}, {0.9f, 0.9f, 0.9f}, {0}, 0.3f, {0}},
+    {0.01f, 0.9f, {0}, {0.9f, 1.0f, 0.9f}, {0}, 0.7f, {0}},
+    {0.01f, 0.9f, {0}, {0.9f, 1.0f, 0.9f}, {0}, 1.2f, {0}},
+    {0.01f, 0.9f, {0}, {0.5f, 0.5f, 0.5f}, {0}, 2.0f, {0}},
+    {0.0f, 0.8f, {0}, {0.5f, 0.5f, 0.5f}, {0}, 1.0f, {0}},
+    {0.0f, 1.0f, {0}, {0.8f, 0.8f, 0.8f}, {0}, 1.7f, {0}},
+    {0.03f, 1.0f, {0}, {0.9f, 0.9f, 0.9f}, {0}, 2.0f, {0}},
+    {0.05f, 1.0f, {0}, {0.0f, 0.0f, 0.0f}, {0}, 0.5f, {0}},
+    {0.05f, 1.0f, {0}, {0.2f, 0.2f, 0.2f}, {0}, 0.5f, {0}},
+    {0.04f, 0.9f, {0}, {0.7f, 0.7f, 0.7f}, {0}, 0.2f, {0}},
+    {0.05f, 1.0f, {0}, {0.5f, 0.5f, 0.5f}, {0}, 0.1f, {0}},
+    {0.5f, 1.0f, {0}, {0.9f, 0.9f, 0.9f}, {0}, 1.0f, {0}},
+    {0.01f, 0.8f, {0}, {0.2f, 0.2f, 0.2f}, {0}, 1.0f, {0}},
+    {0.0f, 0.9f, {0}, {0.9f, 0.9f, 0.9f}, {0}, 0.3f, {0}},
+    {0.05f, 0.8f, {0}, {0.75f, 0.75f, 0.75f}, {0}, 0.5f, {0}},
+    {0.0f, 0.8f, {0}, {0.95f, 0.95f, 0.95f}, {0}, 2.0f, {0}},
+    {0.05f, 0.1f, {0}, {0.0f, 0.0f, 0.0f}, {0}, 0.5f, {0}},
+    {0.0f, 0.01f, {0}, {0.0f, 0.0f, 0.0f}, {0}, 0.5f, {0}}
+};
+static float JR_coatAdjust[3] = {0.0985f, 0.1285f, 0.1985f};
 void EXM_GetWindPower(float output[3], ExMotionJointWork_XM *work, const float input[3],
                       const float parent_position[4]);
 typedef struct HairSelectionWork_XM {

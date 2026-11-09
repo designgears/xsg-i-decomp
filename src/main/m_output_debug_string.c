@@ -6,16 +6,14 @@ typedef char *va_list;
 #define va_end(ap) ((void)0)
 
 extern int vprintf(const char *format, va_list args);
-extern char dstr[0x100];
-extern const char D_004CCA40[];
-extern const char D_004CCA58[];
+static char dstr[0x100];
 
 void MOutputDebugString(const char *format, ...)
 {
     va_list args;
 
     va_start(args, format);
-    sprintf(dstr, D_004CCA40, format);
+    sprintf(dstr, "\x1B[1;36mMDMSG:\x1B[m %s\n", format);
     vprintf(dstr, args);
     va_end(args);
 }
@@ -25,7 +23,7 @@ void MOutputDebugStringWarn(const char *format, ...)
     va_list args;
 
     va_start(args, format);
-    sprintf(dstr, D_004CCA58, format);
+    sprintf(dstr, "\x1B[1;35mMDMSG:\x1B[m %s\n", format);
     vprintf(dstr, args);
     va_end(args);
 }

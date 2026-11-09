@@ -144,11 +144,9 @@ typedef struct GameLoopStateLayout {
 extern GameLoopStateLayout GameLoopState;
 
 extern XglRenderFadeCallback MenuCfTaiki[8];
-extern const char *file_name_0[3];
 extern void endPrintInit(void);
 extern unsigned char *MenuWinAddr;
 extern int xglFontLoad(int font, void (*callback)(int));
-extern int original_font_no_1;
 extern void xglSoundEffectNormalID(int sound, int channel);
 
 typedef struct {
@@ -173,16 +171,12 @@ extern u64 *MenuBgKeepCamera;
 extern void *xglTaskInitial(void *pool, int capacity, int flags);
 extern StudioCamera *xglStudioGetActiveCamera(void);
 extern void xglCameraInit(StudioCamera *camera);
-extern const float D_004D7D58;
-extern const float D_004D7D5C;
-extern const float D_004D7D60;
 extern void tyaMenuBgEntry(XglTaskScheduler *scheduler,
                            MenuBgTaskParameters *work);
 
 typedef struct {
     char path[26];
 } MenuModelPath;
-extern const MenuModelPath D_004C3220;
 extern unsigned char *MenuTairetuModelXtxAddr;
 extern unsigned char *MenuTairetuModelLexAddr;
 extern unsigned char *MenuTairetuModelPointerXtxAddr;
@@ -288,8 +282,6 @@ typedef struct {
     char name[0x12];
     char description[0x16];
 } UmnGunoRecord;
-extern UmnTextPageMap D_004C32F8;
-extern unsigned char D_004DA810[];
 extern UmnUnitInitRecord *func_A19270(int unit_id);
 extern UmnUnitTextRecord *func_A1A698(int unit_id);
 extern const char *const *func_A2C828(int unit_id);

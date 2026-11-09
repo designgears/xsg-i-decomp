@@ -51,25 +51,6 @@ extern PadPrefix PadData;
  * fade picture and stream volume out together. */
 void GameOver(void);
 
-extern const char GameEndImagePath[];
-
-extern const char GameEndQuestion[];
-
-extern const char GameEndSaveQuestion[];
-
-extern const char GameOverImagePath[];
-
-extern const char GameOverStreamPath[];
-
-/* Function-local VIF fade-command scratch packets. GCC's assembler names
- * them TestEnv.4 (GameEnd) and TestEnv.5 (GameOver); only element 4 (the
- * fade command written at +0x20) is touched by either function, so the
- * remaining template bytes are supplied by the reference image, not
- * generated here. */
-extern u64 TestEnv4[12];
-
-extern u64 TestEnv5[12];
-
 extern int xglJpegDecode(JpegDecodeRequest *request);
 
 extern void xglRenderDrawFlipPk(XglPacket *packet);

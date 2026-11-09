@@ -84,61 +84,44 @@ extern void xglSoundLoadEffect(const char *name, int address, int bank);
 
 extern void xglMakeSePacket(int command, int handle, int volume, ...);
 
-extern const char D_004C9BF0[];
 
 
-extern const char D_004C9C08[];
 
 
-extern const char D_004C9C20[];
 
 
-extern const char D_004C9C38[];
 
 
-extern const char D_004C9C50[];
 
 
 /* EUC-JP circle, triangle and square font codes prefix these test labels. */
 
-extern const char D_004C9C68[];
 
 
-extern const char D_004C9C78[];
 
 
-extern const char D_004C9C88[];
 
 
-extern const char D_004C9CA0[];
 
 
-extern const char D_004C9D08[];
 
 
-extern const char D_004C9D18[];
 
 
-extern const char D_004C9D28[];
 
 
 /* EUC-JP sound-packet test label with the font's line-start control byte. */
 
-extern const char D_004C9D38[];
 
 
-extern const char D_004C9D50[];
 
 
-extern const char D_004C9D60[];
 
 
 /* Font control byte followed by the EUC-JP title 唐鎌. */
 
-extern const char D_004DB6A8[];
 
 
-extern const char D_004DB6B8[];
 
 
 extern int printf(const char *format, ...);
@@ -175,14 +158,14 @@ typedef struct ScratchpadPrimitiveBuffer {
 
 extern int FrameCount;
 
-extern u64 rgba_0;
+extern u64 rgba_0 __asm__("rgba.0");
 
 
 extern float I2F(int value);
 
 extern void xglPrimAddGouraudStripN(void *buffer, int count);
 
-extern CfActor *tActor;
+static CfActor *tActor;
 
 
 extern signed char printflg;
@@ -242,7 +225,7 @@ typedef struct TexTestPacket {
     GifAdEntry registers[4];
 } TexTestPacket;
 
-extern TexTestPacket TestEnv_2_0036DE40;
+extern TexTestPacket TestEnv_2_0036DE40 __asm__("TestEnv.2");
 
 
 extern void FlushCache(int mode);
@@ -253,10 +236,8 @@ extern void xglDmaDirectNormal(u32 channel, u32 address, u32 count);
 
 #include "main/xgl_cd.h"
 
-extern const char D_004C9D90[];
 
 
-extern const char D_004C9DB0[];
 
 
 typedef struct GifPackedColor {
@@ -292,7 +273,7 @@ typedef struct TexTestSprite {
     GifPackedVertex xyz1;
 } TexTestSprite;
 
-extern TexTestSprite TestEnv_1_0036DDB0;
+extern TexTestSprite TestEnv_1_0036DDB0 __asm__("TestEnv.1");
 
 
 extern int sceGsSyncPath(int mode, int timeout);
@@ -303,7 +284,6 @@ extern void TexTrans(TextureTransferHeader *texture);
 
 extern void CreateUwamono(int unit_id, float x, float y, float z, float rotation_y);
 
-extern const char D_004C9D80[];
 
 
 void KarakamaTest(void)
@@ -316,20 +296,20 @@ void KarakamaTest(void)
     ClearEnv.red = 0;
     ClearEnv.green = 0;
     ClearEnv.blue = 0;
-    printf(D_004C9BF0, 0x163B0);
-    printf(D_004C9C08, 0xA70);
-    printf(D_004C9C20, 0x300);
-    printf(D_004C9C38, 0x38B0);
-    printf(D_004C9C50, 0xAB0);
+    printf("sizeof(sSaveData):%d\n", 0x163B0);
+    printf("sizeof(sActor):%d\n", 0xA70);
+    printf("sizeof(sMapUnit):%d\n", 0x300);
+    printf("sizeof(sEnepc):%d\n", 0x38B0);
+    printf("sizeof(sefScheduler)%d\n", 0xAB0);
     pad = &PadData;
 
     for (;;) {
         xglSleep();
-        xglFontDebugPrintf(0, 0, D_004DB6A8);
-        xglFontDebugPrintf(0, 16, D_004C9C68);
-        xglFontDebugPrintf(0, 32, D_004C9C78);
-        xglFontDebugPrintf(0, 48, D_004C9C88);
-        xglFontDebugPrintf(0, 64, D_004C9CA0);
+        xglFontDebugPrintf(0, 0, "\013\305\342\263\371");
+        xglFontDebugPrintf(0, 16, "\241\373 CF Test");
+        xglFontDebugPrintf(0, 32, "\242\244 Tex Test");
+        xglFontDebugPrintf(0, 48, "\242\242 SePacket Test");
+        xglFontDebugPrintf(0, 64, "\241\337 return");
 
         if ((pad->input.snapshot & exit_buttons) != exit_buttons) {
             if (pad->input.buttons.pressed & 0x20) {
@@ -381,14 +361,9 @@ typedef struct CfCamera {
     float target_z;
 } CfCamera;
 extern void xglStudioGetCamera(CfCamera **camera_out, int camera_index);
-extern const char D_004C9CB0[];
 extern void GameCamera(void);
 extern int MapNo;
 extern u8 UseTestPath;
-extern const char D_004C9CC8[];
-extern const char D_004DB6B0[];
-extern const char D_004C9CE8[];
-extern const char D_004C9CF8[];
 
 static void CfTest(void)
 {
@@ -407,7 +382,7 @@ static void CfTest(void)
     CfGameLoopState *game;
 
     InitCf();
-    printf(D_004C9CB0);
+    printf("InitCf complete\n");
     xglStudioGetCamera((CfCamera **)&camera, 0);
     camera->state = 3;
     camera->position_y = 5.0f;
@@ -441,7 +416,7 @@ static void CfTest(void)
     UseTestPath = scene_id;
     MapChange(19);
     SetMapUnitTest();
-    printf(D_004C9CC8);
+    printf("Init Complete\n");
     while ((PadData.input.snapshot & 0x8000100ULL) != 0x8000100ULL) {
         held = PadData.input.buttons.held;
         actor = tActor;
@@ -483,7 +458,7 @@ static void CfTest(void)
         if (PadData.input.buttons.held & 0x20) {
             char name[12] = "\xA5\xA2\xA5\xA4\xA5\xC6\xA5\xE0";
 
-            xglFontDebugPrintf(8, 80, D_004DB6B0, name);
+            xglFontDebugPrintf(8, 80, "%s ", name);
         }
         bits = tActor->collision_bits;
         acc = 0;
@@ -506,9 +481,9 @@ static void CfTest(void)
             }
         }
         map_no = MapNo;
-        xglFontDebugPrintf(8, 8, D_004C9CE8, map_no, fptodp(tActor->undulation));
+        xglFontDebugPrintf(8, 8, "MAP=%2d UNDU=%f", map_no, fptodp(tActor->undulation));
         position_actor = tActor;
-        xglFontDebugPrintf(8, 176, D_004C9CF8, fptodp(position_actor->x),
+        xglFontDebugPrintf(8, 176, "SP = %f %f %f", fptodp(position_actor->x),
                            fptodp(position_actor->y), fptodp(position_actor->z));
         xglStudioGetCamera(&camera_after, 0);
         if (camera_after->state == 4 && GameLoopState.camera_callback != 0) {
@@ -533,18 +508,18 @@ void SePacketTest(void)
     u16 held;
     int lower_volume;
 
-    printf(D_004C9D08, 0x1000000);
-    xglSoundLoadEffect(D_004C9D18, 0x1000000, 1);
-    xglSoundLoadEffect(D_004C9D28, 0x1000000, 2);
-    xglSoundLoadEffect(D_004DB6B8, 0x1000000, 3);
+    printf("buffer:%08x\n", 0x1000000);
+    xglSoundLoadEffect("REGISTCF", 0x1000000, 1);
+    xglSoundLoadEffect("SO_VOK05", 0x1000000, 2);
+    xglSoundLoadEffect("ENV_VOK", 0x1000000, 3);
     if ((PadData.input.snapshot & 0x8000100ULL) == 0x8000100ULL) {
         return;
     }
 
     do {
-        xglFontDebugPrintf(0, 0, D_004C9D38);
-        xglFontDebugPrintf(0, 16, D_004C9D50, sound_id);
-        xglFontDebugPrintf(0, 32, D_004C9D60, pitch, volume, pan);
+        xglFontDebugPrintf(0, 0, "\013\245\265\245\246\245\363\245\311\245\321\245\261\245\303\245\310\245\306\245\271\245\310");
+        xglFontDebugPrintf(0, 16, "\013SE=%8x\n", sound_id);
+        xglFontDebugPrintf(0, 32, "\013ID=%8x vol=%3d pan=%3d\n", pitch, volume, pan);
         pressed = PadData.input.buttons.pressed;
         if (pressed & 0x20) {
             xglMakeSePacket(124,
@@ -627,7 +602,7 @@ void SetMapUnitTest(void)
 {
     float row_x;
 
-    printf(D_004C9D80);
+    printf("SetMapUnitTest\n");
     CreateUwamono(0x7101, 10.0f, 0.0f, -14.0f, 0.0f);
     row_x = 8.22f;
     CreateUwamono(0x7102, row_x, -1.0f, 38.41f, 0.0f);
@@ -699,9 +674,9 @@ static void TexTest(void)
     ClearEnv.green = 0;
     ClearEnv.blue = 0;
     ClearEnv.alpha = 0;
-    status = xglCdReadFile(D_004C9D90, texture, 0, 0);
+    status = xglCdReadFile("data\\karakama\\cha_hit.xtx", texture, 0, 0);
     if (status < 0) {
-        printf(D_004C9DB0, status);
+        printf("tex data not found %d\n", status);
         return;
     }
 
@@ -818,55 +793,26 @@ void TexTrans(TextureTransferHeader *texture)
     xglDmaDirectNormal(2, (u32)texture->payload, width / 4 + 1);
 }
 
-extern const char D_004C9BF0[];
+static TexTestSprite TestEnv_1_0036DDB0 __asm__("TestEnv.1") = {
+    0x80AB400000008001ULL, 0x0000000053531EEEULL,
+    { 0x44ULL, 0x42ULL },
+    { 0x3FDFF0ULL, 0x8ULL },
+    { 0x0ULL, 0x6ULL },
+    { 128, 128, 128, 128 },
+    { 0, 0, { 0, 0 } },
+    { 28664, 29176, 1073741824, 0 },
+    { 4096, 4096, { 0, 0 } },
+    { 36856, 36344, 1073741824, 0 },
+};
+static TexTestPacket TestEnv_2_0036DE40 __asm__("TestEnv.2") = {
+    0x4000000000008001ULL, 0x000000000000EEEEULL,
+    {
+        { 0x4380000000000ULL, 0x50ULL },
+        { 0x0ULL, 0x51ULL },
+        { 0x10000000100ULL, 0x52ULL },
+        { 0x0ULL, 0x53ULL },
+    }
+};
+static u64 rgba_0 __asm__("rgba.0") = 0x0000FF00000000FFULL;
 
-extern const char D_004C9C08[];
-
-extern const char D_004C9C20[];
-
-extern const char D_004C9C38[];
-
-extern const char D_004C9C50[];
-
-extern const char D_004C9C68[16];
-
-extern const char D_004C9C78[16];
-
-extern const char D_004C9C88[24];
-
-extern const char D_004C9CA0[];
-
-extern const char D_004C9D08[];
-
-extern const char D_004C9D18[];
-
-extern const char D_004C9D28[];
-
-extern const char D_004C9D38[24];
-
-extern const char D_004C9D50[];
-
-extern const char D_004C9D60[];
-
-extern const char D_004DB6A8[];
-
-extern const char D_004DB6B8[];
-
-extern TexTestSprite TestEnv_1_0036DDB0;
-
-extern signed char printflg;
-
-extern signed char collflg;
-
-extern TexTestPacket TestEnv_2_0036DE40;
-
-extern const char D_004C9D90[];
-
-extern const char D_004C9DB0[];
-
-extern u64 rgba_0;
-
-extern const char D_004C9D80[16];
-
-
-
+int MapNo = 0;

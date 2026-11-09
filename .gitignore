@@ -68,6 +68,7 @@
 !/tools/tu_manifest.py
 !/tools/header_inputs/
 !/tools/tu/
+!/tools/dataown/
 
 # Inside tools/tu/, these regenerate the tracked inputs from the project's
 # private migration evidence, or audit against the acceptance records.

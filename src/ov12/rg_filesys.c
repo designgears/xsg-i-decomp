@@ -60,6 +60,9 @@ static int _FindFile(RgFileSys *pSys, const char *pszName)
 const char rg_filesys_source_file[24] = "../rg_filesys.euc.c";
 const char pSys_not_nil[16] = "pSys != NIL";
 const char D_00A559B0[16] = "pszName != NIL";
+const char D_00A559C0[] = "pszFile != NIL";
+const char D_00A559D0[] = "NLNK";
+const char D_00A559D8[] = "%s is not nlink data";
 const char D_00A559F0[32] = "free -> %s (mode=%d ref=%d)\n";
 const char D_00A55A10[32] = "strlen(pszName) <= NAME_LEN";
 const char D_00A55A30[16] = "pFile != NIL";
@@ -117,9 +120,6 @@ typedef struct RgFileSysLinkFound {
     unsigned int size;
 } RgFileSysLinkFound;
 
-extern const char D_00A559C0[];
-extern const char D_00A559D0[];
-extern const char D_00A559D8[];
 extern void InitRgLinkData(void *pLink, void *buf);
 extern int RgLinkDataMatchDataName(void *pLink, const char *name);
 extern void *RgLinkDataGet(void *pLink, const char *name);

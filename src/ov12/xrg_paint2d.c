@@ -55,7 +55,9 @@ static void _openVifGif(XglPacket *packet, u64 prim,
 const XrgPaint2DGifTag D_00A59030 = {
     .part = {0x1000000000008000ULL, 0xE}
 };
+const char D_00A59040[] = "unknown offset mode %x";
 const char D_00A59058[24] = "../xrg_paint2d.euc.c";
+const char D_00A59070[] = "unknown XrgPaint2DGeom mode (%x)";
 const char D_00A59098[24] = "pPaint != NIL";
 
 static void _openVifGifAD(XglPacket *packet)
@@ -179,7 +181,10 @@ static void _CalcUV(XrgPaint2DVertex corners[4], const XrgIntRect *base,
     _CalcRectangle(corners, &rect, 0, 0);
 }
 
-extern void *s_pCurView_00A51220;
+int s_anHomePos[2] = {0x7000, 0x7200};
+float s_aSizeRatio[2] = {1.0f, 1.0f};
+float s_aCurCenterPos[4] = {2048.0f, 2048.0f, 0.0f, 0.0f};
+void *s_pCurView_00A51220 = 0;
 
 static int _CalcPosOnScreen(void *destination, const void *position, float *offsetWork)
 {
@@ -292,10 +297,6 @@ static void _CalcPosOnScreenFloat(void *destination, const void *position)
         : "memory");
 }
 
-extern int s_anHomePos[];
-extern float s_aCurCenterPos[];
-extern float s_aSizeRatio[];
-extern const char D_00A59040[];
 extern float XrgNormalizeVector(RgVector destination, RgVector source);
 extern void XrgSubVectorXYZ(RgVector destination, RgVector first, RgVector second);
 extern void RgError(const char *message, const char *source_file, int line, ...);
@@ -419,7 +420,6 @@ done:
 #define XRG_PAINT2D_MODE_SCALE 0x40
 #define XRG_PAINT2D_MODE_ANGLE 0x80
 #define XRG_PAINT2D_MODE_JITTER 0x100
-extern const char D_00A59070[];
 extern void XrgUnitMatrix(RgMatrix destination);
 extern void XrgRotMatrixZ(RgMatrix d, RgMatrix s, float angle);
 extern float XrgLengthVector(float *v);
@@ -998,6 +998,8 @@ void XrgPaint2DAlpha(XrgPaint2D *paint, unsigned int mode)
 extern void RgBxxGetHeader(int header);
 extern long long XrgBxxPs2Tex0(void *texture);
 const char D_00A590C8[16] = "pPic != NIL";
+const char D_00A590D8[] = "pPaint->m_uReqNum < REQ_MAX - 1";
+const char D_00A590F8[] = "pView != NIL";
 static void _DrawWithTex(XrgPaint2DDrawReq *req, XglPacket *pk, Quadword *v, unsigned int mode);
 
 /*
@@ -1093,7 +1095,6 @@ void InitXrgPaint2DRect(XrgPaint2DRect *rectangle, int mode)
     rectangle->angle = 0.0f;
 }
 
-extern const char D_00A590D8[];
 
 void XrgPaint2DDrawRect(XrgPaint2D *paint, XrgPaint2DRect *rect)
 {
@@ -1184,7 +1185,6 @@ extern void sceVif1PkAddCode(XglPacket *packet, unsigned int code);
 extern void nmlModelDirectSend(int mode, unsigned char *packet, int size);
 extern void nmlModelDirectSendXtx(int mode, void *texture);
 extern void *RgBxxGetXtx(void *texture);
-extern const char D_00A590F8[];
 
 static void _Paint2DFlush(XrgPaint2D *paint, void *pStudio)
 {

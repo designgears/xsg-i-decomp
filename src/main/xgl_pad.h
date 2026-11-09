@@ -34,7 +34,6 @@ typedef struct XglPadRecord {
 } XglPadRecord;
 
 extern XglPadRecord PadData[2];
-extern unsigned char PadDmaBuffer[0x200];
 void xglPadSetRepeat(int port, unsigned short mask, int delay, int interval);
 
 #define PAD_REPEAT_MASK 0xf00c

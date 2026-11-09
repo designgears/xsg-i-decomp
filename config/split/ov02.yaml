@@ -74,6 +74,8 @@ segments:
       - [0x10674, data, ov02/logo]
       - [0x10720, data, ov02/title]
       - [0x10E10, data, ov02/title_hdd_install]
+      - [0x10EF0, data, ov02/tsk_umn_object_task_main]
+      - [0x114A0, data, ov02/umn_interface2]
       - [0x114A8, data, ov02/task_umn_top_win]
       - [0x11618, data, ov02/tsk_umn_mail_pas]
       - [0x116F8, data, ov02/umn_guno_data_base_get]
@@ -95,8 +97,8 @@ segments:
       - [0x14440, rodata, ov02/tsk_umn_plugin_pas]
       - [0x14550, rodata, ov02/umn_event_text_symbol_check]
       - [0x14654]
-      - { type: bss, vram: 0x00A13654, name: ov02/title_hdd_install }
-      - { type: bss, vram: 0x00A13660, name: ov02/tya_uml }
+      - { type: .bss, vram: 0x00A13654, name: ov02/title_hdd_install }
+      - { type: .bss, vram: 0x00A13660, name: ov02/tya_uml }
   - [0x14654, pad, ov02_bss_file_image]
   - [0x148EC, bin, elf_shstrtab]
   - [0x1490C, bin, elf_section_headers]

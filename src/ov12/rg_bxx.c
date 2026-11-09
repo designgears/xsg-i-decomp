@@ -52,28 +52,21 @@ static RgBxxHeader *_GetHeader(RgBxx *pBxx);
 static RgBxxPic *_GetPicTop(RgBxx *pBxx);
 static int _FindPicByName(RgBxx *pBxx, const char *pszName);
 
-/* ov12:0x00a56f90 "pBxx != NIL" */
-extern const char D_00A56F90[];
-/* ov12:0x00a56fa0 "../rg_bxx.euc.c" */
-extern const char D_00A56FA0[];
-/* ov12:0x00a56fb0 "invalid memory (link) %s %d\n(created %s %d)" */
-extern const char D_00A56FB0[];
-/* ov12:0x00a56fe0 "invalid memory (load) %s %d\n(created %s %d)" */
-extern const char D_00A56FE0[];
-/* ov12:0x00a57010 "pszName" */
-extern const char D_00A57010[];
-/* ov12:0x00a570f0 "pszName != NIL" */
-extern const char D_00A570F0[];
-/* ov12:0x00a57018 "data\\nisimori\\" */
-extern const char D_00A57018[];
-/* ov12:0x00a57028 "pData != NIL" */
-extern const char D_00A57028[];
-/* ov12:0x00a57078 "pBxx->m_pLink != NIL" */
-extern const char D_00A57078[];
-/* ov12:0x00a570c8 "texture ID error (id=%d count=%d)" */
-extern const char D_00A570C8[];
-/* ov12:0x00a57100 "unknown texture name %s" */
-extern const char D_00A57100[];
+const char D_00A56F90[] = "pBxx != NIL";
+const char D_00A56FA0[] = "../rg_bxx.euc.c";
+const char D_00A56FB0[] = "invalid memory (link) %s %d\n(created %s %d)";
+const char D_00A56FE0[] = "invalid memory (load) %s %d\n(created %s %d)";
+const char D_00A57010[] = "pszName";
+const char D_00A57018[] = "data\\nisimori\\";
+const char D_00A57028[] = "pData != NIL";
+const char D_00A57038[] = "pBxx->m_pLoad == NIL";
+const char D_00A57050[] = "bxx data format error (link num %d)";
+const char D_00A57078[] = "pBxx->m_pLink != NIL";
+const char D_00A57090[] = "sizeof(RgBxxPic) == 96";
+const char D_00A570A8[] = "sizeof(RgBxxHeader) == 48";
+const char D_00A570C8[] = "texture ID error (id=%d count=%d)";
+const char D_00A570F0[] = "pszName != NIL";
+const char D_00A57100[] = "unknown texture name %s";
 
 static void _InitBxx(RgBxx *pBxx, const char *pszName, int nMode)
 {
@@ -150,10 +143,6 @@ void DisposeRgBxx_sub(RgBxx *pBxx, const char *pszFile, int nLine)
     RgHeapFree(InstanceOfRgHeap(), pBxx, D_00A56FA0, 83);
 }
 
-/* ov12:0x00a57038 "pBxx->m_pLoad == NIL" */
-extern const char D_00A57038[];
-/* ov12:0x00a57050 "bxx data format error (link num %d)" */
-extern const char D_00A57050[];
 
 extern void InitRgLinkData(RgLinkData *pAna, void *pBuf);
 extern unsigned int RgLinkDataNumOfData(RgLinkData *pAna);

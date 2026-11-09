@@ -33,7 +33,6 @@ typedef struct CasinoResourcePrefix {
 /* Original ov11:0x00a0dfa0 NOTYPE/size-zero symbol; lw/sw prove a 4-byte slot.
  * RES_Load assigns the asset storage at 0x01000000; no slot is defined here.
  */
-extern CasinoResourcePrefix *ResData;
 
 /* Separated word after the incompletely modeled sound-ID region. */
 #define CASINO_DEBUG_SETTING_OFFSET 0x1d3c

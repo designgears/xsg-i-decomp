@@ -85,7 +85,7 @@ typedef union {
     CameraVectorStorage storage;
 } MpackInterest;
 
-extern MpackInterest mpack_interest;
+static MpackInterest mpack_interest;
 
 
 /*
@@ -133,7 +133,7 @@ const char D_004D18F0[24] = "rotate(%f %f %f)";
 
 const char D_004D1908[24] = "fov (%f)";
 
-extern int camDisp __attribute__((section(".sdata")));
+static int camDisp = 0;
 
 
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);

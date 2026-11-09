@@ -21,22 +21,19 @@ extern void ACT_allocMatrix(WtAct *, int);
 extern void ACT_setModelWrapper(WtAct *, int);
 extern void EXM_SetPointWind(void *);
 extern void EXM_SetShakeTime(float);
-extern WtCam *pCamera_004DC614;
-extern float cpos_00585140[];
-extern float wpos[];
-extern float wvec[];
-extern float crx_004DC618;
-extern float cry_004DC61C;
-extern float crvx;
-extern float crvy;
-extern float wpow;
-extern float shake;
-extern signed char wtype;
-extern void *pAct_004DC62C;
+static float cpos_00585140[16] __asm__("cpos") __attribute__((aligned(16)));
+static float wpos[16] __attribute__((aligned(16)));
+static float wvec[16] __attribute__((aligned(16)));
+static signed char wtype;
+static WtCam *pCamera_004DC614 __asm__("pCamera");
+static float crx_004DC618 __asm__("crx");
+static float cry_004DC61C __asm__("cry");
+static float crvx;
+static float crvy;
+static float wpow;
+static void *pAct_004DC62C __asm__("pAct");
+static float shake;
 extern float D_004D81F4;
-extern float D_004D81F8;
-extern const WtQ D_004CBB60;
-extern const WtQ D_004CBB70;
 extern void *memset(void *, int, unsigned int);
 
 static int InitTest(void)
@@ -71,17 +68,19 @@ static int InitTest(void)
     typedef struct { signed char value; } TypeByte;
     TypeByte t;
     WtQ v0;
-    WtQ v1;
-    WtQ v2;
     memset(&v0, 0, 16);
-    v1 = *(const WtQ *)&D_004CBB60;
+    {
+    WtQ v1 = {0.0f, 1.5707964f, 0.0f, 1.0f};
     t.value = 2;
-    v2 = *(const WtQ *)&D_004CBB70;
+    {
+    WtQ v2 = {1.0f, 1.0f, 1.0f, 1.0f};
     v0.w = 1.0f;
     *(TypeByte *)&wtype = t;
     *(WtQ *)((char *)pAct_004DC62C + 0x10) = v0;
     *(WtQ *)((char *)pAct_004DC62C + 0x50) = v1;
     *(WtQ *)((char *)pAct_004DC62C + 0x60) = v2;
+    }
+    }
     }
     ppInit(wpos);
     wpos[12] = 0.0f;
@@ -91,7 +90,7 @@ static int InitTest(void)
     EXM_SetPointWind(wpos);
     ppInit(wvec);
     wvec[12] = 0.0f;
-    ppSetPos(wvec, D_004D81F8, 0.0f, 0.0f);
+    ppSetPos(wvec, -0.05f, 0.0f, 0.0f);
     wpos[3] = 1.0f;
     wpow = k;
     EXM_SetShakeTime(0.5f);
@@ -149,10 +148,10 @@ typedef union WindVectorBlock {
     u64 words[2];
 } WindVectorBlock;
 extern WindPadRecord PadDataRec[2] __asm__("PadData");
-extern WindParticle cpos __asm__("cpos_00585140");
-extern float crx __asm__("crx_004DC618");
-extern float cry __asm__("cry_004DC61C");
-extern StudioCamera *pCamera __asm__("pCamera_004DC614");
+#define cpos (*(WindParticle *)cpos_00585140)
+extern float crx __asm__("crx");
+extern float cry __asm__("cry");
+extern StudioCamera *pCamera __asm__("pCamera");
 extern float crvx;
 extern float crvy;
 extern double fptodp(float value);
@@ -229,10 +228,6 @@ static void MoveCamera(void)
     pCamera->rotation.z = 0.0f;
 }
 
-extern float wpos[];
-extern float D_004D8228;
-extern float D_004D822C;
-extern volatile float D_004D8230;
 static void MoveWind(void)
 {
     float x;
@@ -240,12 +235,12 @@ static void MoveWind(void)
     float scale;
 
     ppNextStart(wpos);
-    scale = D_004D8228;
+    scale = 5e-05f;
     if (PadData.trg & 1) {
-        wpos[1] -= D_004D822C;
+        wpos[1] -= 0.05f;
     }
     if (PadData.trg & 4) {
-        wpos[1] += D_004D8230;
+        wpos[1] += 0.05f;
     }
     x = PadData.lx * scale;
     y = PadData.ly * scale;
@@ -262,10 +257,6 @@ static void MoveWind(void)
     ppNextEnd(wpos);
 }
 
-extern float wvec[];
-extern float D_004D8234;
-extern float D_004D8238;
-extern volatile float D_004D823C;
 
 static void MoveWind2(void)
 {
@@ -274,12 +265,12 @@ static void MoveWind2(void)
     float scale;
 
     ppNextStart(wvec);
-    scale = D_004D8234;
+    scale = 1e-05f;
     if (PadData.trg & 1) {
-        wvec[1] -= D_004D8238;
+        wvec[1] -= 0.001f;
     }
     if (PadData.trg & 4) {
-        wvec[1] += D_004D823C;
+        wvec[1] += 0.001f;
     }
     x = PadData.lx * scale;
     y = PadData.ly * scale;
@@ -298,12 +289,6 @@ static void MoveWind2(void)
 
 extern signed char wtype;
 extern float shake;
-extern const char D_004CBB80[];
-extern const char D_004CBB90[];
-extern const char D_004CBBA0[];
-extern const char D_004CBBB8[];
-extern const char D_004DB9D0[];
-extern float D_0058518C[];
 extern double fptodp(float value);
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 
@@ -311,15 +296,15 @@ static void PrintDisp(void)
 {
     const char *position_format;
 
-    xglFontDebugPrintf(0, 0, D_004CBB80);
+    xglFontDebugPrintf(0, 0, "\x0BWindTest");
     if (wtype == 2) {
-        xglFontDebugPrintf(8, 8, D_004DB9D0);
+        xglFontDebugPrintf(8, 8, "\x0Bpoint");
     } else {
-        xglFontDebugPrintf(8, 8, D_004CBB90);
+        xglFontDebugPrintf(8, 8, "\x0B" "directional");
     }
-    position_format = D_004CBBA0;
-    xglFontDebugPrintf(0x64, 0xC8, position_format, fptodp(D_0058518C[0]));
-    xglFontDebugPrintf(0x64, 0xD0, D_004CBBB8, fptodp(shake));
+    position_format = "\x0B\x1B\x18\x1B\x1E\x1B\x1FWindPow:%f";
+    xglFontDebugPrintf(0x64, 0xC8, position_format, fptodp(wpos[3]));
+    xglFontDebugPrintf(0x64, 0xD0, "\x0B\x1B\x18\x1B\x1D\x1B\x1CRandPow:%f", fptodp(shake));
 }
 
 typedef struct WindParticleMc {
@@ -456,3 +441,6 @@ void WindTest(void)
         EXM_InitWind();
     }
 }
+
+/* Directional-light color record copied by WindTest: RGBA {0xFF, 0xFF, 0xFF, 0x50} as two dwords. */
+const unsigned long long D_004CBBD0[2] = { 0x000000FF000000FFULL, 0x00000050000000FFULL };

@@ -164,14 +164,14 @@ struct NmlModelRenderState {
 
 typedef void *NmlPacket;
 
-extern const char lenz_name[];
+extern char lenz_name[];
 
 void nmlPacketAddExecProg(NmlMaterialRenderState *material,
                           NmlModelRenderState *model,
                           int allow_extended_programs,
                           int add_transform_data);
 
-extern const char eye_name[];
+extern char eye_name[];
 
 extern char *strstr(const char *haystack, const char *needle);
 

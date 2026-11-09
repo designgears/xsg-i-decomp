@@ -257,7 +257,6 @@ typedef struct UmnMain2LightTable {
     UmnMain2LightVector color[3];
     UmnMain2LightVector direction[3];
 } UmnMain2LightTable;
-extern const UmnMain2LightTable D_00A11DF0;
 extern void MenuCfTaikiPush(void);
 extern void MenuCfTaikiPop(void);
 extern void MenuGameDataPush(void);
@@ -277,6 +276,19 @@ extern void GameResourceWorkReload(void);
 extern void GameCfPlayerLoadResource(int flag);
 
 void UmnMain2(int menu_id) {
+    static const UmnMain2LightTable light_table __attribute__((aligned(16))) = {
+        { value: { 0.3f, 0.3f, 0.3f, 1.0f } },
+        {
+            { value: { 0.5f, 0.5f, 0.5f, 1.0f } },
+            { value: { 0.5f, 0.5f, 0.5f, 1.0f } },
+            { value: { 0.5f, 0.5f, 0.5f, 1.0f } },
+        },
+        {
+            { value: { 1.0f, 1.0f, 0.5f, 1.0f } },
+            { value: { -1.0f, 1.0f, 0.5f, 1.0f } },
+            { value: { 0.0f, 1.0f, 0.5f, 1.0f } },
+        },
+    };
     UmnMain2LightTable table;
     void *light;
     void *mem;
@@ -291,7 +303,7 @@ void UmnMain2(int menu_id) {
     MenuLoadInit();
     xglStudioChange(0);
     light = xglStudioGetLight2();
-    table = D_00A11DF0;
+    table = light_table;
     xglLightIntensityAmbient(light, &table.ambient.value);
     xglLightIntensityParallel(light, 0, &table.color[0].value);
     xglLightDirection(light, 0, &table.direction[0].value);
@@ -343,3 +355,23 @@ void UmnMain2(int menu_id) {
     GameCFSoundMenuReload();
     GameLoopState.flags &= ~0x04000000;
 }
+
+/*
+ * The UMN menu globals this TU owns (ov02 .data 0x00A0FEF0-0x00A1049C, all
+ * zero-initialized; original symbol names). UmnVecMat and UmnModel have no
+ * reference in the overlay's code; UmnModel's 16-byte alignment is the
+ * original's (the TU's .data starts 16-aligned at 0x00A0FEF0).
+ */
+int UmnWorkEnd = 0;
+int UmnTexAddr = 0;
+int UmnBgCubeXtx = 0;
+int UmnBgCubeLex = 0;
+int UmnModelUkn = 0;
+int UmnModelSon = 0;
+unsigned char *task_xmx = 0;
+int UmnVecMat = 0;
+unsigned char UmnModel[0x500] __attribute__((aligned(16))) = { 0 };
+UmnWorkData UmnWork = { 0 };
+unsigned char *umn_task = 0;
+int UmnMemory = 0;
+int UmnWorkEndTop = 0;

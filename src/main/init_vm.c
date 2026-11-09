@@ -1,5 +1,6 @@
 #include "common.h"
 #include "init_vm.h"
+#include "java_class.h"
 
 /*
  * initBaseClasses and initPrimitiveTypes are file-local (LOCAL in the
@@ -15,18 +16,18 @@ void initVM(void) {
     xheap_init(1, 0, 0);
     classEntryPool = 0;
     constStringTable = 0;
-    NAME_Init = loadConstString(D_004CD0C0, -1);
-    NAME_Constructor = loadConstString(D_004DBFE0, -1);
-    TYPE_Chr_talk = loadConstString(D_004DBFE8, -1);
-    TYPE_Stage_entered = loadConstString(D_004DBFF0, -1);
-    TYPE_Void = loadConstString(D_004DBFE8, -1);
-    ATTR_SourceFile = loadConstString(D_004CD0D0, -1);
-    ATTR_InnerClasses = loadConstString(D_004CD0E0, -1);
-    ATTR_Code = loadConstString(D_004DBFF8, -1);
-    ATTR_Exceptions = loadConstString(D_004CD0F0, -1);
-    ATTR_LineNumberTable = loadConstString(D_004CD100, -1);
-    ATTR_ConstantValue = loadConstString(D_004CD110, -1);
-    ATTR_LocalVariableTable = loadConstString(D_004CD120, -1);
+    NAME_Init = loadConstString("<clinit>", -1);
+    NAME_Constructor = loadConstString("<init>", -1);
+    TYPE_Chr_talk = loadConstString("()V", -1);
+    TYPE_Stage_entered = loadConstString("(I)V", -1);
+    TYPE_Void = loadConstString("()V", -1);
+    ATTR_SourceFile = loadConstString("SourceFile", -1);
+    ATTR_InnerClasses = loadConstString("InnerClasses", -1);
+    ATTR_Code = loadConstString("Code", -1);
+    ATTR_Exceptions = loadConstString("Exceotions", -1);
+    ATTR_LineNumberTable = loadConstString("LineNumberTable", -1);
+    ATTR_ConstantValue = loadConstString("ConstantValue", -1);
+    ATTR_LocalVariableTable = loadConstString("LocalVariableTable", -1);
     jthreadResetFunc = 0;
     jthreadTop = 0;
     initVMThread = JNI_createThread(0, 8, 0x40);
@@ -1357,9 +1358,9 @@ void virtualMachine(SceneVm *vm, VMMethod *method, VMSlot *arguments, VMSlot *re
 
 static void initBaseClasses(void) {
     initPrimitiveTypes();
-    loadStaticClass(&classObject, D_004CD628);
-    loadStaticClass(&classStringBuffer, D_004CD640);
-    loadStaticClass(&classString, D_004CD658);
+    loadStaticClass(&classObject, "java/lang/Object");
+    loadStaticClass(&classStringBuffer, "java/lang/StringBuffer");
+    loadStaticClass(&classString, "java/lang/String");
 }
 
 extern VMClass *classBoolean;
@@ -1374,24 +1375,16 @@ extern VMClass *classDouble;
 static void initWrapperClass(VMClass **class_slot, const char *name,
                               signed char type_code, int element_size);
 
-extern const char D_004DC000[]; /* "boolean" */
-extern const char D_004DC008[]; /* "byte" */
-extern const char D_004DC010[]; /* "char" */
-extern const char D_004DC018[]; /* "short" */
-extern const char D_004DC020[]; /* "int" */
-extern const char D_004DC028[]; /* "long" */
-extern const char D_004DC030[]; /* "float" */
-extern const char D_004DC038[]; /* "double" */
 
 static void initPrimitiveTypes(void) {
-    initWrapperClass(&classBoolean, D_004DC000, 'Z', 1);
-    initWrapperClass(&classByte, D_004DC008, 'B', 1);
-    initWrapperClass(&classChar, D_004DC010, 'C', 2);
-    initWrapperClass(&classShort, D_004DC018, 'S', 2);
-    initWrapperClass(&classInt, D_004DC020, 'I', 4);
-    initWrapperClass(&classLong, D_004DC028, 'J', 8);
-    initWrapperClass(&classFloat, D_004DC030, 'F', 4);
-    initWrapperClass(&classDouble, D_004DC038, 'D', 8);
+    initWrapperClass(&classBoolean, "boolean", 'Z', 1);
+    initWrapperClass(&classByte, "byte", 'B', 1);
+    initWrapperClass(&classChar, "char", 'C', 2);
+    initWrapperClass(&classShort, "short", 'S', 2);
+    initWrapperClass(&classInt, "int", 'I', 4);
+    initWrapperClass(&classLong, "long", 'J', 8);
+    initWrapperClass(&classFloat, "float", 'F', 4);
+    initWrapperClass(&classDouble, "double", 'D', 8);
 
     primitiveClassTable[4] = classBoolean;
     primitiveClassTable[8] = classByte;
@@ -1419,3 +1412,8 @@ static void initWrapperClass(VMClass **class_slot, const char *name,
     stored_class->name = interned_name;
     (*class_slot)->element_size = element_size;
 }
+
+VMClass *classBoolean = 0;
+/* java.lang.Class's record, until initVM's class loader resolves it. */
+static JavaClass _dummyClass;
+JavaClass *classClass = &_dummyClass;

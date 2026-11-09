@@ -6,7 +6,7 @@
 
 extern int xglMovieClose(void *movie);
 
-extern MovieInfo mi;
+static MovieInfo mi;
 
 
 /* Defined in src/main/xgl_1.c, still INCLUDE_ASM there. */
@@ -31,7 +31,6 @@ extern void nmlModelSetActiveFadeInCancel(int fadeTime);
 
 #include "main/party.h"
 
-extern MovieOverlayPacket TestEnv_0_00367980;
 
 
 extern MovieGameLoopState GameLoopState;
@@ -46,9 +45,9 @@ extern volatile unsigned char GameMovieAlpha;
 
 extern short GameMovieFrame;
 
-extern const char D_004C0290[24];
+const char D_004C0290[24] = "\015\003\031\003\025\002\001\015\025\002\002\010\025\003\003";
 
-extern const char D_004C02A8[88];
+const char D_004C02A8[88] = "\013\015\003A seek error has occured.\n\n\n\014\200  \241\373\014\200\200\200Button: Replay\n\n\014 \200 \242\244\014\200\200\200Button: Skip";
 
 extern int xglMoviePlay(void *movie);
 
@@ -129,6 +128,23 @@ static inline char caption_peek(char *cursor)
 
 void GameMovieMain(void)
 {
+    static MovieOverlayPacket TestEnv_0_00367980 __asm__("TestEnv.0") __attribute__((aligned(16))) = {
+        { 0x0ULL, 0x5100000C00000000ULL },
+        { 0xB0AB400000008001ULL, 0x53531EEEEEEULL },
+        {
+            { 0x0ULL, 0x3FULL },
+            { 0x60ULL, 0x14ULL },
+            { 0x0ULL, 0x6ULL },
+            { 0x0ULL, 0x8ULL },
+            { 0x7000DULL, 0x47ULL },
+            { 0x0ULL, 0x42ULL }
+        },
+        { 0x80, 0x80, 0x80, 0x80 },
+        { 0x0, 0x0, 0x0, 0x0 },
+        { 0x6FF8, 0x71F7, 0xF00000, 0x0 },
+        { 0x2000, 0x1C00, 0x0, 0x0 },
+        { 0x8FF8, 0x8DF7, 0xF00000, 0x0 }
+    };
     if (mi.state != 0) {
         if (!(GameLoopState.flags & 1)) {
             mi.transparent = GameMovieTransparent;

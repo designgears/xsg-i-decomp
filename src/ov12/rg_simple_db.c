@@ -24,8 +24,16 @@ extern void XrgLog(const char *format, const char *source_file, int line,
  * ov12:0x00a531f0 contains the assertion expression "pDB != NIL".
  * ov12:0x00a53200 contains the source filename "../rg_simple_db.euc.c".
  */
-extern const char D_00A531F0[];
-extern const char D_00A53200[];
+const char D_00A531F0[] = "pDB != NIL";
+const char D_00A53200[] = "../rg_simple_db.euc.c";
+const char D_00A53218[] = "pszName != NIL";
+const char D_00A53228[] = "pDat != NIL";
+const char D_00A53238[] = "pDB->m_nNumOfData < pDB->m_nDataCapa";
+const char D_00A53260[] = "\n***** already entried name '%s'\n\n";
+const char D_00A53288[] = "0";
+const char D_00A53290[] = "0 <= nDataID && nDataID < pDB->m_nNumOfData";
+const char D_00A532C0[] = "data base - %p\n";
+const char D_00A532D0[] = "data %d : %s (%p)\n";
 
 /*
  * More of the same asm-owned OV12 rodata window, used only by _GetDataID,
@@ -42,12 +50,6 @@ extern const char D_00A53200[];
  * ov12:0x00a53290 contains the assertion expression
  * "0 <= nDataID && nDataID < pDB->m_nNumOfData".
  */
-extern const char D_00A53218[];
-extern const char D_00A53228[];
-extern const char D_00A53238[];
-extern const char D_00A53260[];
-extern const char D_00A53288[];
-extern const char D_00A53290[];
 
 static void _InitDB(RgSimpleDB *pDB, int capacity, int entry_size);
 static void _ClearDB(RgSimpleDB *pDB);
@@ -239,8 +241,6 @@ void RgSimpleDBClear(RgSimpleDB *pDB)
     _ClearDB(pDB);
 }
 
-extern const char D_00A532C0[];
-extern const char D_00A532D0[];
 
 void RgSimpleDBDump(RgSimpleDB *pDB)
 {

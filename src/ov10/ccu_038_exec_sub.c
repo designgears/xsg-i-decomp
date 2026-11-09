@@ -95,7 +95,7 @@ void xglMatrixScale(Matrix4 destination, const Matrix4 source,
 extern void nmlModelSetPlace(float matrix[4][4]);
 extern void nmlModelSetTexture(void *texture);
 extern void nmlModelEntryCard(void *model);
-extern const char D_00A4D7C8[];
+
 extern void CCC04ExecSub(int side, CardGameWork *work, CardHand *hand);
 extern void CCC03ExecSub(int side, CardGameWork *work, CardHand *hand, CardLayerStack *card);
 extern void CCC07ExecSub(CardGameWork *work, CardHand *hand, CardCursorPosition *position);
@@ -112,44 +112,6 @@ extern int CGPCursorMove(int side, CardGameWork *work);
 extern void CGPCursor2Pos(CardCursorPosition *position, CardGameWork *work);
 extern void CardSetEffect(int side, CardGameWork *work, u8 kind, s8 amount,
                           int sound, void *position, void *target);
-extern int D_00A57760;
-extern int D_00A57764;
-extern int D_00A57788;
-extern int D_00A5778C;
-extern int D_00A57790;
-extern int D_00A57794;
-extern int D_00A577C0;
-extern int D_00A577C4;
-extern int D_00A577C8;
-extern int D_00A57830;
-extern int D_00A577E0;
-extern int D_00A577F0;
-extern int D_00A57800;
-extern s8 D_00A57834;
-extern CardCursorPosition D_00A57750;
-extern CardCursorPosition D_00A57758;
-extern CardCursorPosition D_00A57768;
-extern CardCursorPosition D_00A57770;
-extern CardCursorPosition D_00A57778;
-extern CardCursorPosition D_00A57780;
-extern CardCursorPosition D_00A57798;
-extern s16 D_00A5779A;
-extern CardCursorPosition D_00A577A0;
-extern CardCursorPosition D_00A577A8;
-extern CardCursorPosition D_00A577B0;
-extern s16 D_00A577B2;
-extern CardCursorPosition D_00A577B8;
-extern CardCursorPosition D_00A577D0;
-extern CardCursorPosition D_00A577D8;
-extern CardCursorPosition D_00A577E8;
-extern CardCursorPosition D_00A577F8;
-extern CardCursorPosition D_00A57808;
-extern s16 D_00A5780A;
-extern CardCursorPosition D_00A57810;
-extern CardCursorPosition D_00A57818;
-extern s16 D_00A5781A;
-extern CardCursorPosition D_00A57820;
-extern CardCursorPosition D_00A57828;
 /* This TU saw an int first parameter: CardPlayCommandPlay passes its u16 side
  * number without the s8 sign extension a narrower prototype would add. */
 
@@ -953,6 +915,41 @@ static inline int CardLowByteAiFlag(u8 flags, u8 mask) {
 
 s32 CardPlayCommandPlay(u16 side, u16 command, CardGameWork *work,
                          s16 operand, s16 target) {
+    /* function-local statics (no ELF symbols), original order */
+    static CardCursorPosition D_00A57750 __asm__("D_00A57750");
+    static CardCursorPosition D_00A57758 __asm__("D_00A57758");
+    static int D_00A57760 __asm__("D_00A57760");
+    static int D_00A57764 __asm__("D_00A57764");
+    static CardCursorPosition D_00A57768 __asm__("D_00A57768");
+    static CardCursorPosition D_00A57770 __asm__("D_00A57770");
+    static CardCursorPosition D_00A57778 __asm__("D_00A57778");
+    static CardCursorPosition D_00A57780 __asm__("D_00A57780");
+    static int D_00A57788 __asm__("D_00A57788");
+    static int D_00A5778C __asm__("D_00A5778C");
+    static int D_00A57790 __asm__("D_00A57790");
+    static int D_00A57794 __asm__("D_00A57794");
+    static CardCursorPosition D_00A57798 __asm__("D_00A57798");
+    static CardCursorPosition D_00A577A0 __asm__("D_00A577A0");
+    static CardCursorPosition D_00A577A8 __asm__("D_00A577A8");
+    static CardCursorPosition D_00A577B0 __asm__("D_00A577B0");
+    static CardCursorPosition D_00A577B8 __asm__("D_00A577B8");
+    static int D_00A577C0 __asm__("D_00A577C0");
+    static int D_00A577C4 __asm__("D_00A577C4");
+    static int D_00A577C8 __asm__("D_00A577C8");
+    static CardCursorPosition D_00A577D0 __asm__("D_00A577D0");
+    static CardCursorPosition D_00A577D8 __asm__("D_00A577D8");
+    static int D_00A577E0 __asm__("D_00A577E0");
+    static CardCursorPosition D_00A577E8 __asm__("D_00A577E8");
+    static int D_00A577F0 __asm__("D_00A577F0");
+    static CardCursorPosition D_00A577F8 __asm__("D_00A577F8");
+    static int D_00A57800 __asm__("D_00A57800");
+    static CardCursorPosition D_00A57808 __asm__("D_00A57808");
+    static CardCursorPosition D_00A57810 __asm__("D_00A57810");
+    static CardCursorPosition D_00A57818 __asm__("D_00A57818");
+    static CardCursorPosition D_00A57820 __asm__("D_00A57820");
+    static CardCursorPosition D_00A57828 __asm__("D_00A57828");
+    static int D_00A57830 __asm__("D_00A57830");
+    static s8 D_00A57834 __asm__("D_00A57834");
     s16 *queued;
     CardCursorPosition position;
     CardBoardSlot swapFirst;
@@ -1637,7 +1634,7 @@ s32 CardPlayCommandPlay(u16 side, u16 command, CardGameWork *work,
             break;
         case 2:
             complete = 1;
-            CardPlayDesertOperation(&otherSide->hand, D_00A5779A);
+            CardPlayDesertOperation(&otherSide->hand, D_00A57798.index);
             CardCursorPassive(CardCursorFor(work));
             break;
         }
@@ -1817,7 +1814,7 @@ s32 CardPlayCommandPlay(u16 side, u16 command, CardGameWork *work,
             break;
         case 2:
             complete = 1;
-            otherSide->disposal[D_00A577B2].battle.layers[0].life = 0;
+            otherSide->disposal[D_00A577B0.index].battle.layers[0].life = 0;
             CardCursorPassive(CardCursorFor(work));
             break;
         }
@@ -2710,7 +2707,7 @@ s32 CardPlayCommandPlay(u16 side, u16 command, CardGameWork *work,
                 CardCommandAdvance(work);
                 xglSoundEffectNormalID(1, 0);
             }
-            xglFontPrint(143, 213, 0xFFF8, D_00A4D7C8);
+            xglFontPrint(143, 213, 0xFFF8, "\x0B\x19\x03\x0D\0Select card to discard.");
             scale[0] = 1.5f;
             scale[1] = scale[2] = scale[3] = 1.0f;
             translation[0] = translation[1] = 0.0f;
@@ -2801,7 +2798,7 @@ s32 CardPlayCommandPlay(u16 side, u16 command, CardGameWork *work,
         case 2:
             CGPDispErrorMess(side, 0x18);
             if (pressed & 0x20) {
-                otherSide->battle[D_00A5780A].battle.flags |= 2;
+                otherSide->battle[D_00A57808.index].battle.flags |= 2;
                 xglSoundEffectNormalID(1, 0);
                 CardCommandAdvance(work);
             } else if (pressed & 0x40) {
@@ -2935,7 +2932,7 @@ s32 CardPlayCommandPlay(u16 side, u16 command, CardGameWork *work,
         case 2:
             CGPDispErrorMess(side, 0x18);
             if (pressed & 0x20) {
-                otherSide->disposal[D_00A5781A].battle.flags |= 2;
+                otherSide->disposal[D_00A57818.index].battle.flags |= 2;
                 xglSoundEffectNormalID(1, 0);
                 CardCommandAdvance(work);
             } else if (pressed & 0x40) {

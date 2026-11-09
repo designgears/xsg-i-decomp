@@ -23,11 +23,10 @@ int XrgRandIntRange(int lower, int upper)
     return (rand() % (upper - lower)) + lower;
 }
 
-extern RgVector s_aRes_0;
-
 float *XrgVectorZero(void)
 {
-    return s_aRes_0;
+    static RgVector s_aRes = {0.0f, 0.0f, 0.0f, 0.0f};
+    return s_aRes;
 }
 
 void XrgUnitVector(RgVector vector)
@@ -36,25 +35,22 @@ void XrgUnitVector(RgVector vector)
     vector[3] = 1.0f;
 }
 
-extern RgVector s_aRes_1;
-
 float *XrgVectorX(void)
 {
-    return s_aRes_1;
+    static RgVector s_aRes = {1.0f, 0.0f, 0.0f, 0.0f};
+    return s_aRes;
 }
-
-extern RgVector s_aRes_2;
 
 float *XrgVectorY(void)
 {
-    return s_aRes_2;
+    static RgVector s_aRes = {0.0f, 1.0f, 0.0f, 0.0f};
+    return s_aRes;
 }
-
-extern RgVector s_aRes_3;
 
 float *XrgVectorZ(void)
 {
-    return s_aRes_3;
+    static RgVector s_aRes = {0.0f, 0.0f, 1.0f, 0.0f};
+    return s_aRes;
 }
 
 void XrgSetVector(RgVector destination, float x, float y, float z, float w)
@@ -502,8 +498,8 @@ float XrgCalcRotY(const Vector4 *vector)
     return (float) atan2((double) vector->x, (double) vector->z);
 }
 
-extern unsigned char s_aStack[];
-extern float *s_paTop;
+static unsigned char s_aStack[0x400];
+static float *s_paTop;
 
 void XrgClearMatStack(void)
 {
@@ -511,10 +507,6 @@ void XrgClearMatStack(void)
     XrgUnitMatrix((float *) s_aStack);
 }
 
-/* The current matrix-stack top. The data is still scaffold-owned
- * (docs/naming.md); the scaffold defines it under the original ELF symbol
- * name s_paTop, imported through config/symbols/ov12.txt. */
-extern float *s_paTop;
 
 void XrgPushMatStack(void)
 {

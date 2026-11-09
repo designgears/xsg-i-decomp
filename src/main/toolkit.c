@@ -63,31 +63,31 @@ static void *getPeer_Stage(void *java_stage);
 
 /* Referenced original data recovered from this translation unit. */
 
-extern const char unit_field_algorithm[16];
+const char unit_field_algorithm[16] = "algorithm";
 
 
-extern const char unit_field_id[8];
+const char unit_field_id[8] = "id";
 
 
-extern const char unit_field_px[8];
+const char unit_field_px[8] = "px";
 
 
-extern const char unit_field_py[8];
+const char unit_field_py[8] = "py";
 
 
-extern const char unit_field_pz[8];
+const char unit_field_pz[8] = "pz";
 
 
-extern const char unit_field_rx[8];
+const char unit_field_rx[8] = "rx";
 
 
-extern const char unit_field_ry[8];
+const char unit_field_ry[8] = "ry";
 
 
-extern const char unit_field_rz[8];
+const char unit_field_rz[8] = "rz";
 
 
-extern const char unit_field_peer[8];
+const char unit_field_peer[8] = "peer";
 
 
 const char D_004DC118[8] = "light";

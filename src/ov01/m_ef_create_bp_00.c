@@ -227,7 +227,6 @@ typedef struct BP00CamView {
     void *matrix;
 } BP00CamView;
 extern BP00CamView mefCamParams;
-extern BP00QW coltbl_0_00A51460;
 extern int MMathRotTransPersClip(BP00QW *destination, const void *screen, const void *matrix, void *point);
 extern void MGsGPTerm(void *packet);
 static inline void bp00Flush(BP00GPacket *pk, int nreg)
@@ -251,6 +250,10 @@ static inline BP00QW *bp00Begin(BP00GPacket *gp, unsigned long tag, unsigned lon
 
 static void fnBP00_DP000(void *self, void *work)
 {
+  static const BP00QW coltbl[2] = {
+    { ui: { 0x00, 0x20, 0xFF, 0xFF } },
+    { ui: { 0xFF, 0x80, 0x80, 0xFF } },
+  };
   BP00Work *w = (BP00Work *) work;
   BP00QW out;
   BP00QW unused;
@@ -292,7 +295,7 @@ static void fnBP00_DP000(void *self, void *work)
   bp00Flush(pk, 3);
   for (k = 0; k < 5; k++)
   {
-    col.q = coltbl_0_00A51460.q;
+    col.q = coltbl[0].q;
     n = 0;
     clip = 0;
     dst = bp00Begin((BP00GPacket *) w->packet, 0x0025400000008000, 0x51, 2);

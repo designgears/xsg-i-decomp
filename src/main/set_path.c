@@ -36,11 +36,12 @@ static void splitName(unsigned char *filename, unsigned char *path, unsigned cha
 
 void splitName(unsigned char *filename, unsigned char *path, unsigned char *name);
 void srsSetViewPath(unsigned char *path);
-extern unsigned char name_1[];
-extern unsigned char path_0[];
 
 void setPath(unsigned char *filename)
 {
+    static unsigned char path_0[0x80] __asm__("path.0");
+    static unsigned char name_1[0x40] __asm__("name.1");
+
     splitName(filename, path_0, name_1);
     srsSetViewPath(path_0);
 }
@@ -60,7 +61,6 @@ typedef struct CfSelectState {
     unsigned char selectedPath[1];
 } CfSelectState;
 
-extern CfSelectState cfs;
 
 extern int xglCdFileSelect(CfSelectState *state);
 
@@ -68,15 +68,10 @@ extern void xglRenderClearFrame(void);
 
 extern void xglSleep(void);
 
-extern int filelist;
 
-extern char *gridlexTop;
 
-extern char *gridxtxTop;
 
-extern char *hamalexTop;
 
-extern char *hamaxtxTop;
 
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 
@@ -95,14 +90,25 @@ typedef struct CfSelectStateU {
     unsigned char selectedPath[1];
     unsigned char unmodeled_11d[0x268 - 0x11d];
 } CfSelectStateU;
-extern CfSelectStateU cfsU __asm__("cfs");
-extern char *filelistP __asm__("filelist");
-extern char *cfScriptP __asm__("cfScript");
-extern char basepath[0x17];
+static CfSelectStateU cfsU __asm__("cfs");
+static char basepath[0x17] = "host0:/home/xeno/work/";
+static char *filelist = 0;
+static char *gridlexTop = 0;
+static char *gridxtxTop = 0;
+static char *hamalexTop = 0;
+static char *hamaxtxTop = 0;
+static char *cfScriptP __asm__("cfScript") = 0;
+static s16 loaded = 0;
+static s16 mapdisp = 1;
+static s16 casdisp = 0;
+static s16 tgtdisp = 0;
+static int sftMode = 0;
+s16 _sdrawFloor = 0;
+s16 _debugPause = 0;
 
 void initFileSelect(void)
 {
-    char **directorySlot = &filelistP;
+    char **directorySlot = &filelist;
 
     if (*directorySlot != 0)
         return;
@@ -140,15 +146,15 @@ int execFileSelect(void)
 
     for (;;) {
         xglRenderClearFrame();
-        result = xglCdFileSelect(&cfs);
+        result = xglCdFileSelect((CfSelectState *)&cfsU);
         switch (result) {
         case 0:
             break;
         case 1:
-            setPath(cfs.selectedPath);
+            setPath(cfsU.selectedPath);
             return 1;
         case 2:
-            setPath(cfs.selectedPath);
+            setPath(cfsU.selectedPath);
             return 2;
         }
         xglSleep();
@@ -175,7 +181,6 @@ typedef struct PadDataEffectLayout {
 
 extern PadDataEffectLayout PadData;
 extern s16 _debugPause;
-extern char D_004DBA08[];
 extern void sefExecEffect(void);
 extern void func_A31438(void);
 extern void xglSoundStreamMain(void);
@@ -197,7 +202,7 @@ static void sdbExecEffect(void)
     if (debugPaused == 0 || (pad->half_2c & 0x100)) {
         sefExecEffect();
     } else {
-        xglFontDebugPrintf(0x10, 0x18, D_004DBA08);
+        xglFontDebugPrintf(0x10, 0x18, "PAUSE");
     }
 
     func_A31438();
@@ -236,13 +241,11 @@ static void sdebufPrintMenu(int x, int y, int dy, char **list, int count)
 }
 
 extern int sprintf(char *destination, const char *format, ...);
-extern char *menu_3[];
-extern int cur_2;
-extern int menumax_4;
-extern char D_004DBA18[];
-extern char D_004CBCD8[];
-extern char D_004CBCE8[];
-extern char D_004CBCF8[];
+extern char D_004CBC80[];
+extern char D_004CBC90[];
+extern char D_004CBCA0[];
+extern char D_004CBCB0[];
+extern char D_004CBCC8[];
 typedef struct PadDataCfgLayout {
     u8 unmodeled_00[0x28];
     u64 buttons;
@@ -250,6 +253,9 @@ typedef struct PadDataCfgLayout {
 
 static int debugEffectConfig(void)
 {
+  static int cur_2 __asm__("cur.2") = 0;
+  static char *menu_3[] __asm__("menu.3") = { D_004CBCC8, D_004CBCB0, D_004CBCA0, D_004CBC90, D_004CBC80 };
+  static int menumax_4 __asm__("menumax.4") = 5;
   char text[0x100];
   int cur;
   int step = 0x10;
@@ -259,9 +265,9 @@ static int debugEffectConfig(void)
   for (;;)
   {
     xglRenderClearFrame();
-    sprintf(text, D_004CBCD8, D_004CBCE8, D_004CBCF8);
+    sprintf(text, "ver: %s %s", "Sep  5 2002", "12:51:35");
     xglFontDebugPrintf(0x10, 0x10, text);
-    xglFontDebugPrintf(0x10, (cur_2 * step) + 0x1C, D_004DBA18);
+    xglFontDebugPrintf(0x10, (cur_2 * step) + 0x1C, ">");
     sdebufPrintMenu(0x10, 0x10, 0x10, menu_3, menumax_4);
     if ((((PadDataCfgLayout *) (&PadData))->buttons & 0x08000100) == 0x08000100)
     {
@@ -304,9 +310,6 @@ static int debugEffectConfig(void)
   return cur_2;
 }
 
-extern int cur_5;
-extern char D_004CBD18[];
-extern char D_004CBD08[];
 typedef struct {
     u8 unmodeled_00[0x28];
     u64 buttons;
@@ -314,6 +317,7 @@ typedef struct {
 
 static int debugEffectSelect(void)
 {
+  static int cur_5 __asm__("cur.5") = 1;
   char sp[0x100];
   int var_3;
   int cmp;
@@ -327,7 +331,7 @@ static int debugEffectSelect(void)
     xglRenderClearFrame();
 
     sprintf(sp, "db%d%d : %d", cur_5 / divisor, cur_5 % divisor, cur_5);
-    xglFontDebugPrintf(0x10, 0x10, D_004CBD18);
+    xglFontDebugPrintf(0x10, 0x10, "\xA5\xA8\xA5\xD5\xA5\xA7\xA5\xAF\xA5\xC8\xC1\xAA\xC2\xF2\x0A");
     xglFontDebugPrintf(0x10, 0x20, sp);
     if (!((((PadDataForEffect *) (&PadData))->buttons & mask) != mask))
     {
@@ -406,10 +410,6 @@ static int debugEffectSelect(void)
   return cur_5;
 }
 
-extern int cur_6;
-extern char D_004CBD38[0x30];
-extern char D_004CBD28[0x10];
-extern char D_004DBA28[0x10];
 extern int srsGetEsdData2(int index);
 typedef struct PadDataEnemyLayout {
     u8 unmodeled_00[0x28];
@@ -424,6 +424,7 @@ typedef struct PadDataEnemyHalf {
 
 static int debugEnemySelect(void)
 {
+    static int cur_6 __asm__("cur.6") = 1;
     u64 mask;
     u64 btn;
 
@@ -438,14 +439,14 @@ static int debugEnemySelect(void)
     if ((u32)(cur_6 - 0xB54) < 0x63U) {
         esd = srsGetEsdData2(cur_6 - 0x64);
         if ((esd != 0) && (*(char *)esd != 0)) {
-            sprintf(text, D_004CBD28, esd, cur_6);
+            sprintf(text, "%sz : %d", esd, cur_6);
         } else {
-            sprintf(text, D_004DBA28, esd, cur_6);
+            sprintf(text, "%s : %d", esd, cur_6);
         }
     } else {
-        sprintf(text, D_004DBA28, srsGetEsdData2(cur_6), cur_6);
+        sprintf(text, "%s : %d", srsGetEsdData2(cur_6), cur_6);
     }
-    xglFontDebugPrintf(0x10, 0x10, D_004CBD38);
+    xglFontDebugPrintf(0x10, 0x10, "\xA5\xB3\xA5\xF3\xA5\xDC\xA1\xF5\xBB\xA8\xB5\xFB\xC5\xA8\xCE\xCE\xB0\xE8\xA5\xC6\xA5\xB9\xA5\xC8\xCD\xD1\xA4\xCE\xA5\xA8\xA5\xD5\xA5\xA7\xA5\xAF\xA5\xC8\xC1\xAA\xC2\xF2");
     xglFontDebugPrintf(0x10, 0x20, text);
     btn = ((PadDataEnemyLayout *)&PadData)->buttons;
     mask = 0x08000100;
@@ -516,13 +517,11 @@ typedef struct PadDataMenuLayout {
 extern int sprintf(char *destination, const char *format, ...);
 extern void xglRenderClearFrame(void);
 extern void xglSleep(void);
-extern int cur_7;
-extern char D_004CBD68[];
-extern char D_004DBA28[];
 extern int srsGetEsdData2(int index);
 
 static int debugCfSelect(void)
 {
+    static int cur_7 __asm__("cur.7") = 601;
     char text[0x100];
     u16 held;
     int esd;
@@ -530,8 +529,8 @@ static int debugCfSelect(void)
     for (;;) {
         esd = srsGetEsdData2(cur_7);
         xglRenderClearFrame();
-        sprintf(text, D_004DBA28, esd, cur_7);
-        xglFontDebugPrintf(0x10, 0x10, D_004CBD68);
+        sprintf(text, "%s : %d", esd, cur_7);
+        xglFontDebugPrintf(0x10, 0x10, "\xA3\xC3\xA3\xC6\xCE\xCE\xB0\xE8\xA5\xC6\xA5\xB9\xA5\xC8\xCD\xD1\xA4\xCE\xA5\xA8\xA5\xD5\xA5\xA7\xA5\xAF\xA5\xC8\xC1\xAA\xC2\xF2");
         xglFontDebugPrintf(0x10, 0x20, text);
         if ((((PadDataMenuLayout *) &PadData)->buttons & 0x08000100) == 0x08000100) {
             cur_7 = -1;
@@ -557,8 +556,6 @@ static int debugCfSelect(void)
 extern void func_A31688(void);
 extern void func_A31920(int kind, float *params);
 extern void func_A318B8(void);
-extern float D_004D8298;
-extern float D_004D829C;
 extern void *memset(void *destination, int value, unsigned int count);
 
 static void SCamTake(void)
@@ -568,8 +565,8 @@ static void SCamTake(void)
     func_A31688();
     memset(params, 0, sizeof(params));
     params[0] = 0.0f;
-    params[4] = D_004D8298;
-    params[5] = D_004D829C;
+    params[4] = 0.1f;
+    params[5] = 2.6f;
     params[6] = 5.0f;
     params[7] = 1.0f;
     func_A31920(0, params);
@@ -664,9 +661,6 @@ extern void sdbExecEffect(void);
 extern void dummyMapDraw(void);
 extern s16 casdisp;
 extern s16 tgtdisp;
-extern char D_004CBD90[];
-extern char D_004CBDB8[];
-extern int prm_8[];
 extern s16 _sdrawFloor;
 
 static void seffectDebugDb(void)
@@ -674,6 +668,7 @@ static void seffectDebugDb(void)
     int sel;
     unsigned long long held;
     int *prm;
+    static int prm_8[12] __asm__("prm.8");
 
     SinitCamera();
     sel = debugEffectSelect();
@@ -696,7 +691,7 @@ static void seffectDebugDb(void)
         do {
             xglRenderClearFrame();
             if (sefCheckLoad() == 0) {
-                xglFontDebugPrintf(8, 8, D_004CBD90);
+                xglFontDebugPrintf(8, 8, "\xB7\xE8\xC4\xEA\xA5\xDC\xA5\xBF\xA5\xF3\xA4\xF2\xB2\xA1\xA4\xB9\xA4\xC8\xA5\xA8\xA5\xD5\xA5\xA7\xA5\xAF\xA5\xC8\xB5\xAF\xC6\xB0\x0A");
                 if (PadData.pressed & 0x20) {
                     sefCreateEffect(prm_8);
                 }
@@ -710,7 +705,7 @@ static void seffectDebugDb(void)
                 dummyMapDraw();
                 sdbExecEffect();
             } else {
-                xglFontDebugPrintf(0x10, 0x10, D_004CBDB8);
+                xglFontDebugPrintf(0x10, 0x10, "Now Loading\xA1\xC4\x0A");
             }
             xglSleep();
         } while ((((PadDataForEffect *)&PadData)->buttons & 0x08000100) != 0x08000100);
@@ -734,10 +729,6 @@ typedef struct DmyActorCf {
     short enabled;
     unsigned char unmodeled_88[0xa70 - 0x88];
 } DmyActorCf;
-extern SetPathEffectPeer *handle_9;
-extern DmyActorCf dmyActor_12;
-extern unsigned char point_10[0x10];
-extern unsigned char angle_11[0x10];
 extern void sefDestroyEffectCf(void);
 extern void sefKillEffect(int);
 extern void *sefCreateEffectCf(int, const void *, const void *);
@@ -748,6 +739,10 @@ static void dummyMapLoad(void);
 
 static void seffectDebugCf(void)
 {
+    static SetPathEffectPeer *handle_9 __asm__("handle.9") = 0;
+    static unsigned char point_10[0x10] __asm__("point.10") = { 0 };
+    static unsigned char angle_11[0x10] __asm__("angle.11") = { 0 };
+    static DmyActorCf dmyActor_12 __asm__("dmyActor.12");
     int effect;
 
     SinitCamera();
@@ -776,7 +771,7 @@ static void seffectDebugCf(void)
     while ((((PadDataForEffect *)&PadData)->buttons & 0x08000100) != 0x08000100) {
         xglRenderClearFrame();
         if (sefCheckLoad() == 0) {
-            xglFontDebugPrintf(8, 8, D_004CBD90);
+            xglFontDebugPrintf(8, 8, "\xB7\xE8\xC4\xEA\xA5\xDC\xA5\xBF\xA5\xF3\xA4\xF2\xB2\xA1\xA4\xB9\xA4\xC8\xA5\xA8\xA5\xD5\xA5\xA7\xA5\xAF\xA5\xC8\xB5\xAF\xC6\xB0\x0A");
             if (PadData.pressed & 0x20) {
                 handle_9 = sefCreateEffectCf(effect, point_10, angle_11);
             }
@@ -801,7 +796,7 @@ static void seffectDebugCf(void)
             dummyMapDraw();
             sdbExecEffect();
         } else {
-            xglFontDebugPrintf(0x10, 0x10, D_004CBDB8);
+            xglFontDebugPrintf(0x10, 0x10, "Now Loading\xA1\xC4\x0A");
         }
         xglSleep();
     }
@@ -834,9 +829,7 @@ typedef struct PadDataMenuLayoutSB {
     } buttons;
     u8 unmodeled_30[0x68 - 0x30];
 } PadDataMenuLayoutSB;
-extern SetPathEffectParamsSB prm_13;
 extern s16 mapdisp;
-extern const char D_004CBDC8[];
 static void dummyMapLoad(void);
 extern void func_A31840(void);
 extern void sefDestroyEffectCf(void);
@@ -851,6 +844,7 @@ static void seffectDebugBattle(void)
 {
     extern PadDataMenuLayoutSB PadDataSB[2] __asm__("PadData");
     int effect;
+    static SetPathEffectParamsSB prm_13 __asm__("prm.13");
     struct {
         int kind;
         int variant;
@@ -886,7 +880,7 @@ static void seffectDebugBattle(void)
         sefSetupEffect();
         while (sefCheckLoad() != 0) {
             xglRenderClearFrame();
-            xglFontDebugPrintf(8, 8, D_004CBDC8);
+            xglFontDebugPrintf(8, 8, "\xA5\xED\xA1\xBC\xA5\xC9\xC3\xE6\x0A");
             xglSleep();
         }
     }
@@ -925,7 +919,7 @@ static void seffectDebugBattle(void)
         xglRenderClearFrame();
         _sdrawFloor = 1;
         if (sefCheckLoad() == 0) {
-            xglFontDebugPrintf(8, 8, D_004CBD90);
+            xglFontDebugPrintf(8, 8, "\xB7\xE8\xC4\xEA\xA5\xDC\xA5\xBF\xA5\xF3\xA4\xF2\xB2\xA1\xA4\xB9\xA4\xC8\xA5\xA8\xA5\xD5\xA5\xA7\xA5\xAF\xA5\xC8\xB5\xAF\xC6\xB0\x0A");
             if (PadDataSB[0].buttons.halfwords.pressed & 0x20) {
                 sefCreateEffect((int *) &prm_13);
             }
@@ -935,7 +929,7 @@ static void seffectDebugBattle(void)
             dummyMapDraw();
             sdbExecEffect();
         } else {
-            xglFontDebugPrintf(0x10, 0x10, D_004CBDB8);
+            xglFontDebugPrintf(0x10, 0x10, "Now Loading\xA1\xC4\x0A");
         }
         xglSleep();
     }
@@ -948,20 +942,16 @@ extern void func_A1D1C0(int level);
 extern void func_A2C3A0(int level);
 extern int srsFileLoad(void *buffer, const char *name, int mode);
 extern s16 loaded;
-extern char D_004CBDD8[];
-extern char D_004CBDE8[];
-extern char D_004DBA38[];
-extern char D_004DBA40[];
 
 static void dummyMapLoad(void)
 {
     if (loaded == 0) {
         func_A2C3A0(10);
         func_A1D1C0(10);
-        srsFileLoad(gridlexTop, D_004DBA38, 1);
-        srsFileLoad(gridxtxTop, D_004DBA40, 1);
-        srsFileLoad(hamalexTop, D_004CBDD8, 1);
-        srsFileLoad(hamaxtxTop, D_004CBDE8, 1);
+        srsFileLoad(gridlexTop, "sen.lex", 1);
+        srsFileLoad(gridxtxTop, "sen.xtx", 1);
+        srsFileLoad(hamalexTop, "hama.lex", 1);
+        srsFileLoad(hamaxtxTop, "hama.xtx", 1);
         loaded = 1;
     }
 }
@@ -979,15 +969,15 @@ extern StudioLight *xglStudioGetLight2(void);
 extern unsigned char _defMatLcMod[];
 extern unsigned char _defMatLn[];
 extern s16 casdisp;
-extern Vector4 caspos_15;
 extern s16 mapdisp;
-extern Vector4 pos_14;
-extern Vector4 scale_17;
 extern s16 tgtdisp;
-extern Vector4 tgtpos_16;
 
 static void dummyMapDraw(void)
 {
+    static Vector4 pos_14 __asm__("pos.14") = { 0.0f, 0.0f, 0.0f, 1.0f };
+    static Vector4 caspos_15 __asm__("caspos.15") = { 0.0f, 0.0f, 0.0f, 1.0f };
+    static Vector4 tgtpos_16 __asm__("tgtpos.16") = { 0.0f, 0.0f, -4.0f, 1.0f };
+    static Vector4 scale_17 __asm__("scale.17") = { 0.1f, 0.1f, 0.1f, 1.0f };
     Matrix4 sp0;
     StudioLight *light;
 

@@ -193,7 +193,6 @@ extern int MMathRotTransPersClip(Vector4 *destination, const StudioCamera *camer
                                  Matrix4 *matrix, const Vector4 *point);
 extern Matrix4 *MMathRotateMatrixYXZ(Matrix4 *destination, Matrix4 *matrix,
                                      const Vector4 *angles);
-extern MEfGsQword coltbl_0_00A437B0[3];
 #define EAD00_RAYS 4
 #define EAD00_SEGMENTS 51
 static inline MEfGsQword *ead00OpenTag(MEfGsPacket *packet, int pre, int prim, int reg_count,
@@ -223,6 +222,11 @@ static inline void ead00CloseTag(MEfGsPacket *packet, int nloop)
 
 static void fnEAD00_DP000(void *self, void *work)
 {
+    static MEfGsQword coltbl[3] = {
+        { rgba: { 0x80, 0x20, 0x20, 0xFF } },
+        { rgba: { 0x80, 0x10, 0x10, 0x50 } },
+        { rgba: { 0x40, 0xFF, 0x40, 0xFF } },
+    };
     EAD00DrawWork *state = work;
     MEfGsQword position;
     Vector4 angles;
@@ -262,8 +266,8 @@ static void fnEAD00_DP000(void *self, void *work)
     first = 0;
 
     phase = (float)state->frame * -0.31415927f;
-    colour[0].whole = coltbl_0_00A437B0[0].whole;
-    colour[1].whole = coltbl_0_00A437B0[1].whole;
+    colour[0].whole = coltbl[0].whole;
+    colour[1].whole = coltbl[1].whole;
     for (fan = 0; fan < 3; fan++) {
         Vector4 *start;
         Vector4 *displacement;

@@ -34,54 +34,21 @@ extern void tyaDisplaySetting(int);
 extern void tyaDrawGauge(int);
 
 /* "hdd0:" (0x004DA2D0) and "hdd:" (0x004DA2E0): HddTestFormat's record spelled
- * the first one hdd_device_name, which HddTestShutdown's record uses for the
- * second. The merged TU keeps hdd_device for 0x004DA2D0 (canon, HddTest.c).
+ * the first one "hdd:", which HddTestShutdown's record uses for the
+ * second. The merged TU keeps "hdd0:" for 0x004DA2D0 (canon, HddTest.c).
  */
-extern char hdd_device[];
-extern char hdd_device_name[];
-extern char pfs_device_name[];
-extern char hdd_common_device[];
-extern char hdd_format_start_message[];
-extern char hdd_format_result_format[];
-extern char hdd_pfs_format_result_format[];
-extern char hdd_shutdown_message[];
-extern char hdd_full_path[];
-extern char hdd_create_partition_format[];
-extern char hdd_partition_size[];
-extern char hdd_subcommand_format[];
-extern char hdd_close_result_format[];
 /* "pfs1:" (0x004DA2F0): HddTestMakeYourSaves' record calls it pfs_mount_point,
- * the mount/unmount records hdd_mount_point; one object, one name here. */
-extern char hdd_mount_point[];
-extern char hdd_mount_result_format[];
-extern char hdd_unmount_result_format[];
-extern char hdd_your_saves_directory[];
+ * the mount/unmount records "pfs1:"; one object, one name here. */
 /* "make YourSaves:%d\n" (0x004C0B70). */
-extern char hdd_mkdir_result_format[];
-extern char hdd_zone_size_format[];
-extern char hdd_zone_free_format[];
-extern char hdd_1024_directory_name[];
-extern char hdd_chstat_failure_format[];
-extern char hdd_dummy_folder_name[];
-extern HddTestMenuEntry hdd_test_menu[];
-extern char hdd_status_format[];
-extern char hdd_status_error_format[];
-extern char hdd_free_format[];
-extern char hdd_test_title[];
-extern char hdd_use_title[];
-extern char hdd_no_use_title[];
-extern char menu_cursor[];
-extern char *name_47[];
 
 /*
  * "%s:%d\n" (0x004DA2F8), the per-directory mkdir report of HddTest1024Save
- * and HddTestDummyFolder. Their records also call it hdd_mkdir_result_format,
+ * and HddTestDummyFolder. Their records also call it "make YourSaves:%d\n",
  * which in this TU is the 0x004C0B70 string, so it is named apart here. While
  * .sdata stays scaffold-owned the only name the link has for the object is
  * the splat label of its data piece.
  */
-extern char D_004DA2F8[];
-#define hdd_mkdir_status_format D_004DA2F8
+#define hdd_mkdir_status_format "%s:%d\012"
 
 /*
  * PadData (0xd0-byte object at 0x490d90) through HddTest's raw view: it reads
@@ -110,16 +77,13 @@ static int xtxdec_sleep(void);
 static int xtxdec_sub(char *filename);
 
 extern void sceVif1PkAddDirectDataN(XglPacket *packet, const void *data, int count);
-extern unsigned char TestEnv_0_0036A030[];
+static unsigned char TestEnv_0_0036A030[144] __asm__("TestEnv.0") = { 0x01, 0x80, 0x00, 0x00, 0x00, 0x40, 0x8B, 0x80, 0xEE, 0x1E, 0x53, 0x53, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x47, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x44, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x42, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0xB8, 0x42, 0xA9, 0x06, 0x00, 0x07, 0x20, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7A, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8A, 0x00, 0x00, 0x00, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00 };
 
 /* Only the packet handle at +0x00 is evidenced. */
 static void testfunc(XglPacket **packet) {
     sceVif1PkAddDirectDataN(*packet, TestEnv_0_0036A030, 9);
 }
 
-extern char D_004C07F0[];
-extern char D_004C0808[];
-extern char D_004C0828[];
 extern int xglCdReadFile(const char *name, void *buffer, int mode, int flags);
 extern int xglCdGetFileSize(const char *path);
 extern int sceWrite(int descriptor, void *buffer, unsigned int size);
@@ -136,14 +100,14 @@ static void FontTestSub(void)
   char head;
   unsigned char *end;
   unsigned char *tbl = (unsigned char *) 0x1000000;
-  if (xglCdReadFile(D_004C07F0, (void *) 0x1000000, 0, 0) <= 0)
+  if (xglCdReadFile("data\134yajima\134nisui.euc", (void *) 0x1000000, 0, 0) <= 0)
   {
     return;
   }
   p = (unsigned char *) 0x1000100;
   base = (unsigned char *) 0x1000000;
-  size = xglCdGetFileSize(D_004C0808);
-  xglCdReadFile(D_004C0808, (void *) 0x1000100, 0, 0);
+  size = xglCdGetFileSize("data\134yajima\134scenario.txt");
+  xglCdReadFile("data\134yajima\134scenario.txt", (void *) 0x1000100, 0, 0);
   ((unsigned char *) 0x1000100)[size] = 0;
   ((unsigned char *) 0x1000101)[size] = 0;
   end = (unsigned char *) 0x1000000;
@@ -190,7 +154,7 @@ static void FontTestSub(void)
     }
 
   }
-  fd = sceOpen(D_004C0828, 0x602);
+  fd = sceOpen("host0:nisui.txt", 0x602);
   sceWrite(fd, (void *) 0x1000000, q - tbl);
   sceClose(fd);
 }
@@ -198,35 +162,31 @@ static void FontTestSub(void)
 extern void xglFontDebugHex(int x, int y, int value, int digits);
 extern void FlushCache(int mode);
 extern int xglFontLoad(int font, void (*callback)(int));
-extern int rate_2_004D9F60;
-extern int dir_3;
-extern int rate_8;
-extern int dir_9;
-extern char D_004C0838[];
-extern char D_004C0888[];
-extern char D_004C08A0[];
-extern char D_004C08B0[];
-extern unsigned char test_1[];
-extern char test_4[];
-extern char test_5[];
-extern char test1_6[];
-extern char test2_7[];
-extern char test_10[];
-extern unsigned char txt_11[];
-extern unsigned char xy3_12[];
-extern unsigned char xy5_13[];
-extern unsigned char xy7_14[];
-extern unsigned char xy9_15[];
-extern char test_16[];
-extern char test_17[];
-extern char test_18[];
-extern char test_19[];
-extern char init_20[];
-extern char test_21[];
-extern char test_22[];
-extern char test_23[];
-extern char test_24[];
-extern char test_25[];
+static int rate_2_004D9F60 __asm__("rate.2") = 128;
+static int dir_3 __asm__("dir.3") = -1;
+static int rate_8 __asm__("rate.8") = 128;
+static int dir_9 __asm__("dir.9") = -1;
+static unsigned char test_1[22] __asm__("test.1") = { 0x0F, 0x00, 0x00, 0x00, 0x0D, 0x02, 0x0E, 0x04, 0x04, 0x00, 0x00, 0x00, 0xA5, 0xA2, 0xA5, 0xEB, 0xA5, 0xD5, 0xA5, 0xA1, 0x0B, 0x00 };
+static char test_4[16] __asm__("test.4") = "\015\003\016\002\002\000\000\000\261\357\244\311\244\352\013";
+static char test_5[16] __asm__("test.5") = "\015\003\016\001\001\000\000\000\261\357\244\311\244\352\013";
+static char test1_6[33] __asm__("test1.6") = "\015\003\030\001\245\353\245\323\244\316\245\306\245\271\245\310\245\364\243\301\243\302\243\303\243\260\243\261\243\262\030\000";
+static char test2_7[15] __asm__("test2.7") = "\015\003\264\301\273\372\244\310\244\316\302\320\310\346";
+static char test_10[13] __asm__("test.10") = "\015\000\016\000\000\000\000\000\017D\000\200";
+static unsigned char txt_11[15] __asm__("txt.11") = { 0x01, 0x80, 0x05, 0x00, 0xCA, 0xB8, 0xBB, 0xFA, 0xA5, 0xC6, 0xA5, 0xB9, 0xA5, 0xC8, 0x00 };
+static unsigned char xy3_12[12] __asm__("xy3.12") = { 0x05, 0x00, 0x01, 0x00, 0x00, 0x01, 0x01, 0x01, 0x02, 0x01, 0x01, 0x02 };
+static unsigned char xy5_13[28] __asm__("xy5.13") = { 0x0D, 0x00, 0x02, 0x00, 0x01, 0x01, 0x02, 0x01, 0x03, 0x01, 0x00, 0x02, 0x01, 0x02, 0x02, 0x02, 0x03, 0x02, 0x04, 0x02, 0x01, 0x03, 0x02, 0x03, 0x03, 0x03, 0x02, 0x04 };
+static unsigned char xy7_14[52] __asm__("xy7.14") = { 0x19, 0x00, 0x03, 0x00, 0x02, 0x01, 0x03, 0x01, 0x04, 0x01, 0x01, 0x02, 0x02, 0x02, 0x03, 0x02, 0x04, 0x02, 0x05, 0x02, 0x00, 0x03, 0x01, 0x03, 0x02, 0x03, 0x03, 0x03, 0x04, 0x03, 0x05, 0x03, 0x06, 0x03, 0x01, 0x04, 0x02, 0x04, 0x03, 0x04, 0x04, 0x04, 0x05, 0x04, 0x02, 0x05, 0x03, 0x05, 0x04, 0x05, 0x03, 0x06 };
+static unsigned char xy9_15[84] __asm__("xy9.15") = { 0x29, 0x00, 0x04, 0x00, 0x03, 0x01, 0x04, 0x01, 0x05, 0x01, 0x02, 0x02, 0x03, 0x02, 0x04, 0x02, 0x05, 0x02, 0x06, 0x02, 0x01, 0x03, 0x02, 0x03, 0x03, 0x03, 0x04, 0x03, 0x05, 0x03, 0x06, 0x03, 0x07, 0x03, 0x00, 0x04, 0x01, 0x04, 0x02, 0x04, 0x03, 0x04, 0x04, 0x04, 0x05, 0x04, 0x06, 0x04, 0x07, 0x04, 0x08, 0x04, 0x01, 0x05, 0x02, 0x05, 0x03, 0x05, 0x04, 0x05, 0x05, 0x05, 0x06, 0x05, 0x07, 0x05, 0x02, 0x06, 0x03, 0x06, 0x04, 0x06, 0x05, 0x06, 0x06, 0x06, 0x03, 0x07, 0x04, 0x07, 0x05, 0x07, 0x04, 0x08 };
+static char test_16[25] __asm__("test.16") = "\031\000\243\316\243\357\243\362\243\355\243\341\243\354\241\245\243\260\243\261\243\262\243\263";
+static char test_17[43] __asm__("test.17") = "\031\001\243\320\243\362\243\357\243\360\243\357\243\362\243\364\243\351\243\357\243\356\243\341\243\354\241\245\243\260\243\261\243\262\243\263\247\241\247\243\247\246";
+static char test_18[40] __asm__("test.18") = "\015\000\245\306\245\271\245\310\015\004\245\306\245\271\245\310\264\301\273\372\015\003\016\001\001\200\200\200\245\306\245\271\245\310\264\301\273\372\013";
+static char test_19[31] __asm__("test.19") = "\246\330\247\241\247\242\247\243\247\301\247\321\247\322\247\323\247\361\250\241\250\242\250\243\250\300\255\241\255\242";
+static char init_20[13] __asm__("init.20") = "\015\003\016\002\002\030\030\030\014\200\200\200";
+static char test_21[33] __asm__("test.21") = "\025\002\004\000\031\003\025\002\002\010Half-width iiiiii test";
+static char test_22[21] __asm__("test.22") = "\301\264\263\321\312\270\273\372\316\363\244\310\260\354\275\357\244\313\241\304";
+static char test_23[33] __asm__("test.23") = "\025\002\004\001\031\003\025\002\002\010Half-width iiiiii test";
+static char test_24[31] __asm__("test.24") = "\031\003\025\002\002\010\025\002\005\006Itaric Text TEST\025\002\005\000";
+static char test_25[26] __asm__("test.25") = "\031\003\025\002\002\010\025\002\005\nMore Itaric\025\002\005\000";
 
 static void FontTestP0(void)
 {
@@ -243,9 +203,9 @@ static void FontTestP0(void)
     if (PAD_U16_AT(42) & 0x10) {
         FontTestSub();
     }
-    xglFontDebugPrintf(16, 16, D_004C0838);
-    xglFontDebugPrintf(16, 32, D_004C0888);
-    xglFontDebugPrintf(16, 48, D_004C08A0);
+    xglFontDebugPrintf(16, 16, "\015\003\022\014\014\275\314\276\256\312\270\273\372\244\316\245\306\245\271\245\310\244\303\244\271\022  \263\310\302\347\022\014\014\312\356\273\247\313\342\313\241\315\362\306\256\022\012\012\312\356\273\247\313\342\313\241\315\362\306\256\012\262\376\271\324\245\306\245\271\245\310");
+    xglFontDebugPrintf(16, 32, "\015\002\016\004\004\000\000\000\245\306\245\271\245\310\241\312\243\260\241\313");
+    xglFontDebugPrintf(16, 48, "\015\001\245\306\245\271\245\310\241\312\243\261\241\313");
     rate_2_004D9F60 += dir_3;
     if (rate_2_004D9F60 <= 0) {
         dir_3 = 1;
@@ -308,7 +268,7 @@ static void FontTestP0(void)
     xglFontDebugPrintf(96, 64, test_18);
     xglFontDebugPrintf(96, 80, test_19);
     xglFontPrint(0, 0, 0x10000, init_20);
-    xglFontPrint(192, 192, 0x10000, D_004C08B0);
+    xglFontPrint(192, 192, 0x10000, "\244\250\244\250\244\310\250\241\250\241\241\241\244\242\244\242\241\241\245\336\241\274\245\257\255\266\255\302");
     xglFontDebugPrintf(96, 112, test_21);
     xglFontDebugPrintf(96, 128, test_22);
     xglFontDebugPrintf(96, 144, test_23);
@@ -317,14 +277,14 @@ static void FontTestP0(void)
 }
 
 typedef signed char s8;
-extern char test00_26[51];
-extern char test01_27[];
-extern char test02_28[];
-extern char test03_29[];
-extern char test04_30[];
-extern char test05_31[];
-extern char test06_32[];
-extern char test07_33[];
+static char test00_26[51] __asm__("test00.26") = "\031\002#00#01#02#03#04#05#06#07#08#09#0a#0b#0c#0d#0e#0f";
+static char test01_27[51] __asm__("test01.27") = "\031\002#10#11#12#13#14#15#16#17#18#19#1a#1b#1c#1d#1e#1f";
+static char test02_28[51] __asm__("test02.28") = "\031\002#20#21#22#23#24#25#26#27#28#29#2a#2b#2c#2d#2e#2f";
+static char test03_29[51] __asm__("test03.29") = "\031\002#30#31#32#33#34#35#36#37#38#39#3a#3b#3c#3d#3e#3f";
+static char test04_30[51] __asm__("test04.30") = "\031\002#40#41#42#43#44#45#46#47#48#49#4a#4b#4c#4d#4e#4f";
+static char test05_31[51] __asm__("test05.31") = "\031\002#50#51#52#53#54#55#56#57#58#59#5a#5b#5c#5d#5e#5f";
+static char test06_32[51] __asm__("test06.32") = "\031\002#60#61#62#63#64#65#66#67#68#69#6a#6b#6c#6d#6e#6f";
+static char test07_33[56] __asm__("test07.33") = "\031\002#70#71#72#73#74#75#76#77#78#79#7a#7b#7c#7d#7e#7f###00";
 
 static void FontTestP1(void) {
     u16 temp_3;
@@ -360,10 +320,17 @@ extern void nmlModelDirectSend(int mode, u8 *data, int count);
 typedef struct TestLineVertex {
     int x;
     int y;
-    unsigned char unmodeled_08[8];
+    unsigned int unmodeled_08[2];
 } TestLineVertex;
 
-extern TestLineVertex TestEnv_34[6];
+static TestLineVertex TestEnv_34[6] __asm__("TestEnv.34") = {
+    { 0, 0, { 0, 0x51000005 } },
+    { 0x8001, 0x40014000, { 0x551E, 0 } },
+    { 0x70000, 0, { 0x47, 0 } },
+    { 0xC0, 0x80, { 0x80, 0x80 } },
+    { 0, 0, { 0xFFFFFFFF, 0 } },
+    { 0, 0, { 0xFFFFFFFF, 0 } },
+};
 
 static void FontTestLine(int xIndex, int yIndex, int width)
 {
@@ -380,36 +347,35 @@ static void FontTestLine(int xIndex, int yIndex, int width)
   nmlModelDirectSend(1, (u8 *) TestEnv_34, 6);
 }
 
-extern char D_004C08D0[];
-extern char test0_37[];
-extern char test1_38[];
-extern char test2_39[];
-extern char test3_40[];
-extern char test4_41[];
-extern int width_35;
-extern char D_004D9F78[];
-extern char D_004D9F88[];
-extern char D_004C08E0[];
-extern char test_36[6];
+static char test0_37[40] __asm__("test0.37") = "\031\003Proportional font auto linefeed test\n";
+static char test1_38[19] __asm__("test1.38") = "\031\003!\"#$%&'()*+,-./\n";
+static char test2_39[20] __asm__("test2.39") = "\031\0030123456789:;<=>?\n";
+static char test3_40[36] __asm__("test3.40") = "\031\003@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_\n";
+static char test4_41[35] __asm__("test4.41") = "\031\003`abcdefghijklmnopqrstuvwxyz{|}~\n";
 extern void FontTestLine(int xIndex, int yIndex, int width);
 extern int xglFontGetStringWidth(const void *data);
 extern int xglFontGetProportionalSize(int index);
 
 static void FontTestP2(void) {
+    static int width_35 __asm__("width.35") = 256;
     int i;
     unsigned int temp;
 
-    xglFontDebugPrintf(8, 8, D_004D9F78, width_35);
+    xglFontDebugPrintf(8, 8, "%3d", width_35);
     if (PadData.halfwords[0x4A] & 0x2000) {
         width_35 += 1;
     }
     if (PadData.halfwords[0x4A] & 0x8000) {
         width_35 -= 1;
     }
-    xglFontPrint(0x40, 0x60, 0xFFFFFF, D_004C08D0);
-    test_36[3] = (signed char) ((int) width_35 >> 8);
-    test_36[4] = (unsigned char) width_35;
-    xglFontPrintDirect((void *)test_36);
+    xglFontPrint(0x40, 0x60, 0xFFFFFF, "\013\015\002\025\002\001\014\025\002\002\010");
+    {
+        static char test_36[6] __asm__("test.36") = "\025\003\003\001\000";
+
+        test_36[3] = (signed char) ((int) width_35 >> 8);
+        test_36[4] = (unsigned char) width_35;
+        xglFontPrintDirect((void *)test_36);
+    }
     FontTestLine(0x40, 0x5E, width_35);
     xglFontPrint(0x40, 0x60, 0xFFFFFF, test0_37);
     FontTestLine(0x40, 0x60, xglFontGetStringWidth(test0_37));
@@ -421,11 +387,11 @@ static void FontTestP2(void) {
     FontTestLine(0x40, 0x140, xglFontGetStringWidth(test3_40));
     xglFontPrint(0x40, 0x160, 0xFFFFFF, test4_41);
     FontTestLine(0x40, 0x160, xglFontGetStringWidth(test4_41));
-    xglFontPrint(0x40, 0x60, 0xFFFFFF, D_004D9F88);
+    xglFontPrint(0x40, 0x60, 0xFFFFFF, "\025\003\003");
     if (PadData.halfwords[0x15] & 0x20) {
         for (i = 0; i < 0x40; i++) {
             temp = xglFontGetProportionalSize(i);
-            printf((char *)D_004C08E0, i, temp);
+            printf((char *)"%3d:%04x\012", i, temp);
         }
     }
 }
@@ -467,8 +433,11 @@ typedef struct UmlTestEnv {
     int a0, a1, a2, a3;
     int x0, y0, z0, w0;
     int x1, y1, z1;
+    int unmodeled_5c;
 } UmlTestEnv;
-extern UmlTestEnv TestEnv_42;
+static UmlTestEnv TestEnv_42 __asm__("TestEnv.42") __attribute__((aligned(16))) = {
+    { 0x8001, 0x50034000, 0x551EE, 0, 0x70000, 0, 0x47, 0, 0x44, 0, 0x42, 0 },
+};
 typedef struct UmlTestArg {
     char pad[8];
     short x;
@@ -529,12 +498,6 @@ typedef struct UmlHeaderRecord {
     unsigned char unmodeled_08[0x60];
     char text[1];                    /* +0x68 */
 } UmlHeaderRecord;
-extern char D_004C08F0[];
-extern char D_004C0900[];
-extern char D_004C0918[];
-extern char D_004C0928[];
-extern char D_004C0938[];
-extern char D_004D9F90[];
 extern void xglCdLoadOverlay(int overlay);
 extern void tyaUmlDispInit2(unsigned char *base);
 extern int tyaUmlDispParamReset(void *disp, int mode);
@@ -572,11 +535,11 @@ static void UmlDispTest(void)
     xglSleep();
     while ((PAD_U64_AT(40) & 0x08000100ULL) != 0x08000100ULL) {
         save = (SaveDataDebug *)SaveData;
-        xglFontDebugPrintf(0, 0, D_004C08F0, number);
+        xglFontDebugPrintf(0, 0, "UMLDISP %4x", number);
         if (detail == 0) {
             if (PAD_U16_AT(42) & 0x10) {
                 record = (UmlHeaderRecord *)0x1000000;
-                xglCdReadFile(D_004C0900, record, 0, 0);
+                xglCdReadFile("data\134umn\134header.lst", record, 0, 0);
                 size = record->size;
                 if (size != 0) {
                     do {
@@ -588,7 +551,7 @@ static void UmlDispTest(void)
                             }
                             text++;
                         }
-                        printf(D_004C0918, id, record->text, text + 1);
+                        printf("%04d[%s][%s]\012", id, record->text, text + 1);
                         record = (UmlHeaderRecord *)((char *)record + size + 4);
                         size = record->size;
                     } while (size != 0);
@@ -600,9 +563,9 @@ static void UmlDispTest(void)
             if (PAD_U16_AT(42) & 0x2) {
                 save->umn_flags ^= 0x20;
             }
-            xglFontDebugPrintf(16, 40, D_004D9F90, (save->umn_flags >> 4) & 1,
+            xglFontDebugPrintf(16, 40, "%1x %1x", (save->umn_flags >> 4) & 1,
                                (save->umn_flags >> 5) & 1);
-            xglFontDebugPrintf(16, 16, D_004C0928, number);
+            xglFontDebugPrintf(16, 16, "FILE SELECT\012%4d", number);
             delta = 0;
             if (PAD_U16_AT(44) & 0x1000) {
                 delta = -1;
@@ -658,7 +621,7 @@ static void UmlDispTest(void)
                     }
                 }
             }
-            xglFontDebugPrintf(0, 8, D_004C0938, param.scroll_x, param.scroll_y,
+            xglFontDebugPrintf(0, 8, "%4d,%4d,%3d,%6x", param.scroll_x, param.scroll_y,
                                param.file_number, param.flags);
             tyaUmlDispMain(&param);
         }
@@ -671,13 +634,10 @@ extern void tyaUmlDispInit2(unsigned char *base);
 extern void WindowTexLoad(unsigned char *base, unsigned int slot);
 extern void xglFlagsInitial(void);
 extern int tyaUmlDispParamReset(void *disp, int mode);
-extern char D_004C0948[];
 extern void xglFlagsSet(int index, int a, int b);
 extern void xglSoundLoadRequestSmd(const char *name, void *dst);
 extern int tyaUmlDatabaseMain(void *disp);
 extern void endPrintExtFunc(unsigned int a, int b, int c);
-extern char D_004D9F98[];
-extern char D_004D9FA0[];
 typedef struct DatabaseTestDisp {
     unsigned char unmodeled_00[0x08];
     short x;
@@ -733,23 +693,125 @@ static void DatabaseTest(void)
         }
         var += 1;
     } while (var < 0x1F4);
-    xglSoundLoadRequestSmd(D_004D9F98, (void *)0x01000000);
+    xglSoundLoadRequestSmd("Umnmode", (void *)0x01000000);
     xglSleep();
     while ((PadData.doublewords[5] & 0x08000100) != 0x08000100) {
-        xglFontDebugPrintf(0, 0, D_004C0948);
+        xglFontDebugPrintf(0, 0, "DATABASE");
         if (tyaUmlDatabaseMain(&disp) != 0) {
             break;
         }
-        xglFontDebugPrintf(0x50, 0, D_004D9FA0, disp.selectNo, disp.indexNo);
+        xglFontDebugPrintf(0x50, 0, "%3d/%3d", disp.selectNo, disp.indexNo);
         endPrintExtFunc(0, 0x64, 0);
         xglSleep();
     }
     xglSoundLoadRequestSmd(0, 0);
 }
 
-extern char *name_43[];
-extern char D_004C0978[];
-extern char D_004C0A68[];
+static char *name_43[103] __asm__("name.43") = {
+    "prologue",
+    "10OP",
+    "1001_1",
+    "10B01_1",
+    "1003B2",
+    "1004_1",
+    "1005",
+    "1006",
+    "1008_2",
+    "1010_1",
+    "1011_2",
+    "1017",
+    "1019_1",
+    "1020_1",
+    "1022",
+    "1028",
+    "1032",
+    "1033",
+    "1035",
+    "1038B",
+    "1039",
+    "1039B",
+    "1040",
+    "1041_1",
+    "1043_1",
+    "1044B",
+    "2000_1",
+    "2001A_1",
+    "2002B_1",
+    "2004C_1",
+    "2004D_2",
+    "2006_1",
+    "2007",
+    "2007B",
+    "2007C_1",
+    "2007C_2",
+    "2010",
+    "2012B",
+    "2015",
+    "2017",
+    "2018",
+    "2031_1",
+    "2031_2",
+    "2032",
+    "2033A",
+    "2033B",
+    "2034",
+    "2044A",
+    "2046",
+    "2048",
+    "2051",
+    "2053",
+    "2055",
+    "2056A",
+    "2057",
+    "2058A",
+    "2064_1",
+    "2064_2",
+    "3000",
+    "3003A",
+    "3003E",
+    "3007",
+    "3008A",
+    "3008B",
+    "3009D",
+    "3010",
+    "3011",
+    "3014_1",
+    "3015",
+    "3016_1",
+    "3017_1",
+    "3020",
+    "3021_1",
+    "3022",
+    "3026A",
+    "3027_1",
+    "3028B",
+    "3035",
+    "3036I",
+    "3037",
+    "3039A",
+    "3039B_1",
+    "3039C",
+    "3040",
+    "3042",
+    "3045",
+    "3046A",
+    "3046B",
+    "3047B",
+    "3047C",
+    "3047D",
+    "3048",
+    "3050C1_9",
+    "3050C2",
+    "3052",
+    "3054B2",
+    "3055_1",
+    "3056A",
+    "3056B",
+    "3056C",
+    "3058A",
+    "3058B",
+    "3058D"
+};
 extern void GameResourceInit(int resource_bytes, int work_bytes);
 extern int xglFontLoad(int font, void (*callback)(int));
 extern void xglRenderClearColor(unsigned int color);
@@ -766,7 +828,7 @@ static void XenoMovieCheck(void)
     xglFontLoad(0, 0);
     if ((PadData.doublewords[5] & 0x08000100) != 0x08000100) {
         do {
-            xglFontDebugPrintf(0, 0, D_004C0978, name_43[var]);
+            xglFontDebugPrintf(0, 0, "\013\025\002\001\010\245\340\241\274\245\323\241\274\245\327\245\354\241\274\245\344\241\274\012\012\012%s\012\012\276\345\262\274\244\307\301\252\302\362\241\243\012\012\241\373\245\334\245\277\245\363\244\362\262\241\244\271\244\310\271\365\262\350\314\314\244\307\302\324\265\241\244\267\244\336\244\271\241\243\012\012\244\275\244\316\276\365\302\326\244\307\244\265\244\351\244\313\241\373\245\334\245\277\245\363\244\307\272\306\300\270\263\253\273\317\241\243\012\012\272\306\300\270\303\346\244\317\245\262\241\274\245\340\303\346\244\310\306\261\244\270\301\340\272\356\244\254\262\304\307\275\241\243\012\012\272\306\300\270\244\254\275\252\316\273\244\271\244\353\244\310\244\336\244\277\271\365\262\350\314\314\244\307\302\324\265\241\241\243\012\012\244\275\244\263\244\307\241\373\245\334\245\277\245\363\244\362\262\241\244\271\244\310\244\263\244\316\262\350\314\314\244\313\314\341\244\352\244\336\244\271\241\243", name_43[var]);
             if (PadData.halfwords[0x16] & 0x1000) {
                 var = var - 1;
             }
@@ -784,7 +846,7 @@ static void XenoMovieCheck(void)
                 do {
                     xglSleep();
                 } while (!(PadData.halfwords[0x15] & 0x20));
-                sprintf(buf, D_004C0A68, name_43[var]);
+                sprintf(buf, "data\134movie\134mpeg2\134%s.pss", name_43[var]);
                 GameMpeg2Play(buf, 0);
                 xglRenderClearFrame();
                 do {
@@ -803,19 +865,19 @@ static void HddTestFormat(void)
     int format_size;
     int status;
 
-    printf(hdd_format_start_message);
-    status = sceFormat(hdd_device, 0, 0, 0);
-    printf(hdd_format_result_format, status);
+    printf("format HDD\n");
+    status = sceFormat("hdd0:", 0, 0, 0);
+    printf(" result:%d\n", status);
     format_size = 0x2000;
-    status = sceFormat(pfs_device_name, hdd_common_device, &format_size, 4);
-    printf(hdd_pfs_format_result_format, status);
+    status = sceFormat("pfs:", "hdd0:__common", &format_size, 4);
+    printf(" format __common:%d\n", status);
 }
 
 static void HddTestShutdown(void)
 {
-    printf(hdd_shutdown_message);
-    sceDevctl(pfs_device_name, 0x5003, 0, 0, 0, 0);
-    sceDevctl(hdd_device_name, 0x4806, 0, 0, 0, 0);
+    printf("shutdown hdd\n");
+    sceDevctl("pfs:", 0x5003, 0, 0, 0, 0);
+    sceDevctl("hdd:", 0x4806, 0, 0, 0, 0);
 }
 
 static void HddTestHddFull(void)
@@ -824,33 +886,33 @@ static void HddTestHddFull(void)
     int status;
     int subcommand;
 
-    handle = sceOpen(hdd_full_path, 0x203);
-    printf(hdd_create_partition_format, handle);
+    handle = sceOpen("hdd0:PP.SLPS-99999.DUMMY.DUMMY,,,1G,PFS", 0x203);
+    printf("create partition:%d\n", handle);
     for (subcommand = 0;; subcommand++) {
-        status = sceIoctl2(handle, 0x6801, hdd_partition_size, 3, 0, 0);
-        printf(hdd_subcommand_format, subcommand, status);
+        status = sceIoctl2(handle, 0x6801, "1G", 3, 0, 0);
+        printf("sub%d:%d\n", subcommand, status);
         if (status < 0) {
             break;
         }
     }
     status = sceClose(handle);
-    printf(hdd_close_result_format, status);
+    printf("close:%d\n", status);
 }
 
 static void HddTestMountCommon(void)
 {
     int status;
 
-    status = sceMount(hdd_mount_point, hdd_common_device, 4, 0, 0);
-    printf(hdd_mount_result_format, status);
+    status = sceMount("pfs1:", "hdd0:__common", 4, 0, 0);
+    printf("mount:%d\n", status);
 }
 
 static void HddTestUnmountCommon(void)
 {
     int status;
 
-    status = sceUmount(hdd_mount_point);
-    printf(hdd_unmount_result_format, status);
+    status = sceUmount("pfs1:");
+    printf("umount:%d\n", status);
 }
 
 static void HddTestMakeYourSaves(void)
@@ -858,13 +920,15 @@ static void HddTestMakeYourSaves(void)
     int zone_size;
     int zone_free;
 
-    zone_size = sceMkdir(hdd_your_saves_directory, 0x1ff);
-    printf(hdd_mkdir_result_format, zone_size);
-    zone_size = sceDevctl(hdd_mount_point, 0x5001, 0, 0, 0, 0);
-    zone_free = sceDevctl(hdd_mount_point, 0x5002, 0, 0, 0, 0);
-    printf(hdd_zone_size_format, zone_size);
-    printf(hdd_zone_free_format, zone_free);
+    zone_size = sceMkdir("pfs1:/Your Saves", 0x1ff);
+    printf("make YourSaves:%d\n", zone_size);
+    zone_size = sceDevctl("pfs1:", 0x5001, 0, 0, 0, 0);
+    zone_free = sceDevctl("pfs1:", 0x5002, 0, 0, 0, 0);
+    printf("zonesz:%d\n", zone_size);
+    printf("zonefree:%d\n", zone_free);
 }
+
+static char hdd_1024_directory_name[22] __asm__("name.44") = "pfs1:/Your Saves/0000";
 
 static void HddTest1024Save(void)
 {
@@ -898,12 +962,14 @@ static void HddTest1024Save(void)
         directory_status[SCE_STAT_ATTRIBUTE_WORD] = 0xc4a7;
         status = sceChstat(hdd_1024_directory_name, directory_status, SCE_CST_ATTR);
         if (status < 0) {
-            printf(hdd_chstat_failure_format, status);
+            printf("chstat:%d\n", status);
             break;
         }
     }
     HddTestUnmountCommon();
 }
+
+static char hdd_dummy_folder_name[10] __asm__("name.45") = "pfs1:/000";
 
 static void HddTestDummyFolder(void)
 {
@@ -929,13 +995,6 @@ static void HddTestDummyFolder(void)
 }
 
 extern int sceWrite(int descriptor, void *buffer, unsigned int size);
-extern char D_004C0BB8[];
-extern char D_004C0BC8[];
-extern char D_004C0BD8[];
-extern char D_004C0BE8[];
-extern char D_004C0BF8[];
-extern char D_004C0C08[];
-extern char D_004DA300[];
 
 static void HddTestDummySave(void)
 {
@@ -950,15 +1009,15 @@ static void HddTestDummySave(void)
     int close_status;
 
     HddTestMountCommon();
-    zone_size = sceDevctl(hdd_mount_point, 0x5001, 0, 0, 0, 0);
-    remaining = sceDevctl(hdd_mount_point, 0x5002, 0, 0, 0, 0) - 3;
+    zone_size = sceDevctl("pfs1:", 0x5001, 0, 0, 0, 0);
+    remaining = sceDevctl("pfs1:", 0x5002, 0, 0, 0, 0) - 3;
     chunk_size = 0x1000000 / zone_size;
-    printf(D_004C0BB8, remaining, zone_size);
-    printf(D_004C0BC8, chunk_size);
-    mkdir_status = sceMkdir(D_004C0BD8, 0x1ff);
-    printf(D_004C0BE8, mkdir_status);
-    handle = sceOpen(D_004C0BF8, 0x602, 0x1ff);
-    printf(D_004C0C08, handle);
+    printf("zone:%d,%d\012", remaining, zone_size);
+    printf("step:%d\012", chunk_size);
+    mkdir_status = sceMkdir("pfs1:/999", 0x1ff);
+    printf("mkdir:%d\012", mkdir_status);
+    handle = sceOpen("pfs1:/999/dummy", 0x602, 0x1ff);
+    printf("open:%d\012", handle);
 
     counter = 0;
     for (;;) {
@@ -973,7 +1032,7 @@ static void HddTestDummySave(void)
             remaining = 0;
         }
         wrote = sceWrite(handle, (void *) 0x1000000, write_size);
-        printf(D_004DA300, counter, wrote);
+        printf("%d:%d\012", counter, wrote);
         counter++;
         if (wrote < 0) {
             break;
@@ -981,7 +1040,7 @@ static void HddTestDummySave(void)
     }
 
     close_status = sceClose(handle);
-    printf(hdd_close_result_format, close_status);
+    printf("close:%d\n", close_status);
     HddTestUnmountCommon();
 }
 
@@ -992,6 +1051,17 @@ static void HddTestMakeYS(void)
     HddTestUnmountCommon();
 }
 
+static HddTestMenuEntry hdd_test_menu[8] __asm__("menu.46") = {
+    "FORMAT", HddTestFormat,
+    "SHUTDOWN", HddTestShutdown,
+    "HDD FULL", HddTestHddFull,
+    "1024 SAVE", HddTest1024Save,
+    "DUMMY FOLDER", HddTestDummyFolder,
+    "COMMON FULL", HddTestDummySave,
+    "MAKE YOURSAVES", HddTestMakeYS,
+    0, 0
+};
+
 static void HddTest(void)
 {
     int status;
@@ -1000,22 +1070,22 @@ static void HddTest(void)
     int row;
     const char *use_title;
 
-    status = sceDevctl(hdd_device, 0x4807, 0, 0, 0, 0);
-    printf(hdd_status_format, status);
+    status = sceDevctl("hdd0:", 0x4807, 0, 0, 0, 0);
+    printf("HDIOC_STATUS:%d\n", status);
     if ((unsigned int)status >= 2) {
-        printf(hdd_status_error_format, status);
+        printf("HDD\245\307\245\320\245\244\245\271\244\254\302\270\272\337\244\267\244\336\244\273\244\363:%d\n", status);
         return;
     }
 
     for (menu_count = 0; hdd_test_menu[menu_count].label != 0; menu_count++) {
     }
     selection = 0;
-    printf(hdd_free_format, xglHddMcGetFree());
+    printf("xglHddMcGetFree:%d\n", xglHddMcGetFree());
 
     while ((PAD_U64_AT(40) & 0x08000100ULL) != 0x08000100ULL) {
         int item;
 
-        xglFontDebugPrintf(0, 0, hdd_test_title);
+        xglFontDebugPrintf(0, 0, "\013\243\310\243\304\243\304\245\306\245\271\245\310");
         if (PAD_U16_AT(44) & 0x1000) {
             selection--;
         }
@@ -1034,16 +1104,16 @@ static void HddTest(void)
         }
 
         if (xglHddActivate(-1)) {
-            use_title = hdd_use_title;
+            use_title = "HDD Use";
         } else {
-            use_title = hdd_no_use_title;
+            use_title = "HDD NoUse";
         }
         xglFontDebugPrintf(16, 16, use_title);
 
         row = 32;
         for (item = 0; item < menu_count; item++) {
             if (item == selection) {
-                xglFontDebugPrintf(8, row, menu_cursor);
+                xglFontDebugPrintf(8, row, ">");
             }
             xglFontDebugPrintf(16, row, hdd_test_menu[item].label);
             row += 8;
@@ -1051,6 +1121,12 @@ static void HddTest(void)
         xglSleep();
     }
 }
+
+static char *name_47[3] __asm__("name.47") = {
+    "\245\335\241\274\245\310\243\261",
+    "\245\335\241\274\245\310\243\262",
+    "\243\310\243\304\243\304"
+};
 
 static char *mt_GetPortName(int port)
 {
@@ -1062,8 +1138,6 @@ extern unsigned char SaveData[];
 extern void xglMcSetMapName(const unsigned char *primary_euc_name, const unsigned char *secondary_euc_name);
 extern int xglHddCheck(void);
 extern int sceMcSync(int mode, int *cmd, int *result);
-extern unsigned char tbl_48[4];
-extern unsigned char tbl_49[4];
 extern char *mt_GetPortName(int port);
 typedef struct SaveDataDebugMc {
     unsigned char unmodeled_00[0x74];
@@ -1181,6 +1255,7 @@ extern int xglHddMcSave(HddMcRequestParam *request);
 #define MC_TEXT_LOAD "\xA5\xED\xA1\xBC\xA5\xC9"
 #define MC_TEXT_SAVE "\xA5\xBB\xA1\xBC\xA5\xD6"
 
+
 static void MemcardTest(void)
 {
     unsigned short port_status[2];
@@ -1297,7 +1372,7 @@ static void MemcardTest(void)
                     state = 0x10;
                 }
             }
-            xglFontDebugPrintf(8, work.result * 16 + 48, menu_cursor);
+            xglFontDebugPrintf(8, work.result * 16 + 48, ">");
             break;
 
         case 0x10:
@@ -1317,15 +1392,17 @@ static void MemcardTest(void)
             if (menu_step != 0) {
                 work.result = (work.result + menu_step + 4) % 4;
             }
-            xglFontDebugPrintf(8, work.result * 16 + 48, menu_cursor);
+            xglFontDebugPrintf(8, work.result * 16 + 48, ">");
             if (PAD_U16_AT(42) & 0x20) {
+                static unsigned char tbl[4] __asm__("tbl.48") = { 0x20, 0x30, 0x40, 0x50 };
+
                 if (PAD_U16_AT(40) & 0x8) {
                     state = 0;
                     sceMcSync(0, &sync_command, &sync_result);
                     printf("%d %d\n", sync_command, sync_result);
                     xglMcEasySave("/BISLPS-99999Dummy", (void *)0x01000000, 0x77D800);
                 } else {
-                    state = tbl_48[work.result];
+                    state = tbl[work.result];
                 }
             }
             if (PAD_U16_AT(42) & 0x40) {
@@ -1563,9 +1640,11 @@ static void MemcardTest(void)
             if (hdd_menu_step != 0) {
                 work.result = (work.result + hdd_menu_step + 2) % 2;
             }
-            xglFontDebugPrintf(8, work.result * 16 + 48, menu_cursor);
+            xglFontDebugPrintf(8, work.result * 16 + 48, ">");
             if (PAD_U16_AT(42) & 0x20) {
-                state = tbl_49[work.result];
+                static unsigned char tbl[4] __asm__("tbl.49") = { 0x70, 0x80, 0x00, 0x00 };
+
+                state = tbl[work.result];
             }
             if (PAD_U16_AT(42) & 0x40) {
                 state = 0;
@@ -1739,7 +1818,7 @@ static void xtxdec_put4byte(LittleEndianWord *destination, int value)
     (*destination)[3] = value >> 24;
 }
 
-extern char h_50[7];
+static char h_50[7] __asm__("h.50") = "host0:";
 extern int sceGsSyncPath(int mode, unsigned int timeout);
 extern void sceGsSetDefLoadImage(void *image, short address, short width, short psm, short x,
                                  short y, short w, short h);
@@ -1747,11 +1826,6 @@ extern int sceGsExecLoadImage(void *image, void *source);
 extern int sceGsSetDefStoreImage(void *image, short address, short width, short psm, short x,
                                  short y, short w, short h);
 extern int sceGsExecStoreImage(void *image, void *destination);
-extern char D_004C13D8[];
-extern char D_004C13E8[];
-extern char D_004C13F8[];
-extern char D_004C1408[];
-extern char D_004C1418[];
 typedef struct XtxHeader {
     int magic[2]; 
     int image_count;
@@ -1765,11 +1839,6 @@ typedef struct XtxImageEntry {
     unsigned char unmodeled_0c[4];
     unsigned int data_offset;
 } XtxImageEntry;
-extern char D_004C13D8[16];
-extern char D_004C13E8[16];
-extern char D_004C13F8[16];
-extern char D_004C1408[16];
-extern char D_004C1418[40];
 
 static int xtxdec_sub(char *filename)
 {
@@ -1805,11 +1874,11 @@ static int xtxdec_sub(char *filename)
 
     tbw = 64;
     bmp = (unsigned char *)0x01410000;
-    sprintf(path, D_004C13D8, filename);
+    sprintf(path, "host0:%s.lst", filename);
     memset((void *)0x01000000, 0, 0x10000);
     fd = sceOpen(path, 1);
     read_size = sceRead(fd, (void *)0x01000000, 0x10000);
-    printf(D_004C13E8, fd, path, read_size);
+    printf("%d[%s]%d\012", fd, path, read_size);
     sceClose(fd);
     if (((XtxHeader *)0x01000000)->magic[0] != 0x58455423 ||
         ((XtxHeader *)0x01000000)->magic[1] != 0x314C5455)
@@ -1820,12 +1889,12 @@ static int xtxdec_sub(char *filename)
     line = xtxdec_nextline(line);
     if (line == 0)
         return -1;
-    sprintf(path, D_004C13F8, filename);
+    sprintf(path, "host0:%s.xtx", filename);
     memset((void *)0x01010000, 0, 256);
     fd = sceOpen(path, 1);
     count = 0;
     read_size = sceRead(fd, (void *)0x01010000, 0x400000);
-    printf(D_004C13E8, fd, path, read_size);
+    printf("%d[%s]%d\012", fd, path, read_size);
     sceClose(fd);
     xglSleep();
     sceGsSyncPath(0, 0);
@@ -1838,7 +1907,7 @@ static int xtxdec_sub(char *filename)
             tbw = (pixel_width + 63) >> 6;
         else
             tbw = dimensions >> 16;
-        printf(D_004C1408, tbw, entry->vram_address);
+        printf("tbw:%d:%08x\012", tbw, entry->vram_address);
         sceGsSetDefLoadImage(load_image, (entry->vram_address + 0xE0000) >> 6, tbw, 0, 0, 0,
                              pixel_width, entry->height);
         FlushCache(0);
@@ -1872,7 +1941,7 @@ static int xtxdec_sub(char *filename)
         line = xtxdec_getdec(line, 0);
         line = xtxdec_getdec(line, &origin_x);
         line = xtxdec_getdec(line, &origin_y);
-        printf(D_004C1418, path, bits_per_pixel, left, top, width, height, origin_x, origin_y);
+        printf("[%s],%d,(%d,%d)-(%d,%d),(%d,%d)\012", path, bits_per_pixel, left, top, width, height, origin_x, origin_y);
         switch (bits_per_pixel) {
         default:
             palette_size = 0;
@@ -1951,14 +2020,13 @@ static int xtxdec_sub(char *filename)
     return status;
 }
 
-extern char D_004C14B8[];
 
 static int xtxdec_sleep(void)
 {
     if ((PAD_U64_AT(40) & 0x08000100ULL) == 0x08000100ULL) {
         return 1;
     }
-    xglFontDebugPrintf(0, 0, D_004C14B8);
+    xglFontDebugPrintf(0, 0, "\013\243\330\243\324\243\330\245\307\245\263\241\274\245\311");
     xglSleep();
     return 0;
 }
@@ -1975,8 +2043,6 @@ static void xtxdec_error(int y, const char *message)
 
 extern int main_param_argc;
 extern int main_param_argv;
-extern char D_004C14C8[];
-extern char D_004C14F8[];
 
 static void XtxDecode(void)
 {
@@ -1986,7 +2052,7 @@ static void XtxDecode(void)
     int status;
 
     if (main_param_argc < 2) {
-        xtxdec_error(16, D_004C14C8);
+        xtxdec_error(16, "\013\265\257\306\260\273\376\245\252\245\327\245\267\245\347\245\363\244\307\245\325\245\241\245\244\245\353\314\276\244\362\273\330\304\352\244\267\244\306\244\257\244\300\244\265\244\244");
         return;
     }
 
@@ -2011,7 +2077,7 @@ static void XtxDecode(void)
         }
         i++;
     }
-    xtxdec_error(y, D_004C14F8);
+    xtxdec_error(y, "\275\252\316\273\244\267\244\336\244\267\244\277");
 }
 
 static void Dummy(void)
@@ -2032,10 +2098,39 @@ extern void xglMenuOpen(int mode, YajimaMenuState *menu);
 extern void xglMenuDraw(void);
 extern void xglClockRead(XglClock *clock);
 extern int xglFRand(void);
-extern YajimaMenuState m_54;
-extern void (*func_51[7])(void);
-extern char D_004DA3A0[];
-extern char D_004C1518[];
+static void (*func_51[7])(void) __asm__("func.51") = {
+    FontTest,
+    UmlDispTest,
+    HddTest,
+    MemcardTest,
+    DatabaseTest,
+    XenoMovieCheck,
+    XtxDecode
+};
+
+/* YajimaTest's top menu rows: label and the 1-based selection id xglMenuOpen reports */
+typedef struct YajimaMenuRow {
+    const char *text;
+    int id;
+} YajimaMenuRow;
+
+static YajimaMenuRow i1_52[7] __asm__("i1.52") = {
+    "FONT", 1,
+    "UMLDISP", 2,
+    "HDD", 3,
+    "MEMCARD", 4,
+    "DATABASE", 5,
+    "MOVIE", 6,
+    "XTX DECODE", 7
+};
+
+static XglMenuNode l1_53 __asm__("l1.53") = {
+    7, { 0xFF, 0x01, 0x08 }, 0, { 0 }, (XglMenuRow *)i1_52,
+};
+
+static YajimaMenuState m_54 __asm__("m.54") = {
+    { 1, 0x00100008, 0, -1 }, &l1_53, 0,
+};
 
 void YajimaTest(void)
 {
@@ -2053,10 +2148,10 @@ void YajimaTest(void)
         selection = 0;
         xglMenuOpen(-1, &m_54);
         while (selection == 0) {
-            xglFontDebugPrintf(0, 0, D_004DA3A0);
+            xglFontDebugPrintf(0, 0, "SELECT");
             xglMenuDraw();
             xglClockRead(&clock);
-            xglFontDebugPrintf(0x80, 0x10, D_004C1518, clock.year, clock.month,
+            xglFontDebugPrintf(0x80, 0x10, "%4d.%2d.%2d\012%2d.%2d.%2d", clock.year, clock.month,
                                 clock.day, clock.hour, clock.minute, clock.second);
             xglFRand();
             xglSleep();

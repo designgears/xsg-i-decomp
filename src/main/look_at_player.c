@@ -144,11 +144,11 @@ void Player_System_Init(LookAtPlayerActor *player_actor)
 
 /* Player-movement speed thresholds and vector scaling rate GameCfPlayerMove
  * compares/applies each frame; GameCfPlayerMoveInit restores their defaults. */
-extern int WALK_THRESHOLD_I;
-extern float WALK_THRESHOLD_F;
-extern int RUN_THRESHOLD_I;
-extern float RUN_THRESHOLD_F;
-extern float VECTOR_RATE;
+static int WALK_THRESHOLD_I;
+static float WALK_THRESHOLD_F;
+static int RUN_THRESHOLD_I;
+static float RUN_THRESHOLD_F;
+static float VECTOR_RATE;
 
 extern int F2I(float value);
 
@@ -166,7 +166,6 @@ void GameCfPlayerMoveParamSet(float walkThreshold, float runThreshold, float vec
     RUN_THRESHOLD_I = runThresholdInt;
 }
 
-extern const float D_004D7C0C;
 
 void GameCfPlayerMoveInit(void)
 {
@@ -174,7 +173,7 @@ void GameCfPlayerMoveInit(void)
     WALK_THRESHOLD_F = 32.0f;
     RUN_THRESHOLD_I = 96;
     RUN_THRESHOLD_F = 96.0f;
-    VECTOR_RATE = D_004D7C0C;
+    VECTOR_RATE = 0.0008f;
 }
 
 typedef struct GCPlayerEffect {
@@ -274,19 +273,8 @@ typedef struct GCPadView {
 } GCPadView;
 extern GCPadView PadData;
 extern float I2F(int value);
-extern float rate_0[4];
-extern const float D_004D7C10;
 extern const float D_004D7C14;
 extern const float D_004D7C18;
-extern const float D_004D7C1C;
-extern const float D_004D7C20;
-extern const float D_004D7C24;
-extern const float D_004D7C28;
-extern const float D_004D7C2C;
-extern const float D_004D7C30;
-extern float rate_1[4];
-extern unsigned char idx_2[16];
-extern float vec_3[9][2];
 extern int HitCheckMapUnit(LookAtPlayerActor *a);
 static short HitCheckActor(LookAtPlayerActor *self);
 #define GC_LOOP (*(GCLoopState *)&GameLoopState)
@@ -296,6 +284,13 @@ float Get_Cursol_by_Reduce_Speed_Angle_Loop(float, float, float);
 
 void GameCfPlayerMove(void)
 {
+    static float rate_0[4] __asm__("rate.0") = {1.0f, 2.0f, 0.5f, 3.0f};
+    static float rate_1[4] __asm__("rate.1") = {1.0f, 2.0f, 0.5f, 3.0f};
+    static unsigned char idx_2[16] __asm__("idx.2") = {0, 1, 3, 2, 5, 0, 4, 0, 7, 8, 0, 0, 6, 0, 0, 0};
+    static float vec_3[9][2] __asm__("vec.3") = {
+        {0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 0.0f}, {1.0f, -1.0f},
+        {0.0f, -1.0f}, {-1.0f, -1.0f}, {-1.0f, 0.0f}, {-1.0f, 1.0f},
+    };
     GCPlayer *player = (GCPlayer *)GC_LOOP.player_actor;
     float run_scale = 1.0f;
     float speed;
@@ -342,7 +337,7 @@ void GameCfPlayerMove(void)
     speed = 0.0f;
     stick_speed = 0;
     player->flags |= 0x20;
-    player->external_velocity.y = D_004D7C10;
+    player->external_velocity.y = (-0.05f);
     player->previous_position.x = player->position.x;
     player->previous_position.y = player->position.y;
     player->previous_position.z = player->position.z;
@@ -378,7 +373,7 @@ void GameCfPlayerMove(void)
                 + *(float *)(CfCameraDefine + 0x34);
         } else {
             length = -I2F(stick_y);
-            angle = player->rotation_y - I2F(stick_x) * D_004D7C1C;
+            angle = player->rotation_y - I2F(stick_x) * 0.001f;
         }
         if (128.0f <= length) {
             length = 128.0f;
@@ -387,11 +382,11 @@ void GameCfPlayerMove(void)
             player->aim_angle = angle;
             if (player->terrain_flags & 0x10) {
                 if (RUN_THRESHOLD_F <= length) {
-                    length = RUN_THRESHOLD_F - D_004D7C20;
+                    length = RUN_THRESHOLD_F - 0.1f;
                 }
             }
             if (PadData.held & 2) {
-                length = (RUN_THRESHOLD_F - D_004D7C24) / 1.5f;
+                length = (RUN_THRESHOLD_F - 0.1f) / 1.5f;
             }
             stick_speed = F2I(length);
             speed = length * VECTOR_RATE;
@@ -430,19 +425,19 @@ void GameCfPlayerMove(void)
             if (player->motion_id != 0x1b) {
                 ACT_setMotion2(player, 0, 9);
             }
-            player->motion_speed = D_004D7C28;
+            player->motion_speed = 0.033333335f;
         } else if (abs_speed < RUN_THRESHOLD_I) {
             ACT_setMotion2(player, 1, 9);
             player->motion_speed = speed * 0.5f / run_scale;
         } else {
             ACT_setMotion2(player, 3, 9);
-            player->motion_speed = speed * D_004D7C2C / run_scale;
+            player->motion_speed = speed * 0.23333335f / run_scale;
             Enemy_FindByEar(player, &player->position);
         }
     }
     speed = __builtin_fabsf(speed);
     ground_effect = Get_EffectCode(Get_Attr(&player->position, 0, 0));
-    if (D_004D7C30 < speed || EfTab_Loop[ground_effect] == 1) {
+    if (0.01f < speed || EfTab_Loop[ground_effect] == 1) {
         if (ground_effect != -1) {
             if (EfTab_Intr[ground_effect] != -1) {
                 player->effect_timer++;
@@ -509,16 +504,14 @@ void GameCfPlayerMove(void)
     }
 }
 
-extern float D_004D7C34;
-extern float D_004D7C38;
 int CheckActorExist(void *actor);
 #define ACT_RADIUS(a) (*(float *)((a)->unmodeled_81 + (0x9e8 - 0x81)))
 
 static short HitCheckActor(LookAtPlayerActor *self)
 {
     short i;
-    float min_r = D_004D7C34;
-    float max_dy = D_004D7C38;
+    float min_r = 0.01f;
+    float max_dy = 1.9f;
     float dx, dz;
     char *base = (char *)actor;
     float *p = (float *)(base + 0x9e0);
@@ -537,7 +530,6 @@ static short HitCheckActor(LookAtPlayerActor *self)
     return -1;
 }
 
-extern float D_004D7C3C;
 float Get_Angle(Vector4 *first, Vector4 *second);
 float xglSin(float a);
 float xglCos(float a);
@@ -554,7 +546,7 @@ static int NyuruActor(LookAtPlayerActor *self, LookAtPlayerActor *other)
     angle = Get_Angle(&self->position, &other->position);
     self->position.x -= ACT_VEL(self)->x;
     self->position.z -= ACT_VEL(self)->z;
-    r = ACT_RADIUS(self) + ACT_RADIUS(other) + D_004D7C3C;
+    r = ACT_RADIUS(self) + ACT_RADIUS(other) + 0.01f;
     t.x = other->position.x - r * xglSin(angle);
     t.z = other->position.z - r * xglCos(angle);
     ACT_VEL(self)->x = t.x - self->position.x;
@@ -589,8 +581,8 @@ void PlayerLookAtAim(void)
     Actor_LookAt(player_actor);
 }
 
-extern u16 GameCfPlayerLoadResource_preCID;
-extern u8 GameCfPlayerLoadResource_preCurry;
+static u16 GameCfPlayerLoadResource_preCID;
+static u8 GameCfPlayerLoadResource_preCurry;
 typedef struct LookAtSavedPartyPrefix {
     unsigned char unmodeled_00[0x100a4];
     u16 player_character_id;

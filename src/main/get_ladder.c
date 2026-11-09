@@ -30,13 +30,13 @@ extern int Get_Attr_NU(const float *position, int mapIndex, int attrMask);
 
 #include "main/xgl_2.h"
 
-extern float AdjTable_X[4];
+float AdjTable_X[4] = { 0.0f, 0.41f, 0.0f, -0.41f };
 
 
-extern float AdjTable_Z[4];
+float AdjTable_Z[4] = { -0.41f, 0.0f, 0.41f, 0.0f };
 
 
-extern float LadderStep[127];
+float LadderStep[127] = {0};
 
 
 extern short NowLadderStep;
@@ -149,11 +149,8 @@ extern float *MotTransXYZ(float *xyz);
 
 extern void ACT_updateMotion(LadderActor *actor);
 
-extern const float D_004D8068;
 
-extern const float D_004D806C;
 
-extern const float D_004D8070;
 
 extern LadderPad PadData[2];
 
@@ -168,9 +165,6 @@ extern void xglSoundEffectStopID(int id, int channel);
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 
 extern void *memset(void *destination, int value, unsigned int count);
-
-extern const char D_004CAD30[16];
-
 /* The original copies these 16-byte points with aligned doubleword loads and stores. */
 
 extern void On_Ladder(LadderActor *actor);
@@ -326,7 +320,7 @@ void Fly_to_Ladder(LadderActor *actor)
     work->state = 4;
     work->step_wait = 20;
     ACT_setMotion2(actor, 20, 8);
-    actor->speed = D_004D8068;
+    actor->speed = 0.033333335f;
 
     point = actor->position;
     point.coordinates.x -= AdjTable_X[GameLoopState.ladder_direction[work->ladder_id]];
@@ -340,7 +334,7 @@ void Fly_to_Ladder(LadderActor *actor)
     LadderStep[63] = actor->position.coordinates.y;
 
     for (i = 1; i < 63; i++) {
-        float rise = i * D_004D806C;
+        float rise = i * 0.7f;
         float base = actor->position.coordinates.y;
 
         LadderStep[63 + i] = base + rise;
@@ -365,7 +359,7 @@ void Get_Off_Ladder(LadderActor *actor)
         GameLoopState.map_flags |= 0x20;
     }
 
-    actor->speed = D_004D8070;
+    actor->speed = 0.033333335f;
 }
 
 short Ready_Ladder(LadderActor *actor)
@@ -693,7 +687,7 @@ void On_Ladder(register LadderActor * const actor)
 
     if (actor->position.coordinates.y + move_y < ground &&
         GameLoopState.ladder_bottom_exit[ladder_id] == 1) {
-        CallMethod_I(D_004CAD30, work->ladder_id);
+        CallMethod_I("HashigoBottom", work->ladder_id);
         if (GameLoopState.ladder_flags & 0x20) {
             work->state = 8;
             return;
@@ -817,6 +811,10 @@ void On_Ladder(register LadderActor * const actor)
     }
 }
 
+short NowLadderStep = 0;
+short SelNum = -1;
+short PhCunt = 0;
+
 int Ladder_Main(LadderActor *actor)
 {
     LadderWork *work = &enepc[actor->number];
@@ -849,3 +847,12 @@ int Ladder_Main(LadderActor *actor)
     ACT_updateMotion(actor);
     return 1;
 }
+
+/* Unreferenced zero fill that ends the original .data (alignment of the next TU). */
+static int D_003B1E2C __attribute__((section(".data"))) = 0;
+
+/* Unreferenced zero fill that ends the original .rodata (alignment of the next TU). */
+static const int D_004CAD5C __attribute__((section(".rodata"))) = 0;
+
+/* Unreferenced zero fill that ends the original .sdata (alignment of the next TU). */
+static short D_004DB856 = 0;

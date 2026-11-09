@@ -13,8 +13,6 @@ typedef struct OpenCloseCallbacks {
     void (*entry[4])(OpenCloseController *);
 } OpenCloseCallbacks;
 
-/* Four original function pointers: open subtype 00/01, close 00/00. */
-extern OpenCloseCallbacks D_004C2FD0;
 
 extern void endPrintExtFunc(int work, int mode, void *descriptor);
 
@@ -41,9 +39,6 @@ typedef struct OpenSub01Ctrl {
     OpenSub01Packet packet[1];
 } OpenSub01Ctrl;
 
-extern const float D_004D7D40;
-extern const float D_004D7D44;
-extern const float D_004D7D48;
 extern float xglCos(float angle);
 extern float xglSin(float angle);
 
@@ -64,18 +59,18 @@ static void OpenSubType00(OpenSub01Ctrl *c)
     alpha = t * 5 + 10;
     for (i = 0; i < 3; i++) {
         s = i;
-        a = ft * D_004D7D40;
+        a = ft * 0.1308997f;
         x0 = (c->x + c->w / 2) - (c->w / 2) * xglCos(a);
         x1 = (c->x + c->w / 2) + (c->w / 2) * xglCos(a);
-        a = ft * D_004D7D44;
-        x0 = x0 - (c->w / 2) * (s * D_004D7D48) * xglSin(a);
-        x1 = x1 + (c->w / 2) * (s * D_004D7D48) * xglSin(a);
-        a = ft * D_004D7D40;
+        a = ft * 0.2617994f;
+        x0 = x0 - (c->w / 2) * (s * 0.4f) * xglSin(a);
+        x1 = x1 + (c->w / 2) * (s * 0.4f) * xglSin(a);
+        a = ft * 0.1308997f;
         y0 = (c->y + c->h / 2) - (c->h / 2) * xglCos(a);
         y1 = (c->y + c->h / 2) + (c->h / 2) * xglCos(a);
-        a = ft * D_004D7D44;
-        y0 = y0 - (c->h / 2) * (s * D_004D7D48) * xglSin(a);
-        y1 = y1 + (c->h / 2) * (s * D_004D7D48) * xglSin(a);
+        a = ft * 0.2617994f;
+        y0 = y0 - (c->h / 2) * (s * 0.4f) * xglSin(a);
+        y1 = y1 + (c->h / 2) * (s * 0.4f) * xglSin(a);
         p->w = x1 - x0;
         p->work = c->work;
         p->x = x0;
@@ -99,9 +94,6 @@ static void OpenSubType00(OpenSub01Ctrl *c)
     }
 }
 
-extern const float D_004D7D4C;
-extern const float D_004D7D50;
-extern const float D_004D7D54;
 
 static void CloseSubType00(OpenSub01Ctrl *c)
 {
@@ -120,18 +112,18 @@ static void CloseSubType00(OpenSub01Ctrl *c)
     alpha = t * 5 + 10;
     for (i = 0; i < 3; i++) {
         s = i;
-        a = ft * D_004D7D4C;
+        a = ft * 0.1308997f;
         x0 = (c->x + c->w / 2) - (c->w / 2) * xglSin(a);
         x1 = (c->x + c->w / 2) + (c->w / 2) * xglSin(a);
-        a = ft * D_004D7D50;
-        x0 = x0 - (c->w / 2) * (s * D_004D7D54) * xglCos(a);
-        x1 = x1 + (c->w / 2) * (s * D_004D7D54) * xglCos(a);
-        a = ft * D_004D7D4C;
+        a = ft * 0.2617994f;
+        x0 = x0 - (c->w / 2) * (s * 0.4f) * xglCos(a);
+        x1 = x1 + (c->w / 2) * (s * 0.4f) * xglCos(a);
+        a = ft * 0.1308997f;
         y0 = (c->y + c->h / 2) - (c->h / 2) * xglSin(a);
         y1 = (c->y + c->h / 2) + (c->h / 2) * xglSin(a);
-        a = ft * D_004D7D50;
-        y0 = y0 - (c->h / 2) * (s * D_004D7D54) * xglCos(a);
-        y1 = y1 + (c->h / 2) * (s * D_004D7D54) * xglCos(a);
+        a = ft * 0.2617994f;
+        y0 = y0 - (c->h / 2) * (s * 0.4f) * xglCos(a);
+        y1 = y1 + (c->h / 2) * (s * 0.4f) * xglCos(a);
         p->w = x1 - x0;
         p->work = c->work;
         p->x = x0;
@@ -191,8 +183,6 @@ static void OpenSubType01(OpenSub01Ctrl *c)
 
 void OpenCloseMain(OpenCloseController *controller)
 {
-    OpenCloseCallbacks callbacks;
-
     if (controller->phase != 0) {
         if (controller->phase <= 0)
             return;
@@ -203,9 +193,18 @@ void OpenCloseMain(OpenCloseController *controller)
         controller->phase = 1;
     }
 
-    callbacks = D_004C2FD0;
-    callbacks.entry[(controller->subtype >> 4) * 2 +
-                    (controller->subtype & 15)](controller);
+    {
+        /* Open subtype 00/01, close 00/00. */
+        OpenCloseCallbacks callbacks = {{
+            (void (*)(OpenCloseController *))OpenSubType00,
+            (void (*)(OpenCloseController *))OpenSubType01,
+            (void (*)(OpenCloseController *))CloseSubType00,
+            (void (*)(OpenCloseController *))CloseSubType00,
+        }};
+
+        callbacks.entry[(controller->subtype >> 4) * 2 +
+                        (controller->subtype & 15)](controller);
+    }
 }
 
 typedef struct EWinView {
@@ -482,3 +481,8 @@ void eCursolSet(ECursol *cursol, signed char width)
     } while (0);
     cursol->active = 0;
 }
+
+/* Window texture paths kept in this TU's .rodata; nothing here uses them. */
+const char D_004C31B0[24] __attribute__((aligned(16))) = "data\\endou\\menu02.xtx";
+const char D_004C31C8[24] = "data\\endou\\menu01.xtx";
+const char D_004C31E0[32] = "data\\endou\\cfwin.xtx";

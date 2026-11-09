@@ -13,13 +13,12 @@ void Java_xeno_Chr_getPlayer__(JThread *thread, ChrScaleCall *arguments)
      */
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     *(unsigned int *)(object + peer_field->offset) = GameLoopState[1];
 }
 
 extern unsigned char SaveData[];
 extern int GameResource[];
-extern const char D_004DC198[];
 extern int ACT_allocMatrix(char *actor, int count);
 extern void ACT_setModelWrapper(void *actor, int flags);
 extern void *ACT_create(int id, int code);
@@ -41,7 +40,7 @@ void Java_xeno_Chr_setPlayer__(JThread *thread, ChrScaleCall *arguments)
     object = arguments->object;
     if (GameResource[1] == 0x12A000 && GameResource[7] == 9) {
         field = lookupClassField(classJava_xeno_Chr,
-                                 loadConstString(D_004DC198, -1), 0);
+                                 loadConstString("id", -1), 0);
         *(int *)(object + field->offset) = id;
         peer = getPeer_Chr(object);
         *(int *)(peer + 0x8D0) = 0x01000000;
@@ -64,7 +63,7 @@ void Java_xeno_Chr_setPlayer__(JThread *thread, ChrScaleCall *arguments)
         ACT_setMotion((Actor *)peer, 0x8000);
     } else {
         field = lookupClassField(classJava_xeno_Chr,
-                                 loadConstString(chr_peer_string, -1), 0);
+                                 loadConstString("peer", -1), 0);
         peer = *(u8 **)(object + field->offset);
     }
     ((Actor *)peer)->update = 0;
@@ -101,6 +100,9 @@ typedef struct ChrMoveEntry {
     u32 mask;
 } ChrMoveEntry;
 
+/* Zero offset used when a Chr has no algorithm peer. */
+static float defaultOffset[4] = { 0.0f };
+
 static void CHR_moveXZ(int mode, JThread *thread, ChrMoveCall *arguments,
                        u32 *failure_result)
 {
@@ -119,7 +121,7 @@ static void CHR_moveXZ(int mode, JThread *thread, ChrMoveCall *arguments,
         return;
     }
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(chr_peer_string, -1), 0);
+                             loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + field->offset);
     entry = (ChrMoveEntry *)(actSequence +
         ((u8 *)peer)[ACTOR_SLOT_NUMBER_OFFSET] * SEQUENCE_STRIDE);
@@ -127,7 +129,7 @@ static void CHR_moveXZ(int mode, JThread *thread, ChrMoveCall *arguments,
     entry->mask = 1;
     entry->state_flags |= 1;
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(chr_algorithm_string, -1), 0);
+                             loadConstString("algorithm", -1), 0);
     offset = (*(u32 *)(object + field->offset) & 1)
         ? (float *)((u8 *)peer + 0x10) : defaultOffset;
 
@@ -156,7 +158,7 @@ static void CHR_moveXZ(int mode, JThread *thread, ChrMoveCall *arguments,
         break;
     case 2:
         field = lookupClassField(classJava_xeno_Chr,
-                                 loadConstString(chr_peer_string, -1), 0);
+                                 loadConstString("peer", -1), 0);
         {
             u8 *o = ((ChrMoveObjCall *)arguments)->b.p + field->offset;
             int fr = ((ChrMoveObjCall *)arguments)->a.i;
@@ -169,7 +171,7 @@ static void CHR_moveXZ(int mode, JThread *thread, ChrMoveCall *arguments,
         break;
     case 3:
         field = lookupClassField(classJava_xeno_Chr,
-                                 loadConstString(chr_peer_string, -1), 0);
+                                 loadConstString("peer", -1), 0);
         {
             u8 *o = ((ChrMoveObjCall *)arguments)->a.p + field->offset;
             move->frames = -1;
@@ -261,7 +263,7 @@ void Java_xeno_Chr_move__Lxeno_util_Spline_IZ(JThread *thread,
         return;
     }
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     entry = (ChrMoveEntry *)(actSequence +
         ((u8 *)peer)[ACTOR_SLOT_NUMBER_OFFSET] * SEQUENCE_STRIDE);
@@ -269,7 +271,7 @@ void Java_xeno_Chr_move__Lxeno_util_Spline_IZ(JThread *thread,
     entry->mask = 1;
     entry->state_flags |= 1;
     lookupClassField(classJava_xeno_Chr,
-                     loadConstString(chr_algorithm_string, -1), 0);
+                     loadConstString("algorithm", -1), 0);
     spline = arguments->spline;
     wait = arguments->wait;
     nf = arguments->pad;
@@ -319,7 +321,7 @@ void Java_xeno_Chr_rotate__Lxeno_util_Spline_IZ(JThread *thread,
         return;
     }
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     entry = (ChrMoveEntry *)(actSequence +
         ((u8 *)peer)[ACTOR_SLOT_NUMBER_OFFSET] * SEQUENCE_STRIDE);
@@ -327,7 +329,7 @@ void Java_xeno_Chr_rotate__Lxeno_util_Spline_IZ(JThread *thread,
     entry->mask = 0xE;
     entry->state_flags |= 0xE;
     lookupClassField(classJava_xeno_Chr,
-                     loadConstString(chr_algorithm_string, -1), 0);
+                     loadConstString("algorithm", -1), 0);
     spline = arguments->spline;
     wait = arguments->wait;
     nf = arguments->pad;
@@ -397,10 +399,10 @@ static void CHR_rotX(int mode, JThread *thread, ChrRotCall *arguments,
         return;
     }
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(chr_peer_string, -1), 0);
+                             loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + field->offset);
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(chr_algorithm_string, -1), 0);
+                             loadConstString("algorithm", -1), 0);
     rot_source = (float *)((u8 *)peer + 0x50);
     if ((*(u32 *)(object + field->offset) & 1) == 0)
         rot_source = defaultOffset;
@@ -501,10 +503,10 @@ static void CHR_rotY(int mode, JThread *thread, ChrRotCall *arguments,
         return;
     }
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(chr_peer_string, -1), 0);
+                             loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + field->offset);
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(chr_algorithm_string, -1), 0);
+                             loadConstString("algorithm", -1), 0);
     rot_source = (*(u32 *)(object + field->offset) & 1)
         ? (float *)((u8 *)peer + 0x50) : defaultOffset;
 
@@ -536,7 +538,7 @@ static void CHR_rotY(int mode, JThread *thread, ChrRotCall *arguments,
             int off;
             u8 *o;
             field = lookupClassField(classJava_xeno_Chr,
-                                     loadConstString(chr_peer_string, -1), 0);
+                                     loadConstString("peer", -1), 0);
             off = field->offset;
             o = ((ChrRotObjCall *)arguments)->other;
             rot->frames = ((ChrRotObjCall *)arguments)->frames;
@@ -552,7 +554,7 @@ static void CHR_rotY(int mode, JThread *thread, ChrRotCall *arguments,
             int off;
             u8 *o;
             field = lookupClassField(classJava_xeno_Chr,
-                                     loadConstString(chr_peer_string, -1), 0);
+                                     loadConstString("peer", -1), 0);
             off = field->offset;
             o = ((ChrRotObjCall2 *)arguments)->other;
             rot->frames = -1;
@@ -611,10 +613,10 @@ static void CHR_rotZ(int mode, JThread *thread, ChrRotCall *arguments,
         return;
     }
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(chr_peer_string, -1), 0);
+                             loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + field->offset);
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(chr_algorithm_string, -1), 0);
+                             loadConstString("algorithm", -1), 0);
     rot_source = (float *)((u8 *)peer + 0x50);
     if ((*(u32 *)(object + field->offset) & 1) == 0)
         rot_source = defaultOffset;
@@ -832,7 +834,7 @@ void Java_xeno_Chr_start__ILjava_lang_Object_(JThread *thread,
         return;
     }
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(chr_peer_string, -1), 0);
+                             loadConstString("peer", -1), 0);
     mode = arguments->mode;
     peer = *(Actor **)(object + field->offset);
     entry = (ChrStartEntry *)(actSequence +
@@ -911,29 +913,29 @@ void Java_xeno_Chr_stop__(JThread *thread, ChrObjectCall *arguments,
         return;
     }
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(chr_peer_string, -1), 0);
+                             loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + field->offset);
     chr_thread = JTHREAD_get(object);
     if (chr_thread != 0) {
         chr_thread->flags &= ~0x10;
     }
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1A0, -1), 0);
+                             loadConstString("px", -1), 0);
     *(float *)(object + field->offset) = peer->position.x;
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1A8, -1), 0);
+                             loadConstString("py", -1), 0);
     *(float *)(object + field->offset) = peer->position.y;
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1B0, -1), 0);
+                             loadConstString("pz", -1), 0);
     *(float *)(object + field->offset) = peer->position.z;
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1B8, -1), 0);
+                             loadConstString("rx", -1), 0);
     *(float *)(object + field->offset) = peer->rotation.x;
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1C0, -1), 0);
+                             loadConstString("ry", -1), 0);
     *(float *)(object + field->offset) = peer->rotation.y;
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1C8, -1), 0);
+                             loadConstString("rz", -1), 0);
     *(float *)(object + field->offset) = peer->rotation.z;
 }
 
@@ -969,7 +971,7 @@ static void CHR_motion(int mode, JThread *thread, ChrMotionCall *arguments_,
         return;
     }
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(chr_peer_string, -1), 0);
+                             loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + field->offset);
     entry = (ChrMoveEntry *)(actSequence +
         ((u8 *)peer)[ACTOR_SLOT_NUMBER_OFFSET] * SEQUENCE_STRIDE);
@@ -1052,7 +1054,7 @@ void Java_xeno_Chr_signal__I(JThread *thread, ChrSignalCall *arguments,
         return;
     }
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     peer->signal = arguments->value;
 }
@@ -1070,7 +1072,7 @@ void Java_xeno_Chr_getSignal__(JThread *thread, ChrObjectCall *arguments,
         return;
     }
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     *failure_result = peer->signal;
 }
@@ -1083,16 +1085,16 @@ void Java_xeno_Chr_setRotate__(JThread *thread, ChrScaleCall *arguments)
 
     object = arguments->object;
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(chr_peer_string, -1), 0);
+                             loadConstString("peer", -1), 0);
     rot = (float *)(*(u8 **)(object + field->offset) + 0x50);
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1B8, -1), 0);
+                             loadConstString("rx", -1), 0);
     rot[0] = *(float *)(object + field->offset) / 180.0f * 3.14159265f;
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1C0, -1), 0);
+                             loadConstString("ry", -1), 0);
     rot[1] = *(float *)(object + field->offset) / 180.0f * 3.14159265f;
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1C8, -1), 0);
+                             loadConstString("rz", -1), 0);
     rot[2] = *(float *)(object + field->offset) / 180.0f * 3.14159265f;
 }
 
@@ -1118,18 +1120,18 @@ void Java_xeno_Chr_setTranslate__(JThread *thread, ChrObjectCall *arguments)
 
     object = arguments->object;
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(chr_peer_string, -1), 0);
+                             loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + field->offset);
     position = &peer->position;
 
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1A0, -1), 0);
+                             loadConstString("px", -1), 0);
     position->x = *(float *)(object + field->offset);
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1A8, -1), 0);
+                             loadConstString("py", -1), 0);
     position->y = *(float *)(object + field->offset);
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1B0, -1), 0);
+                             loadConstString("pz", -1), 0);
     z = *(float *)(object + field->offset);
 
     peer->status_flags |= 0x1000;
@@ -1148,16 +1150,16 @@ void Java_xeno_Chr_getRotate__(JThread *thread, ChrScaleCall *arguments)
 
     object = arguments->object;
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(chr_peer_string, -1), 0);
+                             loadConstString("peer", -1), 0);
     rot = (float *)(*(u8 **)(object + field->offset) + 0x50);
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1B8, -1), 0);
+                             loadConstString("rx", -1), 0);
     *(float *)(object + field->offset) = rot[0] / 3.1415927f * 180.0f;
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1C0, -1), 0);
+                             loadConstString("ry", -1), 0);
     *(float *)(object + field->offset) = rot[1] / 3.1415927f * 180.0f;
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1C8, -1), 0);
+                             loadConstString("rz", -1), 0);
     *(float *)(object + field->offset) = rot[2] / 3.1415927f * 180.0f;
 }
 
@@ -1172,18 +1174,18 @@ void Java_xeno_Chr_getTranslate__(JThread *thread, ChrScaleCall *arguments,
     /* Each Java field has a runtime class offset, rather than a fixed C member. */
     object = arguments->object;
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(chr_peer_string, -1), 0);
+                             loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + field->offset);
     position = &peer->position;
 
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1A0, -1), 0);
+                             loadConstString("px", -1), 0);
     *(float *)(object + field->offset) = position->x;
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1A8, -1), 0);
+                             loadConstString("py", -1), 0);
     *(float *)(object + field->offset) = position->y;
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(D_004DC1B0, -1), 0);
+                             loadConstString("pz", -1), 0);
     *(float *)(object + field->offset) = position->z;
 }
 
@@ -1195,7 +1197,7 @@ void Java_xeno_Chr_setVisible__Z(JThread *thread, ChrBoolCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     if (arguments->flag != 0) {
         peer->flags &= ~8;
@@ -1212,7 +1214,7 @@ void Java_xeno_Chr_setVisible__IZ(JThread *thread, ChrVisibleCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     ACT_setVisible(peer, arguments->part, arguments->visible);
 }
@@ -1225,7 +1227,7 @@ void Java_xeno_Chr_setCollision__Z(JThread *thread, ChrBoolCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     if (arguments->flag != 0) {
         peer->flags |= 0x40;
@@ -1242,7 +1244,7 @@ void Java_xeno_Chr_setHand__I(JThread *thread, ChrScaleCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     ACT_setHand(peer, arguments->first.integer);
 }
@@ -1279,7 +1281,7 @@ void Java_xeno_Chr_setArgs__III(JThread *thread, ChrArgsWordCall *arguments)
     offset = arguments->offset;
     size = arguments->size;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     if ((unsigned int)(size - 1) < 4U) {
         copyArgs(peer->args + offset, (u8 *)&value, size);
@@ -1300,7 +1302,7 @@ void Java_xeno_Chr_getArgs__II(JThread *thread, ChrArgsReadCall *arguments,
     offset = arguments->offset;
     size = arguments->size;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     if ((unsigned int)(size - 1) < 4U) {
         copyArgs((u8 *)&value, peer->args + offset, size);
@@ -1323,7 +1325,7 @@ void Java_xeno_Chr_setArgs__ILjava_lang_Object_I(JThread *thread,
     offset = arguments->offset;
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     second = source->second.integer;
     peer = *(Actor **)(object + peer_field->offset);
     first = source->first.integer;
@@ -1340,7 +1342,7 @@ void Java_xeno_Chr_getSerial__(JThread *thread, ChrScaleCall *arguments,
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     result[0] = ((u8 *)peer)[ACTOR_SLOT_NUMBER_OFFSET];
 }
@@ -1356,7 +1358,7 @@ void Java_xeno_Chr_getState__(JThread *thread, ChrObjectCall *arguments,
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     slot = ((u8 *)peer)[ACTOR_SLOT_NUMBER_OFFSET];
     entry = (SequenceState *)(actSequence + slot * SEQUENCE_STRIDE);
@@ -1381,7 +1383,7 @@ void Java_xeno_Chr_mtnGetRoot__ILxeno_util_Vector4f_(JThread *thread,
      */
     do {
         lookupClassField(classJava_xeno_Chr,
-                         loadConstString(chr_peer_string, -1), 0);
+                         loadConstString("peer", -1), 0);
     } while (0);
 }
 
@@ -1393,7 +1395,7 @@ void Java_xeno_Chr_setScale__FFF(JThread *thread, ChrVector3Call *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     peer->scale.x = arguments->x;
     peer->scale.y = arguments->y;
@@ -1408,7 +1410,6 @@ typedef struct ChrScaleResult {
     float w;
     float z;
 } ChrScaleResult;
-extern ChrScaleResult scale_0_007C0A40;
 
 void Java_xeno_Chr_getScale__(JThread *thread, ChrScaleCall *arguments,
                               u32 *failure_result)
@@ -1416,10 +1417,11 @@ void Java_xeno_Chr_getScale__(JThread *thread, ChrScaleCall *arguments,
     JavaField *field;
     Actor *peer;
     u8 *object;
+    static ChrScaleResult scale_0_007C0A40 __asm__("scale.0");
 
     object = arguments->object;
     field = lookupClassField(classJava_xeno_Chr,
-                             loadConstString(chr_peer_string, -1), 0);
+                             loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + field->offset);
     scale_0_007C0A40.cls = *(int *)(classJava_xeno_util_Vector4f + 0x18);
     scale_0_007C0A40.w = peer->scale.x;
@@ -1449,7 +1451,7 @@ void Java_xeno_Chr_scale__Lxeno_util_Spline_IZ(JThread *thread,
         return;
     }
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     entry = (ChrMoveEntry *)(actSequence +
         ((u8 *)peer)[ACTOR_SLOT_NUMBER_OFFSET] * SEQUENCE_STRIDE);
@@ -1457,7 +1459,7 @@ void Java_xeno_Chr_scale__Lxeno_util_Spline_IZ(JThread *thread,
     entry->mask = 0xE0;
     entry->state_flags |= 0xE0;
     lookupClassField(classJava_xeno_Chr,
-                     loadConstString(chr_algorithm_string, -1), 0);
+                     loadConstString("algorithm", -1), 0);
     spline = arguments->spline;
     wait = arguments->wait;
     *(void **)((u8 *)entry + 0x30) = SEQ_scaleSPL;
@@ -1498,7 +1500,7 @@ static void CHR_sclX(int mode, JThread *thread, ChrScaleCall *arguments,
     }
 
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     /*
      * `peer` and `algorithm` are fields of the Java class xeno.Chr, so their
      * position inside the object is the offset the JVM hands back at run time
@@ -1507,7 +1509,7 @@ static void CHR_sclX(int mode, JThread *thread, ChrScaleCall *arguments,
      */
     peer = *(Actor **)(object + peer_field->offset);
     algorithm_field = lookupClassField(
-        classJava_xeno_Chr, loadConstString(chr_algorithm_string, -1), 0);
+        classJava_xeno_Chr, loadConstString("algorithm", -1), 0);
 
     scale_source = &peer->scale.x;
     if ((*(u32 *)(object + algorithm_field->offset) & 1) == 0)
@@ -1586,7 +1588,7 @@ static void CHR_sclY(int mode, JThread *thread, ChrScaleCall *arguments,
     }
 
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     /*
      * `peer` and `algorithm` are fields of the Java class xeno.Chr, so their
      * position inside the object is the offset the JVM hands back at run time
@@ -1595,7 +1597,7 @@ static void CHR_sclY(int mode, JThread *thread, ChrScaleCall *arguments,
      */
     peer = *(Actor **)(object + peer_field->offset);
     algorithm_field = lookupClassField(
-        classJava_xeno_Chr, loadConstString(chr_algorithm_string, -1), 0);
+        classJava_xeno_Chr, loadConstString("algorithm", -1), 0);
 
     scale_source = &peer->scale.x;
     if ((*(u32 *)(object + algorithm_field->offset) & 1) == 0)
@@ -1674,7 +1676,7 @@ static void CHR_sclZ(int mode, JThread *thread, ChrScaleCall *arguments,
     }
 
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     /*
      * `peer` and `algorithm` are fields of the Java class xeno.Chr, so their
      * position inside the object is the offset the JVM hands back at run time
@@ -1683,7 +1685,7 @@ static void CHR_sclZ(int mode, JThread *thread, ChrScaleCall *arguments,
      */
     peer = *(Actor **)(object + peer_field->offset);
     algorithm_field = lookupClassField(
-        classJava_xeno_Chr, loadConstString(chr_algorithm_string, -1), 0);
+        classJava_xeno_Chr, loadConstString("algorithm", -1), 0);
 
     scale_source = &peer->scale.x;
     if ((*(u32 *)(object + algorithm_field->offset) & 1) == 0)
@@ -1764,7 +1766,7 @@ void Java_xeno_Chr_rotCNS__IFFF(JThread *thread, ChrScaleCall *arguments,
     Actor *peer;
 
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(arguments->object + peer_field->offset);
 }
 
@@ -1780,7 +1782,7 @@ void Java_xeno_Chr_setRotCNSParam__IFFFFF(JThread *thread,
     Actor *peer;
 
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(arguments->object + peer_field->offset);
 }
 
@@ -1795,7 +1797,7 @@ void Java_xeno_Chr_relax__II(JThread *thread, ChrScaleCall *arguments,
     Actor *peer;
 
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(arguments->object + peer_field->offset);
 }
 
@@ -1806,7 +1808,7 @@ void Java_xeno_Chr_getFlags__(JThread *thread, ChrScaleCall *arguments,
     Actor *peer;
 
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(arguments->object + peer_field->offset);
     result[0] = peer->flags;
 }
@@ -1817,7 +1819,7 @@ void Java_xeno_Chr_setFlags__I(JThread *thread, ChrScaleCall *arguments)
     Actor *peer;
 
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(arguments->object + peer_field->offset);
     peer->flags = arguments->first.integer;
 }
@@ -1828,7 +1830,7 @@ void Java_xeno_Chr_setEdgeFall__I(JThread *thread, ChrIntCall *arguments)
     Actor *peer;
 
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(arguments->object + peer_field->offset);
     if (arguments->value == 0) {
         /* Also clears every other status_flags bit: andi v0,v0,8 at
@@ -1845,7 +1847,7 @@ void Java_xeno_Chr_setShadow__II(JThread *thread, ChrShadowCall *arguments)
     Actor *peer;
 
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(arguments->object + peer_field->offset);
     peer->flags |= 0x20;
     peer->shadow_kind = arguments->kind;
@@ -1872,7 +1874,7 @@ void Java_xeno_Chr_setShadow__aB(JThread *thread, ChrSplCall *arguments)
     dst = 0;
     src = *(signed char **)(arguments->spline + 8);
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(u8 **)(arguments->object + peer_field->offset);
     def = DropShadowDefineTable;
     slot = 0;
@@ -1910,7 +1912,7 @@ void Java_xeno_Chr_setID__I(JThread *thread, ChrScaleCall *arguments)
     Actor *peer;
 
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(arguments->object + peer_field->offset);
     peer->data_header = UnduDataGetHeader(0, arguments->first.integer);
     peer->status_flags |= 0x1000;
@@ -1922,7 +1924,7 @@ void Java_xeno_Chr_setElevatorMode__I(JThread *thread, ChrIntCall *arguments)
     Actor *peer;
 
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(arguments->object + peer_field->offset);
     if (arguments->value == 0) {
         /* Also clears every other status_flags bit: andi v0,v0,0x20 at
@@ -1958,7 +1960,7 @@ void Java_xeno_Chr_setParent__Lxeno_Chr_III(JThread *thread,
 
     object = args[0].p;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     joint = args[2].i;
     id = args[4].i;
     type = args[3].i;
@@ -1982,7 +1984,7 @@ void Java_xeno_Chr_setMotionFlags__IZ(JThread *thread,
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     mask = arguments->mask;
     peer = *(Actor **)(object + peer_field->offset);
     if (arguments->enabled != 0) {
@@ -2006,7 +2008,7 @@ void Java_xeno_Chr_setFilter__I(JThread *thread, ChrIntCall *arguments, int *res
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     switch (arguments->value) {
     case 0:
@@ -2041,7 +2043,7 @@ void Java_xeno_Chr_setFilterParam__aF(JThread *thread,
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     value = arguments->array->value;
     peer->filter_param[0] = value->components[0];
@@ -2058,7 +2060,7 @@ void Java_xeno_Chr_setClip__I(JThread *thread, ChrIntCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     if (arguments->value != 0) {
         peer->render_flags |= 0x200;
@@ -2075,7 +2077,7 @@ void Java_xeno_Chr_setSymmetryY__I(JThread *thread, ChrIntCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     if (arguments->value != 0) {
         peer->render_flags |= 0x10;
@@ -2092,7 +2094,7 @@ void Java_xeno_Chr_setSortOffset__F(JThread *thread, ChrScaleCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     peer->sort_offset = arguments->first.floating;
 }
@@ -2109,7 +2111,7 @@ void Java_xeno_Chr_setPointLightCol__IFFF(JThread *thread, ChrPLC *args)
 
     object = args->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(ChrPL **)(object + peer_field->offset);
     if (args->idx.u < 3) {
         peer->flags |= 0x800;
@@ -2130,10 +2132,10 @@ void Java_xeno_Chr_setPointLightPos__IFFF(JThread *thread, ChrPLP *args)
     u8 *object;
 
     lookupClassField(classJava_xeno_Chr,
-                     loadConstString(chr_peer_string, -1), 0);
+                     loadConstString("peer", -1), 0);
     object = args->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(ChrPP **)(object + peer_field->offset);
     if (args->idx.u < 3) {
         peer->flags |= 0x800;
@@ -2154,7 +2156,7 @@ void Java_xeno_Chr_setPointLightReset__(JThread *thread, ChrTalkCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(u8 **)(object + peer_field->offset);
     p = (peer + 0x970);
     for (i = 2; i >= 0; i--) {
@@ -2173,7 +2175,7 @@ void Java_xeno_Chr_talkto__Ljava_lang_String_(JThread *thread,
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     peer->talk_message = arguments->message->value->message_id;
 }
@@ -2187,7 +2189,7 @@ void Java_xeno_Chr_touchto__Ljava_lang_String_(JThread *thread,
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     peer->touch_message = arguments->message->value->message_id;
 }
@@ -2205,7 +2207,7 @@ void Java_xeno_Chr_childGetPeer__II(JThread *thread, ChrPeerCall *arguments,
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(void **)(object + peer_field->offset);
     *result = 0;
     if (arguments->flag != (void *)0x01000000)
@@ -2236,7 +2238,7 @@ void Java_xeno_Chr_setPeer__Ljava_lang_Object_(JThread *thread,
     object = arguments->object;
     if (peer != 0) {
         peer_field = lookupClassField(classJava_xeno_Chr,
-                                      loadConstString(chr_peer_string, -1), 0);
+                                      loadConstString("peer", -1), 0);
         offset = peer_field->offset;
         *(void **)(peer + 4) = ACT_updateSequence;
         *(short *)(peer + 0x88) = 0;
@@ -2266,7 +2268,7 @@ void Java_xeno_Chr_dispRadar__Z(JThread *thread, ChrBoolCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     if (arguments->flag != 0) {
         peer->flags &= ~0x80;
@@ -2283,7 +2285,7 @@ void Java_xeno_Chr_look_camera__(JThread *thread, ChrScaleCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     peer->look_mode = 2;
 }
@@ -2298,7 +2300,7 @@ void Java_xeno_Chr_look_char__Ljava_lang_Object_(JThread *thread,
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     target = *(Actor **)(arguments->other + peer_field->offset);
     peer->look_mode = 4;
@@ -2316,10 +2318,10 @@ void Java_xeno_Chr_look_unit__Ljava_lang_Object_(JThread *thread,
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     unit_peer_field = lookupClassField(classJava_xeno_Unit,
-                                       loadConstString(chr_peer_string, -1), 0);
+                                       loadConstString("peer", -1), 0);
     target = *(void **)(arguments->other + unit_peer_field->offset);
     peer->look_mode = 5;
     peer->look_target = target;
@@ -2333,7 +2335,7 @@ void Java_xeno_Chr_look_default__(JThread *thread, ChrScaleCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     peer->look_mode = 1;
     peer->look_eye_control = 0;
@@ -2359,7 +2361,7 @@ void Java_xeno_Chr_look_point__FFF(JThread *thread, SceneObject *arguments)
 
     object = arguments[0];
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     peer->look_mode = 3;
     __builtin_memcpy(&x, &arguments[1], sizeof(x));
@@ -2370,7 +2372,6 @@ void Java_xeno_Chr_look_point__FFF(JThread *thread, SceneObject *arguments)
     peer->look_point[2] = z;
 }
 
-extern float D_004D841C;
 
 void Java_xeno_Chr_look_eye_set__FF(JThread *thread, ChrScaleCall *arguments)
 {
@@ -2382,9 +2383,9 @@ void Java_xeno_Chr_look_eye_set__FF(JThread *thread, ChrScaleCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     x = arguments->first.floating;
-    k = D_004D841C;
+    k = 3.1415927f;
     peer = *(Actor **)(object + peer_field->offset);
     ((float *)((u8 *)peer + 0x660))[0] = x * k / 180.0f;
     ((float *)((u8 *)peer + 0x660))[1] = arguments->second.floating * k / 180.0f;
@@ -2399,7 +2400,7 @@ void Java_xeno_Chr_look_eye_control__I(JThread *thread, ChrScaleCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     peer->look_eye_control = arguments->first.integer;
 }
@@ -2412,7 +2413,7 @@ void Java_xeno_Chr_look_speed__F(JThread *thread, ChrScaleCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     peer->look_speed = arguments->first.floating;
 }
@@ -2425,7 +2426,7 @@ void Java_xeno_Chr_look_eye_speed__F(JThread *thread, ChrScaleCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     peer->look_eye_speed = arguments->first.floating;
 }
@@ -2438,7 +2439,7 @@ void Java_xeno_Chr_renderCommand__I(JThread *thread, ChrScaleCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     peer->render_command = arguments->first.integer;
 }
@@ -2451,7 +2452,7 @@ void Java_xeno_Chr_shadow_clip_scale__F(JThread *thread, ChrScaleCall *arguments
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     peer->shadow_clip_scale = arguments->first.floating;
 }
@@ -2467,7 +2468,7 @@ void Java_xeno_Chr_shadow_map_id__I(JThread *thread,
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     if (peer->shadow_map < 8) {
         count = &peer->shadow_map;
@@ -2485,7 +2486,7 @@ void Java_xeno_Chr_shadow_map_reset__(JThread *thread, ChrScaleCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     peer->shadow_map = 0;
 }
@@ -2498,7 +2499,7 @@ void Java_xeno_Chr_hairStop__II(JThread *thread, ChrScaleCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     peer->hair_stop_a = arguments->first.integer;
     peer->hair_stop_b = arguments->second.integer;
@@ -2512,7 +2513,7 @@ void Java_xeno_Chr_pixelAlpha__I(JThread *thread, ChrScaleCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     peer->pixel_alpha = arguments->first.integer;
 }
@@ -2532,7 +2533,7 @@ void Java_xeno_Chr_pixelAlphaParts__II(JThread *thread, ChrScaleCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(ChrAlphaPartsView **)(object + peer_field->offset);
     n = peer->count;
     if (n < 4) {
@@ -2550,7 +2551,7 @@ void Java_xeno_Chr_pixelAlphaPartsReset__(JThread *thread, ChrScaleCall *argumen
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     peer->pixel_alpha_parts = 0;
 }
@@ -2563,7 +2564,7 @@ void Java_xeno_Chr_setMotNoUpdate__I(JThread *thread, ChrIntCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     switch (arguments->value) {
     case 0:
@@ -2590,7 +2591,7 @@ void Java_xeno_Chr_setWeaponR__Lxeno_Chr_(JThread *thread, ChrWeaponCall *argume
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     object = arguments->other;
     other_peer = *(Actor **)(object + peer_field->offset);
@@ -2606,7 +2607,7 @@ void Java_xeno_Chr_resetWeaponR__Lxeno_Chr_(JThread *thread, ChrWeaponCall *argu
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     object = arguments->other;
     other_peer = *(Actor **)(object + peer_field->offset);
@@ -2629,7 +2630,7 @@ void Java_xeno_Chr_ignoreShape__I(JThread *thread, ChrIntCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(chr_peer_string, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(Actor **)(object + peer_field->offset);
     if (arguments->value != 0) {
         peer->render_flags |= 0x400;

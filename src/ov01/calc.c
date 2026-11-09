@@ -305,11 +305,12 @@ int calcHpDmg(ObjectTask *src, ObjectTask *dst, unsigned char type, int val)
  */
 extern CalcCharParaData *calcTotalParaMenuSub(int charaId, int *attack, int *defense, unsigned char *table);
 
-/* The per-charaId table calcTotalParaMenu hands calcTotalParaMenuSub. */
-extern unsigned char D_00A57CE8[];
-
 CalcCharParaData *calcTotalParaMenu(int charaId, int *attack, int *defense)
 {
+    /* The per-charaId work record calcTotalParaMenu hands
+     * calcTotalParaMenuSub (0x180 bytes, no ELF symbol: function-local). */
+    static unsigned char D_00A57CE8[0x180] __asm__("D_00A57CE8");
+
     return calcTotalParaMenuSub(charaId, attack, defense, D_00A57CE8);
 }
 
@@ -1717,12 +1718,6 @@ extern int calcCrit();
 extern int calcSpec();
 extern int calcLinePos();
 extern int calcAtrChg(ObjectTask *unit, int attribute);
-extern const char D_00A44498[];
-extern const char D_00A444B0[];
-extern const char D_00A444E0[];
-extern const char D_00A44508[];
-extern const char D_00A44518[];
-extern const char D_00A44528[];
 
 int calcDmg(ObjectTask *attacker, CalcHitDmgArg *cmdArg, CalcHitDmgOut *hitArg)
 {
@@ -1788,7 +1783,7 @@ int calcDmg(ObjectTask *attacker, CalcHitDmgArg *cmdArg, CalcHitDmgOut *hitArg)
     case 0:
         phyArm = calcPhyDefGet(cmd->target);
         magArm = calcMagDefGet(cmd->target);
-        printf(D_00A44498, phyArm, magArm);
+        printf("** phyArm=%d magArm=%d\n", phyArm, magArm);
         if (mode == 3) {
             dmg = DMGUP(cmd->target)->maxEp * tec->powLevBase / 20;
         } else {
@@ -1942,8 +1937,8 @@ int calcDmg(ObjectTask *attacker, CalcHitDmgArg *cmdArg, CalcHitDmgOut *hitArg)
     if (dmg < 0) {
         dmg = 0;
     }
-    printf(D_00A444B0, tec->attr, tec->effectType, tec->doubleDamageKind, tec->flags);
-    printf(D_00A444E0, (unsigned char) hit->result, (hit->result >> 8) & 0xFF, dmg);
+    printf("** TGTINFO=%04X JTYPE=%d CTYPE=%d FC=%X\n", tec->attr, tec->effectType, tec->doubleDamageKind, tec->flags);
+    printf("** DMG0:hitAtr=%d hitFlag=%X dmg=%d\n", (unsigned char) hit->result, (hit->result >> 8) & 0xFF, dmg);
     calcStat(attacker, cmd, hit, &dmg);
     statOk = calcStatAtk(attacker, cmd, hit, &dmg);
     calcStatClr(attacker, cmd, hit, &dmg);
@@ -1965,13 +1960,13 @@ int calcDmg(ObjectTask *attacker, CalcHitDmgArg *cmdArg, CalcHitDmgOut *hitArg)
             calcStatSet(cmd->target, 1, 0x100, 0);
             *(CalcDamage *) &dmg = DMGUP(cmd->target)->currentHp;
             hit->result = category;
-            printf(D_00A44508);
+            printf("** Stat: DEATH\n");
             category = hit->setCategory;
         }
         if (category == first && hit->setMask == 2 && calcStatProtectGet(cmd->target, 1, 2) == 0) {
             *(CalcDamage *) &dmg = DMGUP(cmd->target)->currentHp / 4;
             hit->result = category;
-            printf(D_00A44518);
+            printf("** Stat: GRAV\n");
         }
     }
     category = hit->result & 0xFF;
@@ -2003,7 +1998,7 @@ int calcDmg(ObjectTask *attacker, CalcHitDmgArg *cmdArg, CalcHitDmgOut *hitArg)
     {
         int value = *(CalcDamage *) &dmg;
 
-        printf(D_00A44528, hit->result & 0xFF, (hit->result >> 8) & 0xFF, value);
+        printf("** DMG1:hitAtr=%d hitFlag=%X dmg=%d\n", hit->result & 0xFF, (hit->result >> 8) & 0xFF, value);
     }
     return *(CalcDamage *) &dmg;
 }
@@ -2596,14 +2591,10 @@ int calcDmgItem(ObjectTask *attacker, CalcHitItemArg *arg)
 }
 
 typedef struct TgtFindCmd TgtFindCmd;
-extern ObjectTask *tgtTbl[8];
-extern int tgtIdx;
-extern int tgtNum;
+static ObjectTask *tgtTbl[8];
+static int tgtIdx;
+static int tgtNum;
 extern int tgtFindChk(ObjectTask *a, ObjectTask *b, TgtFindCmd *c);
-extern char D_00A447B8[];
-extern char D_00A447D0[];
-extern char D_00A447E0[];
-extern char D_00A447E8[];
 static inline int tgtSideBit(ObjectTask *u)
 {
     return *(int *)u->work & 0x40;
@@ -2661,7 +2652,7 @@ ObjectTask *tgtFindFirst(ObjectTask *arg0, TgtFindCmd *arg1)
             tgtNum = ok;
             return tgtTbl[tgtIdx++];
         }
-        printf(D_00A447B8, calcUPGet(t)->charaId);
+        printf("** reTGT! (ID=%d) ->", calcUPGet(t)->charaId);
     }
     n = 1;
     if (flag & 8) {
@@ -2703,11 +2694,11 @@ ObjectTask *tgtFindFirst(ObjectTask *arg0, TgtFindCmd *arg1)
     if (all == 0) {
         tgtNum = 1;
     }
-    printf(D_00A447D0);
+    printf("** tgt ID=");
     for (i = 0; i < tgtNum; i++) {
-        printf(D_00A447E0, calcUPGet(tgtTbl[i])->charaId);
+        printf("%d ", calcUPGet(tgtTbl[i])->charaId);
     }
-    printf(D_00A447E8);
+    printf("\n");
     return tgtTbl[tgtIdx++];
 }
 
@@ -3519,15 +3510,24 @@ void calcStatReset(ObjectTask *unit, int category, int mask, int unused)
     }
 }
 
-extern signed char turn_1[8][16];
 
 int calcStatDefTurnGet(ObjectTask *unit, int category, int mask)
 {
+    static signed char turn_tbl[8][16] = {
+        { 5, 5, 5, -1, 5, -1, 5, -1, -1, -1, -1, -1, 5, 5, 0, 0 },
+        { 0, 1, -1, -1, -1, -1, -1, 5, 1, 3, -1, -1, -1, -1, 5, 0 },
+        { -1, 0, 0, -1, 2, 5, 5, 5, 5, 5, 5, 5, 5, 5, -1, 0 },
+        { 0, -1, 5, 5, 5, 5, 3, -1, -1, 5, 5, -1, 5, 5, 5, 0 },
+        { 5, 5, 5, 0, -1, 5, 5, -1, 5, 5, -1, 5, -1, 5, 0, 0 },
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, 0 },
+        { -1, -1, -1, -1, -1, 0, 0, 0, -1, -1, -1, 3, 2, 3, 3, 0 },
+        { 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    };
     int turn;
     int idx;
 
     idx = calcStatBit2Idx(mask);
-    turn = turn_1[category][idx];
+    turn = turn_tbl[category][idx];
     if (category == 7 && (mask & 3)) {
         turn += (short)calcUPGet(unit)->currentHp < *(short *)calcUPGet(unit) / 2;
         turn += (short)calcUPGet(unit)->currentHp < *(short *)calcUPGet(unit) / 4;

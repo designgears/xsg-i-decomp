@@ -20,9 +20,8 @@ struct UmnPluginState {
 
 extern struct UmnPluginState UmnWork;
 extern unsigned char *UmnWorkEnd;
-extern unsigned char plugin_folder[16];
-extern const char D_00A13450[];
-extern const char D_00A13540[];
+extern unsigned char plugin_folder[16] __attribute__((aligned(8)));
+
 extern unsigned short D_4A1A0C[];
 
 /* PadData's +0x2a halfword records newly pressed controller buttons. */
@@ -101,7 +100,6 @@ struct UmnPluginPasWork {
     struct UmnPluginPasRect caption_rect;
 };
 
-extern void *msg00_0_00A10C40;
 void eMessageSet(void *message, void *text);
 void eMessageMain(void *message);
 void endPrintExtFunc(int color, int mode, void *rectangle);
@@ -123,6 +121,7 @@ void MoveSlide(short *current, short *target, float rate);
 
 void tskUmnPluginPas(void *task_opaque, void *work_opaque)
 {
+    static const char *msg00 = "Plug-ins";
     struct UmnPluginTask *task = task_opaque;
     struct UmnPluginPasWork *work = work_opaque;
 
@@ -146,7 +145,7 @@ void tskUmnPluginPas(void *task_opaque, void *work_opaque)
             work->window.state = initial_state;
             WindowDXMain(&work->window);
             work->window.state = 3;
-            eMessageSet(work->label.message, msg00_0_00A10C40);
+            eMessageSet(work->label.message, (void *)msg00);
             {
             struct UmnPluginPasLabel *label = &work->label;
             label->message[1] = label_font_size;
@@ -243,7 +242,7 @@ void tskUmnPluginInfo(void *task_opaque, void *work_opaque)
                 if (plugin_id < 6) {
                     work->info.text = UmnPluginTextGet((signed char)plugin_id) + 0x20;
                 } else {
-                    work->info.text = (char *)D_00A13450;
+                    work->info.text = "";
                 }
                 MoveSlide(&work->window.y, &slide_target, 3.0f);
                 WindowDXMain(&work->window);
@@ -253,8 +252,6 @@ void tskUmnPluginInfo(void *task_opaque, void *work_opaque)
     }
 }
 
-extern const char D_00A13458[];
-extern const char D_00A13460[];
 void WindowSPSet(void *window);
 void WindowSPMain(void *window);
 void WindowSPItemChange(void *window);
@@ -312,7 +309,7 @@ void tskUmnPluginList(void *task_opaque, void *work_opaque)
         work->window.y = 0x70;
         work->window.color = 0xFF0000;
         work->window.mode = 3;
-        work->window.title = D_00A13458;
+        work->window.title = "List";
         work->window.cols = 10;
         work->window.rows = 1;
         work->window.width = 400;
@@ -339,7 +336,7 @@ void tskUmnPluginList(void *task_opaque, void *work_opaque)
                     work->item[i].value = 0;
                     work->item[i].flag = 0;
                 }
-                work->item[i].text = D_00A13450;
+                work->item[i].text = "";
                 work->item[i + 1].text = 0;
                 work->window.items = work->item;
                 WindowSPItemChange(&work->window);
@@ -382,10 +379,9 @@ void tskUmnPluginList(void *task_opaque, void *work_opaque)
         work->window.color = work->color;
         WindowSPMain(&work->window);
     }
-    xglFontDebugPrintf(0, 0x10, D_00A13460, work->state);
+    xglFontDebugPrintf(0, 0x10, "list : %2d", work->state);
 }
 
-extern char msg00_1_00A10C48[];
 void eNumberSet(void *number, int mode);
 void eNumberMain(void *number);
 void eTagFontSet(void *tag, void *text);
@@ -434,6 +430,7 @@ struct UmnPluginExWinWork {
 
 void tskUmnPluginExWin(void *task_opaque, void *work_opaque)
 {
+    static char msg00[] = "\x01Num";
     struct UmnPluginTask *task = task_opaque;
     struct UmnPluginExWinWork *work = work_opaque;
 
@@ -453,7 +450,7 @@ void tskUmnPluginExWin(void *task_opaque, void *work_opaque)
                 eRibbonSet(&work->item[i].ribbon, 3);
                 work->item[i].ribbon.width = 0x100;
                 work->item[i].ribbon.height = 0x18;
-                eTagFontSet(&work->item[i].tag, msg00_1_00A10C48);
+                eTagFontSet(&work->item[i].tag, msg00);
                 eNumberSet(&work->item[i].number, 0);
             }
             }
@@ -497,6 +494,7 @@ void tskUmnPluginExWin(void *task_opaque, void *work_opaque)
         }
     }
 }
+
 
 void UmnPlugin(void)
 {
@@ -559,6 +557,8 @@ void UmnPlugin(void)
     if (UmnWork.transition_timer != 0) {
         UmnWork.transition_timer--;
     }
-    xglFontDebugPrintf(32, 208, D_00A13540);
+    xglFontDebugPrintf(32, 208, "\xA5\xD7\xA5\xE9\xA5\xB0\xA5\xA4\xA5\xF3");
     xglFontDebugHex(0, 64, UmnWork.plugin_mode, 2);
 }
+
+unsigned char plugin_folder[16] __attribute__((aligned(8))) = { 0 };

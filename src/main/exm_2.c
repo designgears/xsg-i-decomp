@@ -48,13 +48,15 @@ typedef struct MapUnitDoorView {
     unsigned char unmodeled_d0[0x230];
 } MapUnitDoorView;
 
+typedef union MapUnitRecord {
+    MapUnitDrawView draw;
+    MapUnitTransformView transform;
+    MapUnitDoorView door;
+} MapUnitRecord;
+
 
 typedef struct EXM_WindState EXM_WindState;
 
-extern EXM_WindState *wind;
-extern float wave;
-extern float waverad;
-extern EXM_WindState _wind;
 
 /* The +0x10 vector fields are named from the allocated reset and setter stores.
  * The u64 at +0x08 preserves the 8-byte alignment of the complete wind state. */
@@ -94,7 +96,15 @@ struct EXM_WindState {
     u8 unmodeled_2c[4];
 };
 
-extern float D_004D8770;
+static EXM_WindState _wind = { 0 };
+MapUnitRecord MapUnit[64] = { { { 0 } } };
+/* 64 unit-sequence records (0x260 bytes each); their layout is the map TUs'. */
+u8 unitSequence[0x9800] = { 0 };
+
+static EXM_WindState *wind = &_wind;
+static float wave = 0.0f;
+static float waverad = 0.0f;
+
 extern float xglSin(float angle);
 extern void xglVectorNormal(Vector4 *destination, const Vector4 *source);
 extern void MATRIX_identity4s(float destination[4][4]);
@@ -115,7 +125,7 @@ void EXM_GetWindPower(float *out, char *obj, float *pos)
 
     if (wind->mode == 0) goto plain;
     {
-        wave = wave + D_004D8770;
+        wave = wave + 1.3f;
         shake = xglSin(wind->shake_rad - wave) * wave;
         c = *(float *)(obj + 0x720);
         s = *(float *)(obj + 0x740);
@@ -207,17 +217,13 @@ void EXM_SetShakePower(float power)
     wind->shake_power = power;
 }
 
-/* D_004D8774 = 6.2831855f (2*pi), the upper clamp for the shake phase. */
-extern float D_004D8774;
-/* D_004D8778 = -6.2831855f (-2*pi), the lower clamp for the shake phase. */
-extern float D_004D8778;
 
 void EXM_SetShakeTime(float time)
 {
-    if (time > D_004D8774) {
-        time = D_004D8774;
-    } else if (time < D_004D8778) {
-        time = D_004D8778;
+    if (time > 6.2831855f) {
+        time = 6.2831855f;
+    } else if (time < -6.2831855f) {
+        time = -6.2831855f;
     }
     wind->shake_time = time;
 }
@@ -258,8 +264,6 @@ void EXM_ClearWindStruct(void)
     wind = &_wind;
 }
 
-extern volatile float D_004D877C;
-extern float D_004D8780;
 
 void EXM_StepShakeWind(void) {
     float r;
@@ -267,7 +271,7 @@ void EXM_StepShakeWind(void) {
     if (wind != 0) {
         float k;
         wind->shake_rad += wind->shake_time;
-        k = D_004D877C;
+        k = 6.2831855f;
         if (wind->shake_rad > k) {
             wind->shake_rad -= k;
         } else if (wind->shake_rad < 0.0f) {
@@ -276,10 +280,10 @@ void EXM_StepShakeWind(void) {
     }
     r = waverad + 0.5f;
     waverad = r;
-    if (r > D_004D8780) {
-        waverad = r - D_004D8780;
+    if (r > 6.2831855f) {
+        waverad = r - 6.2831855f;
     } else if (r < 0.0f) {
-        waverad = r + D_004D8780;
+        waverad = r + 6.2831855f;
     }
 }
 

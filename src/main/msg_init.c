@@ -8,7 +8,7 @@ typedef struct Mif2Argument {
     } value;
 } Mif2Argument;
 
-extern int ctrlCodeFlags;
+static int ctrlCodeFlags = 0;
 
 void MSG_init(void)
 {
@@ -358,8 +358,6 @@ static void _copyCTRLCode(unsigned char **dstp, unsigned char **srcp);
 int xglFontGetStringWidth(unsigned char *s);
 int xglFontGetStringWidth2(unsigned char *s, int n);
 unsigned short xglFontAscii2Euc(char code, char **textp);
-extern unsigned char D_004DA3B0[];
-
 int MSG_queuePop(unsigned char *q, unsigned char *dst, int n)
 {
     unsigned char *out;
@@ -386,7 +384,7 @@ int MSG_queuePop(unsigned char *q, unsigned char *dst, int n)
     in = start;
     *end = 0;
     out = dst;
-    xglFontGetStringWidth(D_004DA3B0);
+    xglFontGetStringWidth("\031\003");
     *(short *)(q + 0x12) = 0;
 
     while (more && in < end) {
@@ -900,9 +898,9 @@ void MSG_setArgs(Mif2Argument *args, int n, const char **argv)
     }
 }
 
-extern int rubyX1;
-extern int rubyX2;
-extern int rubyY;
+static int rubyX1;
+static int rubyX2;
+static int rubyY;
 typedef struct RubyGlyph { char pad[8]; short x; short y; char pad2[12]; unsigned char flags; } RubyGlyph;
 
 static void rubyFont(RubyGlyph *g, unsigned int code)
@@ -1137,7 +1135,31 @@ typedef struct MsgFuncEntry {
     const char *name;
 } MsgFuncEntry;
 
-extern MsgFuncEntry mfunc[];
+static MsgFuncEntry mfunc[] = {
+    { (char *(*)(char *, int))MIF2_clear, "clear" },
+    { (char *(*)(char *, int))MIF2_waitkey, "waitkey" },
+    { (char *(*)(char *, int))MIF2_dummy, "signal" },
+    { (char *(*)(char *, int))MIF2_wait, "wait" },
+    { (char *(*)(char *, int))MIF2_color, "color" },
+    { (char *(*)(char *, int))MIF2_close, "close" },
+    { (char *(*)(char *, int))MIF2_dummy, "tips" },
+    { (char *(*)(char *, int))MIF2_ruby, "ruby" },
+    { (char *(*)(char *, int))MIF2_font, "font" },
+    { (char *(*)(char *, int))MIF2_label, "label" },
+    { (char *(*)(char *, int))MIF2_gaiji, "gaiji" },
+    { (char *(*)(char *, int))MIF2_code, "code" },
+    { 0, 0 }
+};
+
+char digits[16] __attribute__((aligned(16))) = "0123456789abcdef";
+unsigned char radixTenTenths[100] =
+    "0000000000111111111122222222223333333333"
+    "4444444444555555555566666666667777777777"
+    "88888888889999999999";
+unsigned char radixTenUnits[100] __attribute__((aligned(8))) =
+    "0123456789012345678901234567890123456789"
+    "0123456789012345678901234567890123456789"
+    "01234567890123456789";
 
 /*
  * Looks up name in the mfunc[] control-code table and returns the matching
@@ -1158,11 +1180,9 @@ static MsgFuncEntry *findMsgFunc(const char *name)
     return 0;
 }
 
-extern int cnvCH;
-extern int cnvCW;
+static int cnvCW;
+static int cnvCH;
 static void _copyCTRLCode(unsigned char **dstp, unsigned char **srcp);
-extern char D_004DA418[];
-
 unsigned int MSG_convert(unsigned char *destination, int capacity, const char *text, int length)
 {
     char bracket[256];
@@ -1193,19 +1213,19 @@ unsigned int MSG_convert(unsigned char *destination, int capacity, const char *t
                     strncpy(bracket, (const char *)input, span);
                     input = (unsigned char *)closing + 1;
                     bracket[span] = 0;
-                    token = STR_tokenGetNext(bracket, D_004DA418);
+                    token = STR_tokenGetNext(bracket, ",();");
                     while (token) {
                         int argc = 0;
                         MsgFuncEntry *entry = findMsgFunc(token);
                         if (entry) {
                             int type;
-                            token = STR_tokenGetNext(0, D_004DA418);
+                            token = STR_tokenGetNext(0, ",();");
                             type = STR_tokenGetType();
                             if (token) {
                                 tokens[argc++] = token;
                                 if (type != ')') {
                                     do {
-                                        token = STR_tokenGetNext(0, D_004DA418);
+                                        token = STR_tokenGetNext(0, ",();");
                                         type = STR_tokenGetType();
                                         if (!token)
                                             break;
@@ -1228,7 +1248,7 @@ unsigned int MSG_convert(unsigned char *destination, int capacity, const char *t
                             } while (*output++);
                             output--;
                         }
-                        token = STR_tokenGetNext(0, D_004DA418);
+                        token = STR_tokenGetNext(0, ",();");
                     }
                 }
             } else {

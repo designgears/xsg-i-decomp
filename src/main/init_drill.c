@@ -331,22 +331,11 @@ typedef struct DrillEnemyWork {
 
 extern DrillContainerDef container[31];
 extern DrillItemBox ItemBoxTbl[];
-extern u32 *pDrillFlag;
+static u32 *pDrillFlag;
 extern DrillHitActor actor[64];
 extern DrillEnemyWork enepc[16];
 
 /* These unchanged data records are supplied by the original scaffolding. */
-extern const char D_004CA940[];
-extern const char D_004CA970[];
-extern const char D_004CA9A0[];
-extern const char D_004CA9B8[];
-extern const char D_004CA9C8[];
-extern char D_004DB7E0[];
-extern char D_004DB7E8[];
-extern const char D_004CAA00[];
-extern const char D_004CAA10[];
-extern const char D_004CAA20[];
-extern const char D_004CAA30[];
 
 int xglFlagsGet1(int bit_offset);
 unsigned short xglSRand(void);
@@ -379,7 +368,7 @@ void Enemy_Command_Freeze(DrillHitActor *target, int frozen);
 void CallMethod_I(const char *method, int argument);
 void ACT_setMotion2(DrillMotionActor *actor, int motion, int mode);
 
-const char D_004CA960[] = "SetContainer\n";
+extern const char D_004CA960[];
 
 int CreateContainer(int, int);
 
@@ -474,7 +463,7 @@ void InitDrill(Drill *drill)
     DrillSave *save = &drill->save;
     DrillEffectRef *effect;
 
-    printf((char *) D_004CA940, save->partIndexA, save->partIndexB, drill->serial);
+    printf((char *) "InitDrill D1=%d D2=%d D3=%d\n", save->partIndexA, save->partIndexB, drill->serial);
     GetPartsPos(drill);
     save->runState = 0;
     drill->phase = 0;
@@ -513,6 +502,8 @@ void InitDrill(Drill *drill)
     effect->hidden = 0;
     DrillResetFlag(drill);
 }
+
+const char D_004CA960[] = "SetContainer\n";
 
 void SetContainer(int count)
 {
@@ -575,7 +566,7 @@ int CreateContainer(int identifier, int unit_id)
                 item = pick + 0x21D;
                 if (xglFlagsGet1(pick + 0x7A0E4) == 0) {
                     SetContainerItem((DrillItemUnit *)unit, item);
-                    printf((char *) D_004CA970, item);
+                    printf((char *) "\xA4\xA6\xA1\xBC\xA4\xAF\xA4\xF3\xA5\xDC\xA1\xBC\xA5\xEB\xA4\xCB%d\xA4\xCE\xA5\xEC\xA5\xA2\xA5\xA2\xA5\xA4\xA5\xC6\xA5\xE0\xA4\xAC\xC6\xFE\xA4\xC3\xA4\xBF\n", item);
                     return (int)unit;
                 }
             }
@@ -752,15 +743,15 @@ void MAP_updateUnitDrill(Drill *drill)
                 seconds = (int)((float)save->frameCount / 30.0f);
                 seconds = seconds < 1000 ? seconds : 999;
                 length = HexToStr(seconds, text);
-                xglFontPrint(336, 24, 0xFFF0, D_004CA9A0);
+                xglFontPrint(336, 24, 0xFFF0, "\x0D\x00\x19\x03""Elapsed Time\x15\x02\x04\x01");
                 xglFontPrint(472 - length * 10, 24, 0xFFF0, text);
-                xglFontPrintDirectOT(0xFFF0, D_004DB7E0);
+                xglFontPrintDirectOT(0xFFF0, "\x15\x02\x04");
             } else {
                 seconds = (int)((float)(save->frameLimit - save->frameCount) / 30.0f);
                 seconds = seconds < 1000 ? seconds : 999;
                 if (seconds <= 0) {
                     if (!(flags & 0x80000000)) {
-                        CallMethod(D_004CA9B8);
+                        CallMethod("drill_timeover");
                         save->flags |= 0x80000000;
                         if (drill->phase != 5) {
                             DrillEffectRef *effect;
@@ -775,9 +766,9 @@ void MAP_updateUnitDrill(Drill *drill)
                     seconds = 0;
                 }
                 length = HexToStr(seconds, text);
-                xglFontPrint(328, 24, 0xFFF0, D_004CA9C8);
+                xglFontPrint(328, 24, 0xFFF0, "\x0D\x00\x19\x03Time Remaining\x15\x02\x04\x01");
                 xglFontPrint(480 - length * 10, 24, 0xFFF0, text);
-                xglFontPrintDirectOT(0xFFF0, D_004DB7E0);
+                xglFontPrintDirectOT(0xFFF0, "\x15\x02\x04");
             }
         }
         if (save->command != 2) {
@@ -831,7 +822,7 @@ void DrillPowerOffFunc(Drill *drill)
     DrillEffectRef *effect;
     signed char hit;
 
-    xglFontDebugPrintf(8, 16, D_004CAA00);
+    xglFontDebugPrintf(8, 16, "DRILL POWEROFF");
     drill->position.vector.x = -2.9f;
     drill->position.vector.y = 4.5f;
     drill->position.vector.z = -12.5f;
@@ -869,7 +860,7 @@ void DrillStandbyFunc(Drill *drill)
 
     if (save->command == 2) {
         save->cameraPreset = 1;
-        xglFontDebugPrintf(8, 16, (char *) D_004CAA10);
+        xglFontDebugPrintf(8, 16, (char *) "DRILL STOP");
         DrillResetCameraPos(drill, camera);
         return;
     } else if (save->command == 1) {
@@ -880,7 +871,7 @@ void DrillStandbyFunc(Drill *drill)
         save->hit = 0;
         save->command = 0;
     } else {
-        xglFontDebugPrintf(8, 16, (char *) D_004CAA20);
+        xglFontDebugPrintf(8, 16, (char *) "DRILL STANDBY");
         if ((int) save->flags >= 0) {
             DrillCameraControlFunc(drill, camera);
             drill->crashTimer = 0;
@@ -905,7 +896,7 @@ void DrillStandbyFunc(Drill *drill)
                 && ((save->flags & 1) == 0 || save->frameLimit - save->frameCount >= 60)
                 && save->command != 1) {
                 save->command = 2;
-                CallMethod((const char *) D_004CAA30);
+                CallMethod((const char *) "drill_stop");
             }
         }
     }
@@ -1422,9 +1413,46 @@ int HitCheckEnemy(Vector4 *position, float radius)
             sefCreateEffectCf(635, &target->position, 0);
             xglSoundEffectNormalID(0x10003, 0);
             Enemy_Command_Freeze(target, 1);
-            CallMethod_I(D_004DB7E8, target->methodArg);
+            CallMethod_I("broken", target->methodArg);
             return i;
         }
     }
     return -1;
 }
+
+DrillContainerDef container[31] = {
+    {1, {0}, {{0.15f, 1.0f, 0.15f, 0.0f}}, {0, {0}, 628, 501, 0}},
+    {1, {0}, {{0.15f, 1.0f, 0.15f, 0.0f}}, {0, {0}, 628, 503, 0}},
+    {1, {0}, {{0.15f, 1.0f, 0.15f, 0.0f}}, {0, {0}, 628, 505, 0}},
+    {1, {0}, {{0.15f, 1.0f, 0.15f, 0.0f}}, {0, {0}, 628, 507, 0}},
+    {2, {0}, {{0.25f, 1.5f, 0.25f, 0.0f}}, {0, {0}, 602, 509, 0}},
+    {2, {0}, {{0.25f, 1.5f, 0.25f, 0.0f}}, {0, {0}, 602, 511, 0}},
+    {2, {0}, {{0.25f, 1.5f, 0.25f, 0.0f}}, {0, {0}, 602, 513, 0}},
+    {2, {0}, {{0.25f, 1.5f, 0.25f, 0.0f}}, {0, {0}, 602, 515, 0}},
+    {1, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, {2, {0}, 648, 517, 0}},
+    {1, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, {2, {0}, 648, 519, 0}},
+    {1, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, {2, {0}, 648, 521, 0}},
+    {1, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, {2, {0}, 648, 523, 0}},
+    {2, {0}, {{0.5f, 1.5f, 0.5f, 0.0f}}, {0, {0}, 602, 525, 0}},
+    {2, {0}, {{0.5f, 1.5f, 0.5f, 0.0f}}, {0, {0}, 602, 527, 0}},
+    {2, {0}, {{0.5f, 1.5f, 0.5f, 0.0f}}, {0, {0}, 602, 529, 0}},
+    {2, {0}, {{0.5f, 1.5f, 0.5f, 0.0f}}, {0, {0}, 602, 531, 0}},
+    {2, {0}, {{1.0f, 1.5f, 1.0f, 0.0f}}, {1, {0}, 614, 533, 0}},
+    {2, {0}, {{1.0f, 1.5f, 1.0f, 0.0f}}, {1, {0}, 614, 535, 0}},
+    {1, {0}, {{1.0f, 1.5f, 1.0f, 0.0f}}, {1, {0}, 642, 537, 0}},
+    {1, {0}, {{1.0f, 1.5f, 1.0f, 0.0f}}, {1, {0}, 642, 539, 0}},
+    {1, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, {0, {0}, 629, 1, 0}},
+    {1, {0}, {{1.0f, 1.0f, 1.0f, 0.0f}}, {0, {0}, 632, 3, 0}},
+    {1, {0}, {{1.5f, 1.0f, 1.5f, 0.0f}}, {0, {0}, 635, 5, 0}},
+    {2, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, {0, {0}, 601, 7, 0}},
+    {2, {0}, {{1.0f, 1.0f, 1.0f, 0.0f}}, {0, {0}, 604, 9, 0}},
+    {2, {0}, {{0.15f, 1.5f, 0.15f, 0.0f}}, {0, {0}, 601, 1, 0}},
+    {2, {0}, {{0.25f, 1.5f, 0.25f, 0.0f}}, {0, {0}, 601, 3, 0}},
+    {2, {0}, {{0.4f, 1.5f, 0.4f, 0.0f}}, {0, {0}, 601, 7, 0}},
+    {2, {0}, {{0.5f, 1.5f, 0.5f, 0.0f}}, {0, {0}, 601, 8, 0}},
+    {2, {0}, {{1.0f, 1.5f, 1.0f, 0.0f}}, {0, {0}, 604, 9, 0}},
+    {1, {0}, {{0.15f, 1.0f, 0.15f, 0.0f}}, {0, {0}, 628, 10, 0}},
+};
+
+short Times = 0;
+short NowTester = 0;

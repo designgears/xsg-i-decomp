@@ -3,7 +3,7 @@
  */
 #include "common.h"
 
-unsigned char TitleMaxList[7] = {6, 9, 14, 9, 3, 5, 6};
+extern unsigned char TitleMaxList[7];
 
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 extern void xglFontPrint(int x, int y, int color, const char *text);
@@ -21,7 +21,6 @@ extern void CardListDisp(void *w, void *src);
 extern unsigned int CardCntList(void *o, int idx);
 extern char ModeEndMess0[];
 extern char ModeEndMess1[];
-extern char D_00A4DB30[];
 typedef struct { unsigned char pad[0x2A]; unsigned short trg; unsigned short rpt; unsigned char pad2[0xA2]; } CVPad;
 extern CVPad PadData[];
 typedef struct {
@@ -65,7 +64,7 @@ void CardViewProc(void *work, CVList *list, short *exiting)
   int m;
   int i;
   int all;
-  xglFontDebugPrintf(0x54, 0, D_00A4DB30);
+  xglFontDebugPrintf(0x54, 0, "View Cards");
   *((unsigned char *) (((char *) work) + 0x59BF)) = 0x36;
   pos[0] = -1.0f;
   pos[1] = 0.6f;
@@ -480,30 +479,51 @@ extern int dataEvtBoxChk(int index);
 extern void dataEvtBoxDec(int index);
 extern int dataMoneyBoxInc(int amount);
 extern int CardAddList(CardGameWork *work, s16 cardId);
-extern unsigned char BS1RariLst[];
-extern unsigned char BS1UncoLst[];
-extern unsigned char BS1ComoLst[];
-extern unsigned char BS2RariLst[];
-extern unsigned char BS2UncoLst[];
-extern unsigned char BS2ComoLst[];
-extern unsigned char ST1RariLst[];
-extern unsigned char ST1CardLst[];
-extern char ZenkakuListA[];
-extern char ZenkakuListB[];
-extern char CardConvertNameLst[CARD_PACK_COUNT][24];
-extern u8 D_00A57848[CARD_PACK_COUNT];
-extern s16 D_00A57860[CARD_OPEN_LIST_MAX];
-extern int D_00A578B0;
-extern int D_00A578B4;
-extern int D_00A578B8;
-extern int D_00A578BC;
-extern int D_00A578C0;
-extern int D_00A578C4;
-extern float rotval_7;
-extern u8 CursorTimer_9;
+char ZenkakuListA[20] = "\xA1\xA1" "1 2 3 4 5 6 7 8 9 ";
+char ZenkakuListB[20] = "0 1 2 3 4 5 6 7 8 9 ";
+char CardConvertNameLst[20][24] = {
+    "\x19\x03PM Card A",
+    "\x19\x03PM Card B",
+    "\x19\x03PM Card C",
+    "\x19\x03PM Card D",
+    "\x19\x03PM Card E",
+    "\x19\x03PM Card F",
+    "\x19\x03PM Card G",
+    "\x19\x03PM Card H",
+    "\x19\x03PM Card I",
+    "\x19\x03PM Card J",
+    "\x19\x03PM Card K",
+    "\x19\x03PM Card L",
+    "\x19\x03PM Card M",
+    "\x19\x03PM Card N",
+    "\x19\x03PM Card O",
+    "\x19\x03PM Card P",
+    "\x19\x03PM Card Q",
+    "\x19\x03Starter Set",
+    "\x19\x03" "Card Pack #821",
+    "\x19\x03" "Card Pack #822",
+};
+unsigned char ST1RariLst[6] = { 0x00, 0x02, 0x03, 0x04, 0x05, 0x06 };
+unsigned char ST1CardLst[39] = { 0x10, 0x10, 0x11, 0x11, 0x12, 0x12, 0x13, 0x13, 0x16, 0x17, 0x17, 0x18, 0x19, 0x19, 0x24, 0x24, 0x24, 0x21, 0x21, 0x21, 0x2B, 0x30, 0x31, 0x31, 0x31, 0x32, 0x32, 0x32, 0x53, 0x53, 0x53, 0x54, 0x54, 0x54, 0x5B, 0x5B, 0x5B, 0x6F, 0x6F };
+unsigned char BS1RariLst[16] = { 0x00, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x2C, 0x3B, 0x41, 0x4A, 0x57, 0x65, 0x6B, 0x73, 0x84 };
+unsigned char BS1UncoLst[23] = { 0x0F, 0x16, 0x1A, 0x1B, 0x1C, 0x1F, 0x21, 0x27, 0x2E, 0x36, 0x37, 0x38, 0x3C, 0x4B, 0x56, 0x59, 0x5C, 0x61, 0x62, 0x64, 0x6D, 0x75, 0x81 };
+unsigned char BS1ComoLst[44] = { 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x17, 0x18, 0x19, 0x24, 0x2A, 0x2B, 0x2F, 0x30, 0x31, 0x32, 0x35, 0x3D, 0x3E, 0x43, 0x45, 0x53, 0x54, 0x55, 0x58, 0x5B, 0x60, 0x67, 0x69, 0x6A, 0x6C, 0x6F, 0x74, 0x78, 0x79, 0x7C, 0x7E, 0x82, 0x88, 0x8A, 0x8C, 0x91, 0x92, 0x93 };
+unsigned char BS2RariLst[20] = { 0x09, 0x0A, 0x0C, 0x0E, 0x20, 0x28, 0x2D, 0x40, 0x4C, 0x4D, 0x4E, 0x4F, 0x50, 0x51, 0x52, 0x5D, 0x5E, 0x63, 0x6E, 0x7F };
+unsigned char BS2UncoLst[9] = { 0x25, 0x26, 0x29, 0x39, 0x42, 0x7D, 0x83, 0x86, 0x77 };
+unsigned char BS2ComoLst[17] = { 0x33, 0x3F, 0x44, 0x46, 0x47, 0x48, 0x49, 0x5F, 0x68, 0x7A, 0x7B, 0x85, 0x87, 0x89, 0x5A, 0x70, 0x72 };
+static u8 D_00A57848[CARD_PACK_COUNT];
+static s16 D_00A57860[CARD_OPEN_LIST_MAX];
+static int D_00A578B0;
+static int D_00A578B4;
+static int D_00A578B8;
+static int D_00A578BC;
+static int D_00A578C0;
+static int D_00A578C4;
 
 void CardOpenProc(CardGameWork *work, s16 *exiting)
 {
+    static float rotval __asm__("rotval.7") = 0.0f;
+    static u8 CursorTimer __asm__("CursorTimer.9") = 0;
     Matrix4 cardMatrix;
     Matrix4 placement;
     float cardOffset[4];
@@ -607,7 +627,7 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
         }
         break;
     case CARD_OPEN_STEP_COUNT:
-        rotval_7 = 0.0f;
+        rotval = 0.0f;
         D_00A578B0 = -1;
         D_00A578B4 = 0;
         for (i = 0; i < CARD_PACK_COUNT; i += 1) {
@@ -656,20 +676,20 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
                 xglSoundEffectNormalID(CARD_SE_CURSOR, 0);
                 D_00A578B0 = COPSerachPackL(D_00A57848, D_00A578B0);
             }
-            CursorTimer_9 += 1;
-            if (CursorTimer_9 >= CARD_CURSOR_FRAMES) {
-                CursorTimer_9 = 0;
+            CursorTimer += 1;
+            if (CursorTimer >= CARD_CURSOR_FRAMES) {
+                CursorTimer = 0;
             }
             cardOffset[1] = 0.6271f;
             cardOffset[2] = 0.6271f;
-            cardOffset[0] = (((float) CursorTimer_9 * CARD_CURSOR_TRAVEL) / CARD_CURSOR_LAST_FRAME) + CARD_CURSOR_REST_X;
+            cardOffset[0] = (((float) CursorTimer * CARD_CURSOR_TRAVEL) / CARD_CURSOR_LAST_FRAME) + CARD_CURSOR_REST_X;
             xglMatrixTrans(placement, cardMatrix, cardOffset);
             nmlModelSetPlace(placement);
             nmlModelSetTexture(CARD_CURSOR_TEXTURE);
             nmlModelEntryCard(CARD_CURSOR_R_MODEL);
             cardOffset[1] = 0.6271f;
             cardOffset[2] = 0.6271f;
-            cardOffset[0] = -CARD_CURSOR_REST_X - (((float) CursorTimer_9 * CARD_CURSOR_TRAVEL) / CARD_CURSOR_LAST_FRAME);
+            cardOffset[0] = -CARD_CURSOR_REST_X - (((float) CursorTimer * CARD_CURSOR_TRAVEL) / CARD_CURSOR_LAST_FRAME);
             xglMatrixTrans(placement, cardMatrix, cardOffset);
             nmlModelSetPlace(placement);
             nmlModelSetTexture(CARD_CURSOR_TEXTURE);
@@ -683,7 +703,7 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
         cardOffset[1] = 0.6271f;
         cardOffset[2] = 0.3881f;
         cardOffset[0] = 0.0f;
-        rotval_7 += CARD_PACK_SPIN_STEP;
+        rotval += CARD_PACK_SPIN_STEP;
         xglMatrixTrans(placement, cardMatrix, cardOffset);
         switch (D_00A578B0) {
         case CARD_PACK_ST1: packModel = CARD_PACK1_MODEL; break;
@@ -691,7 +711,7 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
         case CARD_PACK_BS2: packModel = CARD_PACK3_MODEL; break;
         default: packModel = CARD_PACK4_MODEL; break;
         }
-        xglMatrixRotY(placement, placement, rotval_7);
+        xglMatrixRotY(placement, placement, rotval);
         nmlModelSetPlace(placement);
         nmlModelSetTexture(CARD_PACK_TEXTURE);
         nmlModelEntry(packModel);
@@ -706,7 +726,7 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
         xglFontPrint(234, 312, CARD_TEXT_COLOR, "\x19\x03\r\0?");
         xglFontPrint(10, 384, CARD_TEXT_COLOR, "\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\x0C\x80@@\xA1\xFB \v\x19\x03\r\0Okay");
         xglFontPrint(120, 288, CARD_TEXT_COLOR, "\v");
-        rotval_7 += CARD_PACK_OPEN_SPIN_STEP;
+        rotval += CARD_PACK_OPEN_SPIN_STEP;
         cardOffset[1] = 0.6271f;
         cardOffset[2] = 0.3881f;
         cardOffset[0] = 0.0f;
@@ -717,7 +737,7 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
         case CARD_PACK_BS2: packModel = CARD_PACK3_MODEL; break;
         default: packModel = CARD_PACK4_MODEL; break;
         }
-        xglMatrixRotY(placement, placement, rotval_7);
+        xglMatrixRotY(placement, placement, rotval);
         nmlModelSetPlace(placement);
         nmlModelSetTexture(CARD_PACK_TEXTURE);
         nmlModelEntryCard(packModel);
@@ -1051,3 +1071,78 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
         break;
     }
 }
+
+/* Book page tables, also read by card_disp. */
+unsigned char TitleMaxList[7] = {6, 9, 14, 9, 3, 5, 6};
+signed char SkipStartList[7] = {0, 6, 15, 29, 38, 41, 46};
+signed char PageStatusLst[59][3] = {
+    {0, 0, 0},
+    {0, 1, 0},
+    {0, 2, 0},
+    {0, 3, 0},
+    {0, 4, 0},
+    {0, 5, 0},
+    {1, 0, 0},
+    {1, 1, 0},
+    {1, 2, 0},
+    {1, 3, 0},
+    {1, 4, 0},
+    {1, 5, 0},
+    {1, 6, 0},
+    {1, 7, 0},
+    {1, 8, 0},
+    {2, 0, 0},
+    {2, 1, 0},
+    {2, 2, 0},
+    {2, 3, 0},
+    {2, 4, 0},
+    {2, 5, 0},
+    {2, 6, 0},
+    {2, 7, 0},
+    {2, 8, 0},
+    {2, 9, 0},
+    {2, 10, 0},
+    {2, 11, 0},
+    {2, 12, 0},
+    {2, 13, 0},
+    {2, 14, 0},
+    {3, 0, 0},
+    {3, 1, 0},
+    {3, 2, 0},
+    {3, 3, 0},
+    {3, 4, 0},
+    {3, 5, 0},
+    {3, 6, 0},
+    {3, 7, 0},
+    {3, 8, 0},
+    {3, 9, 0},
+    {3, 10, 0},
+    {3, 11, 0},
+    {3, 12, 0},
+    {3, 13, 0},
+    {4, 0, 0},
+    {4, 1, 0},
+    {4, 2, 0},
+    {4, 3, 0},
+    {5, 0, 0},
+    {5, 1, 0},
+    {5, 2, 0},
+    {5, 3, 0},
+    {5, 4, 0},
+    {6, 0, 0},
+    {6, 1, 0},
+    {6, 2, 0},
+    {6, 3, 0},
+    {6, 4, 0},
+    {6, 5, 0},
+};
+unsigned char SkipPageLst[7][14] = {
+    {0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0},
+    {6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 0, 0, 0, 0},
+    {15, 16, 17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 28, 29},
+    {30, 31, 33, 34, 35, 38, 40, 41, 43, 0, 0, 0, 0, 0},
+    {44, 45, 47, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {48, 49, 50, 51, 52, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {53, 54, 55, 56, 57, 58, 0, 0, 0, 0, 0, 0, 0, 0},
+};
+int ChangeCnt = 0;

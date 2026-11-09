@@ -18,12 +18,26 @@ extern DrawImageRenderState sRender;
 
 extern void sceVif1PkCnt(XglPacket *packet, int count);
 extern void sceVif1PkAddDataN(XglPacket *packet, const void *data, int count);
-extern u64 TestEnv_0_0036ABC0[12];
-extern unsigned char TransEnv_1_0036AC20[];
-extern unsigned char FlushEnv_2_0036AC40[];
 
 static void DrawImage(u8 *framebuffer)
 {
+    static u64 TestEnv_0_0036ABC0[12] __asm__("TestEnv.0") __attribute__((aligned(16))) = {
+        0x0ULL, 0x5100000500000000ULL,
+        0x1000000000000004ULL, 0xEULL,
+        0x0ULL, 0x50ULL,
+        0x0ULL, 0x51ULL,
+        0x1C000000200ULL, 0x52ULL,
+        0x0ULL, 0x53ULL
+    };
+    static u64 TransEnv_1_0036AC20[4] __asm__("TransEnv.1") __attribute__((aligned(16))) = {
+        0x0ULL, 0x5100000100000000ULL,
+        0x800000000007000ULL, 0x0ULL
+    };
+    static u64 FlushEnv_2_0036AC40[6] __asm__("FlushEnv.2") __attribute__((aligned(16))) = {
+        0x0ULL, 0x5100000200000000ULL,
+        0x1000000000008001ULL, 0xEULL,
+        0x0ULL, 0x3FULL
+    };
     XglPacket *packet;
 
     packet = xglPacketGetCurrent();
@@ -73,8 +87,6 @@ typedef struct {
 } TyaPadView;
 extern TyaGsDispEnv DispEnv;
 extern TyaPadView PadData;
-extern const char D_004C15E8[];
-extern const char D_004C1600[];
 extern void sceGsSetDefDispEnv(TyaGsDispEnv *env, int psm, int w, int h, int dx, int dy);
 extern int xglCdReadFile(const char *name, void *buffer, int mode, int flags);
 extern int xglJpegDecode(void *request);
@@ -106,7 +118,7 @@ void tyaDisplaySetting(u8 *buf)
         ((TyaSaveDataView *)SaveData)->disp_y = 0;
         return;
     }
-    xglCdReadFile(D_004C15E8, buf + 0x100000, 0, 1);
+    xglCdReadFile("data\\yajima\\mnt_set.jpg", buf + 0x100000, 0, 1);
     memset(&req, 0, 0x20);
     req.source = (u32)(buf + 0x100000);
     req.destination = (u32)buf;
@@ -154,7 +166,7 @@ void tyaDisplaySetting(u8 *buf)
             xglSoundEffectNormalDirect(2);
             break;
         }
-        xglFontDebugPrintf(8, 8, D_004C1600, (int)DispEnv.display.raw & 0xFFF, (int)(DispEnv.display.raw >> 12) & 0x7FF, ((TyaSaveDataView *)SaveData)->disp_x, ((TyaSaveDataView *)SaveData)->disp_y);
+        xglFontDebugPrintf(8, 8, "%04x %04x\n%04x %04x", (int)DispEnv.display.raw & 0xFFF, (int)(DispEnv.display.raw >> 12) & 0x7FF, ((TyaSaveDataView *)SaveData)->disp_x, ((TyaSaveDataView *)SaveData)->disp_y);
         DrawImage(buf);
         xglSleep();
     }

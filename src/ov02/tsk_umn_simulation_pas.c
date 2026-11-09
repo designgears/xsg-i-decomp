@@ -67,7 +67,18 @@ typedef struct UmnSharedWork {
     int pending_script;
 } UmnSharedWork;
 extern UmnSharedWork UmnWork;
-extern const char *msg00_0_00A10888;
+char *ListText[] = {
+    "KOS-MOS Simulator",
+    "Woglinde",
+    "Pleroma",
+    "U-TIC Battleship",
+    "Cathedral Ship",
+    "Encephalon",
+    "Song of Nephilim",
+};
+int UmnSimulationScriptNoTbl[] = {
+    0x000300EF, 0x00040149, 0x00010333, 0x00010419, 0x0001058B, 0x0001097D, 0x00010B35,
+};
 extern void WindowDXSet(void *window);
 extern void WindowDXMain(void *window);
 extern void MoveSlide(short *current, short *target, float rate);
@@ -77,6 +88,7 @@ extern void endPrintExtFunc(int kind, int id, void *data);
 
 void tskUmnSimulationPas(UmnTaskCommand *task, UmnSimulationPasWork *work)
 {
+    static const char *msg00 __attribute__((aligned(8))) = "Environmental Simulator";
     unsigned char simulation_state = UmnWork.simulation_state;
 
     if (simulation_state != 3) {
@@ -100,7 +112,7 @@ void tskUmnSimulationPas(UmnTaskCommand *task, UmnSimulationPasWork *work)
             work->window.state = opening_state;
             WindowDXMain(&work->window);
             work->window.state = simulation_state;
-            eMessageSet(&work->message.control, msg00_0_00A10888);
+            eMessageSet(&work->message.control, msg00);
             message = &work->message;
             message->control.mode = 0x20;
             message->control.x = message_x;
@@ -187,10 +199,6 @@ typedef struct UmnSimInfoWork {
     } str;
 } UmnSimInfoWork;
 extern void MenuInfoWindow(void);
-extern char D_00A13218;
-extern const char D_00A13220[] __attribute__((aligned(8)));
-extern char D_00A13230[];
-extern char *ListText[];
 extern char *strcat(char *, const char *);
 
 void tskUmnSimulationInfo(UmnTaskCommand *task, void *arg)
@@ -210,7 +218,7 @@ void tskUmnSimulationInfo(UmnTaskCommand *task, void *arg)
     switch (task->command) {
     case 0:
         work->color = 0x00FF0000;
-        work->str.buf[0] = D_00A13218;
+        __builtin_memcpy(work->str.buf, "", 1);
         work->opened = 0;
         work->state = 0;
         WindowDXSet(&work->window);
@@ -243,9 +251,9 @@ void tskUmnSimulationInfo(UmnTaskCommand *task, void *arg)
         if (tab < 0x12) {
             if (tab >= 0x10) {
                 if (UmnWork.list_index >= 0) {
-                    __builtin_memcpy(&work->str.head, D_00A13220, 10);
+                    __builtin_memcpy(&work->str.head, "Simulate ", 10);
                     strcat(work->str.buf, ListText[UmnWork.list_index]);
-                    strcat(work->str.buf, D_00A13230);
+                    strcat(work->str.buf, ".");
                 }
             } else {
                 slideTarget = 512;
@@ -270,7 +278,6 @@ extern UmnGameLoopState GameLoopState;
 
 extern PadPrefix PadData;
 
-extern const char D_00A13238[];
 extern void WindowSPSet(void *window);
 extern void WindowSPMain(void *window);
 extern int WindowSPSelect(void *window, int pad);
@@ -331,7 +338,7 @@ void tskUmnSimulationList(UmnTaskCommand *task, void *arg)
                 }
                 work->item[i].value = 0;
             }
-            work->item[i].text = &D_00A13218;
+            work->item[i].text = "";
             work->item[i].value = 0;
             work->item[i].flag = 0;
             work->item[i + 1].text = 0;
@@ -339,7 +346,7 @@ void tskUmnSimulationList(UmnTaskCommand *task, void *arg)
             work->window.y = work->y;
             work->window.color = work->color;
             work->window.mode = 3;
-            work->window.title = D_00A13238;
+            work->window.title = "Information";
             work->window.rows = 1;
             work->window.cols = 7;
             work->window.width = 0x1A6;
@@ -392,9 +399,7 @@ void tskUmnSimulationList(UmnTaskCommand *task, void *arg)
 }
 
 extern int UmnWorkEnd;
-extern int UmnSimulationScriptNoTbl[];
 extern int UmnSimulationNo;
-extern const char D_00A132F8[];
 extern int MenuScenarioNoGet(void);
 extern void tskUmnSimulationInfo(UmnTaskCommand *task, void *work);
 extern void tskUmnSimulationList(UmnTaskCommand *task, void *work);
@@ -486,6 +491,6 @@ int UmnSimulation(void)
     if (UmnWork.countdown != 0) {
         UmnWork.countdown--;
     }
-    xglFontDebugPrintf(32, 208, D_00A132F8);
+    xglFontDebugPrintf(32, 208, "\xA5\xB7\xA5\xDF\xA5\xE5\xA5\xEC\xA1\xBC\xA5\xB7\xA5\xE7\xA5\xF3");
     return xglFontDebugHex(0, 64, UmnWork.tab_state, 2);
 }

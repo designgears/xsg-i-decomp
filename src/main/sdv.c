@@ -6,31 +6,24 @@
 
 #include "m_ef_obj.h"
 
-extern float _sdvMapRgb[4];
+static float _sdvMapRgb[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 
-extern float _sdvAmbient[4];
+static float _sdvAmbient[4] = { 0.25f, 0.25f, 0.25f, 1.0f };
 
 
-extern const float McMathUnitMatrix[4][4];
 
 
-extern short _sdvSpecialBuf[8];
+static short _sdvSpecialBuf[8];
 
 
-extern SdvAlter _sdvAlter[16];
+static SdvAlter _sdvAlter[16];
 
 
-extern int _sdvAmbFrame;
+static int _sdvAmbFrame = 0;
 
 
-extern int _sdvAmbState;
-
-
-extern unsigned char charID_0;
-
-
-extern int eftCate_1;
+static int _sdvAmbState = 0;
 
 
 extern unsigned short itmBox[255];
@@ -48,7 +41,6 @@ extern unsigned short accBox[255];
 extern unsigned short evtBox[255];
 
 
-extern long long moneyBox;
 
 
 extern unsigned char orgData[33][0x180];
@@ -87,10 +79,8 @@ typedef struct SdvSequence {
 
 extern void sefMemZero(void *data, unsigned int size);
 
-extern const Vector4 McMathUnitVector;
 
 
-extern int serial_3;
 
 
 extern Vector4 *func_A2C3F8(void);
@@ -168,6 +158,9 @@ void sdvSaveAmbient(void)
 
 static void sdvSetAmbStateSub(int state, int effect_no, int force)
 {
+    static unsigned char charID_0 __asm__("charID.0");
+    static int eftCate_1 __asm__("eftCate.1");
+
     if (force != 0) {
         _sdvAmbState = state;
         return;
@@ -644,7 +637,6 @@ void sdvScheduleCamera(SdvCameraTask *task)
     }
 }
 
-extern float D_004D836C;
 extern void *sefGetNowScheduler(void);
 extern void MMathMulMatrix(void *, void *, void *);
 extern void MMathApplyMatrix(void *, void *, void *);
@@ -671,7 +663,7 @@ static int sdvTransOffset(int *out, void *src, void *mtx, unsigned short *arg3)
     }
     sched = sefGetNowScheduler();
     __asm__ __volatile__("lqc2 vf1, 0(%0)\n\tvitof0.xyzw vf1, vf1\n\tsqc2 vf1, 0(%1)" : : "r"(src), "r"(tmp) : "memory");
-    tmp[2] *= D_004D836C;
+    tmp[2] *= 0.01f;
     tmp[3] = 1.0f;
     sefGetPosition(pos, tmp, type);
     if (*(int *)(sched + 0xA8C) & 2) {
@@ -743,7 +735,6 @@ static int sdvAllocSpecialWork(int kind)
     return -1;
 }
 
-extern const short blksiz_2[9];
 typedef struct SdvScreenPoint {
     int x;
     int y;
@@ -894,6 +885,7 @@ void sdvExecSpecial(SdvSpecial *special)
 
 void sdvDrawSpecial(SdvSpecial *special)
 {
+    static short blksiz[9] __asm__("blksiz.2") = { 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, 0x7F, 0xFF, 0x1FF };
     int params[16];
     SdvScreenPoint offset;
     SdvScreenPoint screen;
@@ -994,8 +986,8 @@ void sdvDrawSpecial(SdvSpecial *special)
             params[4] = key->width;
             params[5] = key->height;
             for (i = 0; i < 9; i++) {
-                if (blksiz_2[i] >= key->intensity) {
-                    size = blksiz_2[i];
+                if (blksiz[i] >= key->intensity) {
+                    size = blksiz[i];
                     break;
                 }
             }
@@ -1086,6 +1078,30 @@ void sdvDrawSpecial(SdvSpecial *special)
         }
     }
 }
+
+/*
+ * An unreferenced zero quadword at 0x00422930, between blksiz.2 and orgData:
+ * without it orgData would land at 0x00422930. It carries the name of the
+ * splat pad item it lies in so the carve owns that whole fill. The 2-byte
+ * D_xxx after each item box below is unreferenced alignment fill.
+ */
+static unsigned int D_00422930[4] __asm__("D_00422922") __attribute__((aligned(16))) = {0};
+unsigned char orgData[33][0x180] = {{0}};
+unsigned char plChaData[0xA80] = {0};
+unsigned short itmBox[255] = {0};
+static unsigned short D_0042673E __attribute__((section(".data"))) = 0;
+unsigned short wpnBox[255] = {0};
+static unsigned short D_0042693E __attribute__((section(".data"))) = 0;
+unsigned short bltBox[255] = {0};
+static unsigned short D_00426B3E __attribute__((section(".data"))) = 0;
+unsigned short accBox[255] = {0};
+static unsigned short D_00426D3E __attribute__((section(".data"))) = 0;
+unsigned short evtBox[255] = {0};
+static unsigned short D_00426F3E __attribute__((section(".data"))) = 0;
+unsigned char batDatBuf[0x10000] = {0};
+unsigned char thinkBuf[0x4000] = {0};
+MEfObjCamParams mefCamParams = {0};
+char mdstr[0x100] = {0};
 
 #define SCE_GS_SET_TEX0(tbp, tbw, psm, tw, th, tcc, tfx, cbp, cpsm, csm, csa, cld) \
     ((unsigned long long)(tbp) | ((unsigned long long)(tbw) << 14) | \
@@ -1217,21 +1233,22 @@ void sdvInitAlter(SdvAlter *alter)
 
 int sdvCreateAlter(SdvAlterParameters *parameters)
 {
+    static int serial __asm__("serial.3") = 0;
     int index;
     int unavailable = -1;
 
     index = 0;
     do {
         if (_sdvAlter[index].active == 0) {
-            int serial = (serial_3 + 1) & 255;
-            serial_3 = serial;
+            int next = (serial + 1) & 255;
+            serial = next;
             _sdvAlter[index].parameters = *parameters;
-            _sdvAlter[index].serial = serial_3;
+            _sdvAlter[index].serial = serial;
             _sdvAlter[index].active = 1;
             _sdvAlter[index].samples = 0;
             _sdvAlter[index].phase = 0.0f;
             _sdvAlter[index].cursor = 0;
-            return (serial << 16) | index;
+            return (next << 16) | index;
         }
         ++index;
     } while (index < 16);
@@ -1402,7 +1419,29 @@ typedef struct SdvGifPacket {
     int loop_count;
     void *base;
 } SdvGifPacket;
-extern const unsigned long long alphaTbl_004CC8D8[4];
+/* GS ALPHA register values indexed by alter blend mode. */
+static const unsigned long long alphaTbl_004CC8D8[4] __asm__("alphaTbl") = {
+    0x44, 0x48, 0x8000000042ULL, 0x6A
+};
+
+/* Quad texture coordinates (S, T, Q, 0) per corner. */
+static const float stqTbl_004CC900[16] __asm__("stqTbl") __attribute__((aligned(16))) = {
+    0.0f, 0.0f, 1.0f, 0.0f,
+    1.0f, 0.0f, 1.0f, 0.0f,
+    0.0f, 1.0f, 1.0f, 0.0f,
+    1.0f, 1.0f, 1.0f, 0.0f
+};
+/* Its splat label, so the data carve finds the (code-unreferenced) table. */
+__asm__("stqTbl_004CC900 = stqTbl");
+
+const Vector4 McMathUnitVector = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+const float McMathUnitMatrix[4][4] = {
+    {1.0f, 0.0f, 0.0f, 0.0f},
+    {0.0f, 1.0f, 0.0f, 0.0f},
+    {0.0f, 0.0f, 1.0f, 0.0f},
+    {0.0f, 0.0f, 0.0f, 1.0f}
+};
 extern void SGsInitGifPacket(SdvGifPacket *packet);
 extern void SGsOpenGifPacket(SdvGifPacket *packet, int prim,
                              unsigned long long registers, unsigned int nreg);

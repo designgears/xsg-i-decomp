@@ -2,6 +2,123 @@
 #include "shared.h"
 #include "main/xgl_2.h"
 #include "nml_packet_add.h"
+
+static const float s_aNormalTbl[114][4] __attribute__((aligned(16))) = {
+    { 0.0f, -1.0f, 0.0f, 1.0f },
+    { 0.0f, -0.866f, 0.5f, 1.0f },
+    { 0.191f, -0.866f, 0.462f, 1.0f },
+    { 0.354f, -0.866f, 0.354f, 1.0f },
+    { 0.462f, -0.866f, 0.191f, 1.0f },
+    { 0.5f, -0.866f, 0.0f, 1.0f },
+    { 0.462f, -0.866f, -0.191f, 1.0f },
+    { 0.354f, -0.866f, -0.354f, 1.0f },
+    { 0.191f, -0.866f, -0.462f, 1.0f },
+    { 0.0f, -0.866f, -0.5f, 1.0f },
+    { -0.191f, -0.866f, -0.462f, 1.0f },
+    { -0.354f, -0.866f, -0.354f, 1.0f },
+    { -0.462f, -0.866f, -0.191f, 1.0f },
+    { -0.5f, -0.866f, -0.0f, 1.0f },
+    { -0.462f, -0.866f, 0.191f, 1.0f },
+    { -0.354f, -0.866f, 0.354f, 1.0f },
+    { -0.191f, -0.866f, 0.462f, 1.0f },
+    { 0.0f, -0.707f, 0.707f, 1.0f },
+    { 0.271f, -0.707f, 0.653f, 1.0f },
+    { 0.5f, -0.707f, 0.5f, 1.0f },
+    { 0.653f, -0.707f, 0.271f, 1.0f },
+    { 0.707f, -0.707f, 0.0f, 1.0f },
+    { 0.653f, -0.707f, -0.271f, 1.0f },
+    { 0.5f, -0.707f, -0.5f, 1.0f },
+    { 0.271f, -0.707f, -0.653f, 1.0f },
+    { 0.0f, -0.707f, -0.707f, 1.0f },
+    { -0.271f, -0.707f, -0.653f, 1.0f },
+    { -0.5f, -0.707f, -0.5f, 1.0f },
+    { -0.653f, -0.707f, -0.271f, 1.0f },
+    { -0.707f, -0.707f, -0.0f, 1.0f },
+    { -0.653f, -0.707f, 0.271f, 1.0f },
+    { -0.5f, -0.707f, 0.5f, 1.0f },
+    { -0.271f, -0.707f, 0.653f, 1.0f },
+    { 0.0f, -0.5f, 0.866f, 1.0f },
+    { 0.331f, -0.5f, 0.8f, 1.0f },
+    { 0.612f, -0.5f, 0.612f, 1.0f },
+    { 0.8f, -0.5f, 0.331f, 1.0f },
+    { 0.866f, -0.5f, 0.0f, 1.0f },
+    { 0.8f, -0.5f, -0.331f, 1.0f },
+    { 0.612f, -0.5f, -0.612f, 1.0f },
+    { 0.331f, -0.5f, -0.8f, 1.0f },
+    { 0.0f, -0.5f, -0.866f, 1.0f },
+    { -0.331f, -0.5f, -0.8f, 1.0f },
+    { -0.612f, -0.5f, -0.612f, 1.0f },
+    { -0.8f, -0.5f, -0.331f, 1.0f },
+    { -0.866f, -0.5f, -0.0f, 1.0f },
+    { -0.8f, -0.5f, 0.331f, 1.0f },
+    { -0.612f, -0.5f, 0.612f, 1.0f },
+    { -0.331f, -0.5f, 0.8f, 1.0f },
+    { 0.0f, 0.0f, 1.0f, 1.0f },
+    { 0.383f, 0.0f, 0.924f, 1.0f },
+    { 0.707f, 0.0f, 0.707f, 1.0f },
+    { 0.924f, 0.0f, 0.383f, 1.0f },
+    { 1.0f, 0.0f, 0.0f, 1.0f },
+    { 0.924f, 0.0f, -0.383f, 1.0f },
+    { 0.707f, 0.0f, -0.707f, 1.0f },
+    { 0.383f, 0.0f, -0.924f, 1.0f },
+    { 0.0f, 0.0f, -1.0f, 1.0f },
+    { -0.383f, 0.0f, -0.924f, 1.0f },
+    { -0.707f, 0.0f, -0.707f, 1.0f },
+    { -0.924f, 0.0f, -0.383f, 1.0f },
+    { -1.0f, 0.0f, -0.0f, 1.0f },
+    { -0.924f, 0.0f, 0.383f, 1.0f },
+    { -0.707f, 0.0f, 0.707f, 1.0f },
+    { -0.383f, 0.0f, 0.924f, 1.0f },
+    { 0.0f, 0.5f, 0.866f, 1.0f },
+    { 0.331f, 0.5f, 0.8f, 1.0f },
+    { 0.612f, 0.5f, 0.612f, 1.0f },
+    { 0.8f, 0.5f, 0.331f, 1.0f },
+    { 0.866f, 0.5f, 0.0f, 1.0f },
+    { 0.8f, 0.5f, -0.331f, 1.0f },
+    { 0.612f, 0.5f, -0.612f, 1.0f },
+    { 0.331f, 0.5f, -0.8f, 1.0f },
+    { 0.0f, 0.5f, -0.866f, 1.0f },
+    { -0.331f, 0.5f, -0.8f, 1.0f },
+    { -0.612f, 0.5f, -0.612f, 1.0f },
+    { -0.8f, 0.5f, -0.331f, 1.0f },
+    { -0.866f, 0.5f, -0.0f, 1.0f },
+    { -0.8f, 0.5f, 0.331f, 1.0f },
+    { -0.612f, 0.5f, 0.612f, 1.0f },
+    { -0.331f, 0.5f, 0.8f, 1.0f },
+    { 0.0f, 0.707f, 0.707f, 1.0f },
+    { 0.271f, 0.707f, 0.653f, 1.0f },
+    { 0.5f, 0.707f, 0.5f, 1.0f },
+    { 0.653f, 0.707f, 0.271f, 1.0f },
+    { 0.707f, 0.707f, 0.0f, 1.0f },
+    { 0.653f, 0.707f, -0.271f, 1.0f },
+    { 0.5f, 0.707f, -0.5f, 1.0f },
+    { 0.271f, 0.707f, -0.653f, 1.0f },
+    { 0.0f, 0.707f, -0.707f, 1.0f },
+    { -0.271f, 0.707f, -0.653f, 1.0f },
+    { -0.5f, 0.707f, -0.5f, 1.0f },
+    { -0.653f, 0.707f, -0.271f, 1.0f },
+    { -0.707f, 0.707f, -0.0f, 1.0f },
+    { -0.653f, 0.707f, 0.271f, 1.0f },
+    { -0.5f, 0.707f, 0.5f, 1.0f },
+    { -0.271f, 0.707f, 0.653f, 1.0f },
+    { 0.0f, 0.866f, 0.5f, 1.0f },
+    { 0.191f, 0.866f, 0.462f, 1.0f },
+    { 0.354f, 0.866f, 0.354f, 1.0f },
+    { 0.462f, 0.866f, 0.191f, 1.0f },
+    { 0.5f, 0.866f, 0.0f, 1.0f },
+    { 0.462f, 0.866f, -0.191f, 1.0f },
+    { 0.354f, 0.866f, -0.354f, 1.0f },
+    { 0.191f, 0.866f, -0.462f, 1.0f },
+    { 0.0f, 0.866f, -0.5f, 1.0f },
+    { -0.191f, 0.866f, -0.462f, 1.0f },
+    { -0.354f, 0.866f, -0.354f, 1.0f },
+    { -0.462f, 0.866f, -0.191f, 1.0f },
+    { -0.5f, 0.866f, -0.0f, 1.0f },
+    { -0.462f, 0.866f, 0.191f, 1.0f },
+    { -0.354f, 0.866f, 0.354f, 1.0f },
+    { -0.191f, 0.866f, 0.462f, 1.0f },
+    { 0.0f, 1.0f, 0.0f, 1.0f },
+};
 #include "main/xgl_packet.h"
 
 /*
@@ -57,7 +174,90 @@ typedef struct UcodeTableRow {
     u32 *programs[7];
 } UcodeTableRow;
 
-extern UcodeTableRow s_aUcodeTbl[];
+/* VU1 program byte addresses per microcode family, one list per variant. */
+static u32 s_aUcodeDropNull[5] = { 0 };
+static u32 s_aUcodeDrop[5] = {
+    0x0C80, 0x0000, 0x06F0, 0x08F8, 0x0A98,
+};
+static u32 s_aUcodeTexEnvNull[5] = { 0 };
+static u32 s_aUcodeTexEnv[5] = {
+    0x0D68, 0x0000, 0x06F0, 0x08B0, 0x0AB8,
+};
+static u32 s_aUcodeAddAdr[5] = {
+    0x0CA0, 0x1170, 0x13B8, 0x1718, 0x1AE0,
+};
+static u32 s_aUcodeAddAdrZbuf[5] = { 0 };
+static u32 s_aUcodeAddFaceAdr[5] = {
+    0x0EE0, 0x1F48, 0x2070, 0x2198, 0x2438,
+};
+static u32 s_aUcodeAddBackAdr[5] = {
+    0x1128, 0x2620, 0x2620, 0x2620, 0x2620,
+};
+static u32 s_aUcodeAddEnvAdr[12] = {
+    0x06F8, 0x0A48, 0x0EE8, 0x13D0, 0x1958, 0x1C70,
+    0x20C8, 0x2560, 0x2A98, 0x2E50, 0x32E0, 0x37B8,
+};
+static u32 s_aUcodeAddEnvAdrZbuf[12] = {
+    0x06F8, 0x06F8, 0x06F8, 0x06F8, 0x1958, 0x1958,
+    0x1958, 0x1958, 0x2A98, 0x2A98, 0x2A98, 0x2A98,
+};
+static u32 s_aUcodeAddEnvNullAdr[12] = { 0 };
+static u32 s_aUcodeAddEnvFaceAdr[12] = {
+    0x09D8, 0x0E78, 0x1360, 0x18E8, 0x1C00, 0x2058,
+    0x24F0, 0x2A28, 0x2DE0, 0x3270, 0x3748, 0x3CC0,
+};
+static u32 s_aUcodeAddEnvBackAdr[12] = {
+    0x0A10, 0x0EB0, 0x1398, 0x1920, 0x1C38, 0x2090,
+    0x2528, 0x2A60, 0x2E18, 0x32A8, 0x3780, 0x3CF8,
+};
+static u32 s_aUcodeProAdr[6] = {
+    0x08A8, 0x0BB8, 0x0E78, 0x11E8, 0x1498, 0x1838,
+};
+static u32 s_aUcodeProSkipAdr[7] = { 0 };
+static u32 s_aUcodeProFaceAdr[6] = {
+    0x08A8, 0x0BB8, 0x0E78, 0x11E8, 0x1498, 0x1838,
+};
+static u32 s_aUcodeProBackAdr[6] = { 0 };
+static u32 s_aUcodeEnvAdr[12] = {
+    0x05B0, 0x08E0, 0x0D60, 0x1228, 0x1790, 0x1A88,
+    0x1EC0, 0x2338, 0x2850, 0x2BE8, 0x3058, 0x3510,
+};
+static u32 s_aUcodeEnvAdrZbuf[12] = {
+    0x05B0, 0x05B0, 0x05B0, 0x05B0, 0x1790, 0x1790,
+    0x1790, 0x1790, 0x2850, 0x2850, 0x2850, 0x2850,
+};
+static u32 s_aUcodeEnvFaceAdr[12] = {
+    0x0870, 0x0CF0, 0x11B8, 0x1720, 0x1A18, 0x1E50,
+    0x22C8, 0x27E0, 0x2B78, 0x2FE8, 0x34A0, 0x39F8,
+};
+static u32 s_aUcodeEnvBackAdr[12] = {
+    0x08A8, 0x0D28, 0x11F0, 0x1758, 0x1A50, 0x1E88,
+    0x2300, 0x2818, 0x2BB0, 0x3020, 0x34D8, 0x3A30,
+};
+static u32 s_aUcodeEnvNullAdr[12] = { 0 };
+static u32 s_aUcodeAdr[6] = {
+    0x0BD8, 0x0DE0, 0x1418, 0x16F8, 0x1B08, 0x1F60,
+};
+static u32 s_aUcodeAdrZbuf[6] = {
+    0x0BD8, 0x0DE0, 0x1418, 0x1418, 0x1418, 0x1418,
+};
+static u32 s_aUcodeFaceAdr[6] = {
+    0x0F90, 0x11E0, 0x1648, 0x1A58, 0x1EB0, 0x23A8,
+};
+static u32 s_aUcodeBackAdr[6] = {
+    0x12D8, 0x1320, 0x16A0, 0x16A0, 0x16A0, 0x16A0,
+};
+
+static UcodeTableRow s_aUcodeTbl[6] = {
+    { { s_aUcodeEnvAdrZbuf, s_aUcodeAdrZbuf, s_aUcodeProSkipAdr, s_aUcodeAddEnvAdrZbuf, s_aUcodeAddAdrZbuf, s_aUcodeTexEnvNull, s_aUcodeDropNull } },
+    { { s_aUcodeEnvFaceAdr, s_aUcodeFaceAdr, s_aUcodeProFaceAdr, s_aUcodeAddEnvFaceAdr, s_aUcodeAddFaceAdr, s_aUcodeTexEnv, s_aUcodeDrop } },
+    { { s_aUcodeEnvBackAdr, s_aUcodeBackAdr, s_aUcodeProBackAdr, s_aUcodeAddEnvBackAdr, s_aUcodeAddBackAdr, s_aUcodeTexEnv, s_aUcodeDrop } },
+    { { s_aUcodeEnvAdr, s_aUcodeAdr, s_aUcodeProAdr, s_aUcodeAddEnvAdr, s_aUcodeAddAdr, s_aUcodeTexEnv, s_aUcodeDrop } },
+    { { s_aUcodeEnvAdr, s_aUcodeFaceAdr, s_aUcodeProFaceAdr, s_aUcodeAddEnvAdr, s_aUcodeAddFaceAdr, s_aUcodeTexEnv, s_aUcodeDrop } },
+    { { s_aUcodeEnvNullAdr, s_aUcodeBackAdr, s_aUcodeProBackAdr, s_aUcodeAddEnvNullAdr, s_aUcodeAddBackAdr, s_aUcodeTexEnv, s_aUcodeDrop } },
+};
+
+GsTagWord g_aGsTag[162] = { { 0 } };
 
 extern int g_aSubWindow[4];
 
@@ -477,13 +677,13 @@ typedef union NmlLightColor {
     Quadword rows[4];
     float m[4][4];
 } NmlLightColor;
-extern NmlLightColor s_inLc0;
+static NmlLightColor s_inLc0;
 extern int s_nPixelTestType;
 extern int s_nModelParts;
-extern void *s_pCacheTexture;
-extern void *s_pMatrixCache;
-extern void *s_pModelCache;
-extern void *s_pLightLayout;
+static void *s_pCacheTexture;
+static void *s_pMatrixCache;
+static void *s_pModelCache;
+static void *s_pLightLayout;
 extern float xglSin(float angle);
 
 void nmlPacketAddTransMicrocodeInit(void)
@@ -528,7 +728,6 @@ extern int D_004B9700[];
 extern u8 D_004B9710[];
 extern int D_004BD490[];
 extern u8 D_004BD4A0[];
-extern u8 s_aNormalTbl[];
 
 void nmlPacketAddTransMicrocode(const NmlMaterialRenderState *material,
                                 const NmlModelRenderState *model)
@@ -566,7 +765,7 @@ void nmlPacketAddTransMicrocode(const NmlMaterialRenderState *material,
         s_nProgType = prog;
         sceVif1PkCnt(s_pPacket, 0);
         sceVif1PkOpenUpkCode(s_pPacket, 0x350, 0x6C, 1, 1);
-        sceVif1PkAddUpkData128N(s_pPacket, s_aNormalTbl, 0x72);
+        sceVif1PkAddUpkData128N(s_pPacket, (void *)s_aNormalTbl, 0x72);
         sceVif1PkCloseUpkCode(s_pPacket);
         return;
     case 4:
@@ -584,7 +783,7 @@ void nmlPacketAddTransMicrocode(const NmlMaterialRenderState *material,
         s_nProgType = prog;
         sceVif1PkCnt(s_pPacket, 0);
         sceVif1PkOpenUpkCode(s_pPacket, 0x350, 0x6C, 1, 1);
-        sceVif1PkAddUpkData128N(s_pPacket, s_aNormalTbl, 0x72);
+        sceVif1PkAddUpkData128N(s_pPacket, (void *)s_aNormalTbl, 0x72);
         sceVif1PkCloseUpkCode(s_pPacket);
         return;
     case 6:
@@ -856,8 +1055,6 @@ typedef struct NmlZbufRenderState {
     u16 display_buffer_base; /* +0x20 */
 } NmlZbufRenderState;
 
-extern float D_004D8970;
-extern const float D_004D8974;
 typedef union NmlCircleVector {
     Vector4 vector;
     int words[4];
@@ -877,8 +1074,6 @@ typedef struct NmlCircleGsRecord {
     GsTag value;
     GsTag address;
 } NmlCircleGsRecord;
-extern const NmlCircleOffsetTable D_004D3090;
-extern const NmlCircleOffsetTable D_004D30A0;
 static inline NmlCircleGsRecord *nmlCircleGsRecord(unsigned int index)
 {
     return (NmlCircleGsRecord *)(0x70001000u +
@@ -923,20 +1118,17 @@ void nmlPacketMakeCircleTexture(NmlModelRenderState *model,
     float radius_scale;
     float height_offset;
     float *matrix;
-    NmlCircleOffsetTable x_offsets;
-    NmlCircleOffsetTable z_offsets;
+    NmlCircleOffsetTable x_offsets = { { -1.0f, 1.0f, -1.0f, 1.0f } };
+    NmlCircleOffsetTable z_offsets = { { -1.0f, -1.0f, 1.0f, 1.0f } };
     u32 texture_base;
     int i;
     int first_clip_flags;
     int second_clip_flags;
     int third_clip_flags;
 
-    x_offsets = D_004D3090;
-    z_offsets = D_004D30A0;
-
     matrix = (float *)transform;
 
-    matrix[14] = 1.0f;
+    radius_scale = 0.4f;
     matrix[0] = 0.0f;
     matrix[1] = 0.0f;
     matrix[2] = 1.0f;
@@ -947,12 +1139,12 @@ void nmlPacketMakeCircleTexture(NmlModelRenderState *model,
     matrix[9] = 1.0f;
     matrix[10] = 1.0f;
     matrix[12] = 1.0f;
-    radius_scale = D_004D8970;
     matrix[13] = 1.0f;
+    matrix[14] = 1.0f;
 
     _CurSetViewScaleTrans(&camera->screenScale, &camera->screenOffset);
     _CurSetMatrix(camera->viewMatrix);
-    height_offset = D_004D8974;
+    height_offset = 0.005f;
 
     for (i = 0; i < 4;) {
         int clip_flags;
@@ -1148,7 +1340,7 @@ static void nmlPacketTextureTrans(NmlModelRenderState *model)
 /* The cached texture built by the (still asm) texture cache builder;
  * cleared to invalidate it, like s_pMatrixCache/s_pModelCache/
  * s_pModelLayout/s_pLightLayout below. */
-extern void *s_pCacheTexture;
+static void *s_pCacheTexture;
 
 void nmlPacketClrTextureCache(void)
 {
@@ -1158,10 +1350,10 @@ void nmlPacketClrTextureCache(void)
 /* The cached VU1 upload state a model was last sent with: matrix data,
  * model geometry and the light/model attribute layouts. Cleared together
  * to force the next nmlPacket* draw call to resend all four. */
-extern void *s_pMatrixCache;
-extern void *s_pModelCache;
-extern void *s_pModelLayout;
-extern void *s_pLightLayout;
+static void *s_pMatrixCache;
+static void *s_pModelCache;
+static void *s_pModelLayout;
+static void *s_pLightLayout;
 
 void nmlPacketClrModelCache(void)
 {
@@ -2300,3 +2492,22 @@ void nmlPacketAddGsPrmodecont(u64 prmode_control)
     g_aGsTag[g_nGsEntry * 2 + 3].d = 26;
     g_nGsEntry++;
 }
+
+/* Packet-builder globals (g_nPacketOver is read and set by nml_model_set). */
+int g_nPacketOver = 0;
+int g_nGsEntry = 0;
+static XglPacket *s_pPacket = 0;
+static void *s_pCacheTexture = 0;
+static void *s_pMatrixCache = 0;
+static void *s_pModelCache = 0;
+static void *s_pModelLayout = 0;
+static int s_nModelParts = 0;
+static void *s_pLightLayout = 0;
+static int s_nLightPara = 0;
+static int s_nProgType = -1;
+static int s_nPixelTestType = 0;
+static int s_nReflRotType = -1;
+static float s_inReflRotX = 0.0f;
+static float s_inReflRotY = 0.0f;
+char eye_name[] = "eye";
+char lenz_name[] = "lenz";

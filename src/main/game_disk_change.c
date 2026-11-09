@@ -46,15 +46,19 @@ typedef struct GameDiskChangeTestEnv {
 
 extern void sceVif1PkCnt(XglPacket *packet, int count);
 extern void sceVif1PkAddDataN(XglPacket *packet, const void *data, int count);
-extern unsigned char TestEnv_0_00369EF0[];
 
 static void drawbg(void)
 {
+    static u64 TestEnv[12] __attribute__((aligned(16))) = {
+        0x0000000000000000, 0x5000000500000000, 0x4003400000008001, 0x000000000000551E,
+        0x0000000000030000, 0x0000000000000047, 0x0000004000000000, 0x0000008000000000,
+        0x000071F700006FF8, 0x0000000000000000, 0x00008DF700008FF8, 0x0000000000000000,
+    };
     XglPacket *packet;
 
     packet = xglPacketGetCurrent();
     sceVif1PkCnt(packet, 0);
-    sceVif1PkAddDataN(packet, TestEnv_0_00369EF0, 0x18);
+    sceVif1PkAddDataN(packet, TestEnv, 0x18);
 }
 
 static void replace(u8 *str, int disk_number) {
@@ -81,21 +85,18 @@ extern void xglFontPrint(int x, int y, int color, const char *text);
 extern void xglFontPrintDirectOT(int ot, const char *text);
 
 extern u8 GameDiskChangeT10K;
-extern u8 mes00_1[];
-extern u8 mes01_2[];
-extern u8 mes02_3[];
-extern char *tbl_4[];
-extern const char D_004C0790[];
-extern const char D_004C07C8[];
-extern const char D_004D9F58[];
 extern PadPrefix PadData;
 
 int GameDiskChange(int disk_number)
 {
+    /* EUC-JP messages; replace() patches the disc digits in place. */
+    static u8 mes00_1[] __asm__("mes00.1") = "\xA3\xC4\xA3\xC9\xA3\xD3\xA3\xC3\xA3\xB1\xA4\xF2\xBC\xE8\xA4\xEA\xBD\xD0\xA4\xB7\xA4\xC6\xA1\xA2\n\n\xA3\xC4\xA3\xC9\xA3\xD3\xA3\xC3\xA3\xB2\xA4\xF2\xC1\xDE\xC6\xFE\xA4\xB7\xA4\xC6\xB2\xBC\xA4\xB5\xA4\xA4\xA1\xA3";
+    static u8 mes01_2[] __asm__("mes01.2") = "\xA3\xC4\xA3\xC9\xA3\xD3\xA3\xC3\xA4\xAC\xB0\xE3\xA4\xA4\xA4\xDE\xA4\xB9\xA1\xA3\xA3\xC4\xA3\xC9\xA3\xD3\xA3\xC3\xA4\xF2\xBC\xE8\xA4\xEA\xBD\xD0\xA4\xB7\xA4\xC6\xA1\xA2\n\n\xA5\xBC\xA5\xCE\xA5\xB5\xA1\xBC\xA5\xAC\xA4\xCE\xA3\xC4\xA3\xC9\xA3\xD3\xA3\xC3\xA3\xB2\xA4\xF2\xC1\xDE\xC6\xFE\xA4\xB7\xA4\xC6\xB2\xBC\xA4\xB5\xA4\xA4\xA1\xA3";
+    static u8 mes02_3[] __asm__("mes02.3") = "\xA5\xBC\xA5\xCE\xA5\xB5\xA1\xBC\xA5\xAC\xA4\xCE\xA3\xC4\xA3\xC9\xA3\xD3\xA3\xC3\xA3\xB2\xA4\xF2\xC1\xDE\xC6\xFE\xA4\xB7\xA4\xC6\xB2\xBC\xA4\xB5\xA4\xA4\xA1\xA3";
     int disk_check;
     int retry;
 
-    printf(D_004C0790, disk_number, GameDiskChangeT10K);
+    printf("GameDiskChange:%d %d\n", disk_number, GameDiskChangeT10K);
 
     if (disk_number < 1 || disk_number > 3) {
         return -1;
@@ -131,13 +132,22 @@ int GameDiskChange(int disk_number)
             retry = 1;
         }
         drawbg();
-        xglFontPrintDirectOT(0xFFFFFF, D_004D9F58);
+        xglFontPrintDirectOT(0xFFFFFF, "\v\r\x03");
         if (retry == 0) {
             xglFontPrint(0x40, 0x40, 0xFFFFFF, (const char *)mes00_1);
         } else {
+            /* Indexed by xglCdDiskCheck() + 3. */
+            static char *tbl_4[] __asm__("tbl.4") = {
+                "\xC7\xA7\xBC\xB1\xC3\xE6\xA1\xC4",
+                (char *)mes02_3, (char *)mes01_2, (char *)mes02_3,
+                (char *)mes01_2, (char *)mes01_2,
+                "\xA3\xC4\xA3\xC9\xA3\xD3\xA3\xCB\xA3\xB1\xA1\xF5\xA3\xB2",
+                (char *)mes01_2,
+            };
+
             xglFontPrint(0x40, 0x40, 0xFFFFFF, tbl_4[disk_check + 3]);
         }
-        xglFontPrint(0x40, 0x100, 0xFFFFFF, D_004C07C8);
+        xglFontPrint(0x40, 0x100, 0xFFFFFF, "\x19\x01\xA3\xD3\xA3\xD4\xA3\xC1\xA3\xD2\xA3\xD4\x19\x00\xA4\xC7\xB6\xAF\xC0\xA9\xC2\xB3\xB9\xD4");
         if (PadData.half_2a & 0x800) {
             break;
         }
@@ -148,3 +158,6 @@ int GameDiskChange(int disk_number)
     xglSleep();
     return 0;
 }
+
+/* Emitted after GameDiskChange's .sdata string, as in the original. */
+u8 GameDiskChangeT10K = 0;

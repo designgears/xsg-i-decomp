@@ -1,6 +1,8 @@
 #include "common.h"
 #include "xgl_pad.h"
 
+static unsigned char PadDmaBuffer[0x200];
+
 void xglPadInitial(void) {
     unsigned int byte_index;
     int map_remaining;
@@ -70,10 +72,10 @@ void xglPadSetRepeat(int port, unsigned short mask, int delay, int interval)
     pad->repeat_count = 0;
 }
 
-extern unsigned char act_align_0[6];
 
 void xglPadRead(void)
 {
+    static unsigned char act_align[6] = { 0x00, 0x01, 0xFF, 0xFF, 0xFF, 0xFF };
     int port;
     unsigned char button_bits;
     unsigned char button_down;
@@ -140,7 +142,7 @@ void xglPadRead(void)
         case 0x70:
             pad->actuator_count = scePadInfoAct(port, 0, -1, 0);
             if (pad->actuator_count) {
-                if (scePadSetActAlign(port, 0, act_align_0))
+                if (scePadSetActAlign(port, 0, act_align))
                     pad->setup_state = 0x71;
             } else {
                 pad->setup_state = 0xff;
