@@ -41,7 +41,9 @@ const char* Symbol(uint8_t lo) {
     case 0xb8: return "!";
     case 0xb9: return ".";
     case 0xba: return ",";
-    case 0xfd: return ":";
+    case 0xc0: return "'";   // that's, you'll
+    case 0xe6: return "%";   // 22% of its normal capacity
+    case 0xfd: return "-";   // KOS-MOS
     default: return nullptr;
     }
 }
@@ -162,12 +164,17 @@ void DialogDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
         dl->AddRectFilled(ImVec2(px0, py1 - 1.5f * k), ImVec2(px0 + 28 * k, py1 + 0.5f * k), Alpha(col::kCyan, t));
         HaloText(dl, font, ns, ImVec2(px0 + 10 * k, py0 + 3 * k), col::kText, name.c_str(), t);
     }
-    // body: the lines typed out so far, with a soft shadow
-    float ty = y0 + 12 * sy;
-    for (uint32_t i = 0; i < d.nlines && i < XSG_GPU_UI_LINES; ++i) {
-        const std::string tx = Decode(d.line[i]);
-        if (!tx.empty()) RichText(dl, UiFont(kFontBodyBold, font), fs * 0.92f, x0 + 22 * sx, ty, col::kText, tx.c_str(), t);
-        ty += 26.0f * sy;
+    // body: the lines typed out so far, the box's full three lines centred on it by their capitals
+    // (laid out for three so the text does not move as lines are typed)
+    {
+        ImFont* const bf = UiFont(kFontBodyBold, font);
+        const float bs = fs * 0.92f, pitch = 25.0f * sy, mid = (y0 + y1) * 0.5f;
+        const float n = float(XSG_GPU_UI_LINES);
+        for (uint32_t i = 0; i < d.nlines && i < XSG_GPU_UI_LINES; ++i) {
+            const std::string tx = Decode(d.line[i]);
+            const float yc = mid + (float(i) - (n - 1) * 0.5f) * pitch;
+            if (!tx.empty()) RichText(dl, bf, bs, x0 + 22 * sx, CapCentreY(bf, bs, yc), col::kText, tx.c_str(), t);
+        }
     }
     // page arrow (the game waits for a key)
     if (d.state == 8 || d.state == 0xb || d.state == 0x11) {
