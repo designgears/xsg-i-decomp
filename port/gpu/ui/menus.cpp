@@ -538,7 +538,7 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                 } else segs.back().t += char(c);
             }
             for (const Seg& g : segs) width += g.dx + SmallCaps(dl, lf, fs, ImVec2(0, 0), 0, Decode(g.t.c_str()).c_str(), 0, false);
-            ImVec2 p = P(x, y + 16);   // the game's tags sit on a 16 px baseline
+            ImVec2 p = P(x, y + 13.5f);   // on the tag bar's centre line (the game's 16 px baseline sat low)
             p.y -= fs * (lf->Ascent / lf->FontSize);   // ImGui draws from the ascender line
             if (o.w) p.x -= width;
             for (const Seg& g : segs) {
@@ -566,14 +566,24 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             const ImVec2 c0 = P(px, y), c1 = P(px + gwid * float(digits), y + ghgt);
             {   // the original's tall rounded-square digits, outlined; width fitted to the game's digit span
                 ImFont* const nf = UiFont(kFontLabel, font);   // Saira Semi Condensed: the original's heavy condensed digits
-                float nfs = fs;
-                const float nw = nf->CalcTextSizeA(nfs, 1e9f, 0, buf).x, span = c1.x - c0.x;
-                if (nw > span * 1.02f) nfs *= span * 1.02f / nw;
-                const ImVec2 nsz = nf->CalcTextSizeA(nfs, 1e9f, 0, buf);
-                const float nx2 = (o.v & 0x10) ? c1.x - nsz.x : c0.x;
+                float nfs = fs, adv = 0;
+                for (char d = '0'; d <= '9'; ++d) { const char one[2] = {d, 0}; adv = std::max(adv, nf->CalcTextSizeA(nfs, 1e9f, 0, one).x); }
+                const int n = int(std::strlen(buf));
+                const float span = c1.x - c0.x;
+                if (adv * n > span * 1.02f) nfs *= span * 1.02f / (adv * n);
+                adv = std::min(span / float(n), adv * (nfs / fs) * 1.06f);
+                // the run centred on the game's digit span: its ':' '/' 'G' sit between spans, evenly spaced
+                const float nx2 = c0.x + (span - adv * float(n)) * 0.5f;
                 ImU32 nc = Ps2(o.rgba) | 0xff000000u;
                 if (((nc & 0xff) > 0xe0) && (((nc >> 8) & 0xff) > 0xe0)) nc = IM_COL32(236, 240, 232, 255);   // white -> the original's warm white
-                OutlineText(dl, nf, nfs, ImVec2(nx2, c1.y - nfs * (nf->Ascent / nf->FontSize)), nc, buf, tw);   // baseline on the cell's bottom
+                // tabular: each digit centred in a fixed cell, so columns stay rectangular; baseline 1.5 px
+                // above the cell's bottom, on the list text's baseline
+                const float by = c1.y - 1.5f * k - nfs * (nf->Ascent / nf->FontSize);
+                for (int q = 0; q < n; ++q) {
+                    const char one[2] = {buf[q], 0};
+                    const float w = nf->CalcTextSizeA(nfs, 1e9f, 0, one).x;
+                    OutlineText(dl, nf, nfs, ImVec2(nx2 + adv * q + (adv - w) * 0.5f, by), nc, one, tw);
+                }
             }
             break;
         }
