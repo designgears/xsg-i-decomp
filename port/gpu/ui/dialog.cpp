@@ -772,45 +772,57 @@ void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
             const float br = 0.5f + 0.5f * float(std::sin(AnimNow() * 3.2));
             dl->AddRect(ImVec2(a.x - 3 * k, a.y - 3 * k), ImVec2(c.x + 3 * k, c.y + 3 * k), Alpha(col::kCyan, 0.25f * br * t), 0, 0, 2.0f * k);
         }
-        const float ls = 17.0f * k, vs = 38.0f * k, ss = 20.0f * k;   // the original's large digits (~14 px caps)
-        // the original's colours: HP / EP cyan, AP / BG blue; numbers in square digits, outlined
-        ImFont* const lf = UiFont(kFontNumber, font);   // the original's battle HUD: heavy blocky labels and digits
+        // a grid inside the panel (x+0x3a..x+0xa2, y-5..y+0x40): four rows on equal centres, a label
+        // column, a value column right-aligned to one edge, the max beside it, gauges between
+        ImFont* const lf = UiFont(kFontNumber, font);   // heavy: the labels and the values
         ImFont* const nf = UiFont(kFontNumber, font);
-        auto label = [&](float ly, const char* t) {
+        const float rowY[4] = {y + 4.5f, y + 20.5f, y + 36.5f, y + 52.5f};
+        const float colLabel = x + 0x41, colGauge = x + 0x55, colValue = x + 0x83, colMax = x + 0x85, colRight = x + 0x9c;
+        auto put = [&](ImFont* f, float size, float px, float cy, bool right, ImU32 c, const char* s2) {
+            // vertically centred on the row: caps are ~0.7 of the size, the baseline sits half a cap below centre
+            const float asc = f->Ascent / f->FontSize, base = P(0, cy).y + size * 0.35f;
+            float xx = P(px, 0).x;
+            if (right) xx -= f->CalcTextSizeA(size, 1e9f, 0, s2).x;
+            OutlineText(dl, f, size, ImVec2(xx, base - size * asc), c, s2, an.a);
+        };
+        const float ls = 19.0f * k, vs = 30.0f * k, ss = 16.0f * k;
+        auto label = [&](int row, const char* t) {
             const bool blue = t[0] == 'A' || t[0] == 'B';
-            SmallCaps(dl, lf, ls * 0.95f, P(x + 0x40, ly + 1), blue ? IM_COL32(90, 160, 255, 255) : IM_COL32(110, 236, 240, 255), t, an.a);
+            put(lf, ls, colLabel, rowY[row], false, blue ? IM_COL32(90, 160, 255, 255) : IM_COL32(110, 236, 240, 255), t);
         };
-        auto value = [&](float ly, int v, int vmax, bool warn) {
+        auto value = [&](int row, int v, int vmax, bool warn) {
             std::snprintf(b, sizeof b, "%d", v);
-            // both numbers share the row's baseline (13 px below the row top, as the original's digits)
-            const float nvs = vs * 0.82f, asc = nf->Ascent / nf->FontSize;
-            const ImVec2 w = nf->CalcTextSizeA(nvs, 1e9f, 0, b);
-            const ImVec2 r = P(x + 0x7a, ly + 13);
-            OutlineText(dl, nf, nvs, ImVec2(r.x - w.x, r.y - nvs * asc), warn ? col::kWarn : IM_COL32(236, 240, 232, 255), b, an.a);
+            // the value and its max share one baseline
+            const float base = P(0, rowY[row]).y + ls * 0.35f, asc = nf->Ascent / nf->FontSize;   // the label's baseline
+            const float vx = P(colValue, 0).x - nf->CalcTextSizeA(vs, 1e9f, 0, b).x;
+            OutlineText(dl, nf, vs, ImVec2(vx, base - vs * asc), warn ? col::kWarn : IM_COL32(236, 240, 232, 255), b, an.a);
             std::snprintf(b, sizeof b, "/%d", vmax);
-            OutlineText(dl, nf, ss * 0.8f, ImVec2(P(x + 0x7c, 0).x, r.y - ss * 0.8f * asc), col::kTextDim, b, an.a);
+            OutlineText(dl, nf, ss, ImVec2(P(colMax, 0).x, base - ss * asc), col::kTextDim, b, an.a);
         };
-        label(y, "HP");
-        value(y, u.hp, u.hp_max, u.idol || (u.hp_max > 0 && u.hp * 4 <= u.hp_max));
-        label(y + 0x11, "EP");
-        value(y + 0x11, u.ep, u.ep_max, false);
-        // AP: six chevrons
-        label(y + 0x22, "AP");
-        for (int i = 0; i < 6; ++i) {
-            const ImVec2 o = P(x + 0x52 + i * 10.5f, y + 0x22);
-            const float h = 9 * k, w = 6 * kx;
-            const ImU32 cc = i < u.ap ? col::kCyan : IM_COL32(118, 214, 255, 45);
-            dl->AddTriangleFilled(o, ImVec2(o.x + w, o.y + h / 2), ImVec2(o.x, o.y + h), cc);
+        label(0, "HP");
+        value(0, u.hp, u.hp_max, u.idol || (u.hp_max > 0 && u.hp * 4 <= u.hp_max));
+        label(1, "EP");
+        value(1, u.ep, u.ep_max, false);
+        // AP: six chevrons, centred on the row, spanning the gauge column
+        label(2, "AP");
+        {
+            const float span = colRight - colGauge, step = span / 6.0f, h = 9.0f, w = 6.5f;
+            for (int i2 = 0; i2 < 6; ++i2) {
+                const ImVec2 o = P(colGauge + i2 * step, rowY[2] - h * 0.5f);
+                const ImU32 cc = i2 < u.ap ? col::kCyan : IM_COL32(118, 214, 255, 45);
+                dl->AddTriangleFilled(o, ImVec2(o.x + w * kx, o.y + h * 0.5f * k), ImVec2(o.x, o.y + h * k), cc);
+            }
         }
-        // BG: the boost count and its gauge
-        label(y + 0x30, "BG");
-        const ImVec2 g0 = P(x + 0x52, y + 0x33), g1 = P(x + 0x52 + 60, y + 0x37);
-        dl->AddRectFilled(g0, g1, IM_COL32(255, 32, 128, 50));
-        dl->AddRectFilled(g0, ImVec2(g0.x + (g1.x - g0.x) * std::min(1.0f, std::max(0, u.bp) / 60.0f), g1.y),
-                          IM_COL32(255, 60, 150, 230));
-        std::snprintf(b, sizeof b, "%d", u.bg);
-        OutlineText(dl, nf, vs * 0.82f, ImVec2(P(x + 0x92, 0).x, P(0, y + 0x30 + 13).y - vs * 0.82f * (nf->Ascent / nf->FontSize)),
-                    IM_COL32(236, 240, 232, 255), b, an.a);
+        // BG: the gauge, then the boost count right-aligned to the panel's content edge
+        label(3, "BG");
+        {
+            const ImVec2 g0 = P(colGauge, rowY[3] - 2), g1 = P(colRight - 14, rowY[3] + 2);
+            dl->AddRectFilled(g0, g1, IM_COL32(255, 32, 128, 50), 2.0f * k);
+            dl->AddRectFilled(g0, ImVec2(g0.x + (g1.x - g0.x) * std::min(1.0f, std::max(0, u.bp) / 60.0f), g1.y),
+                              IM_COL32(255, 60, 150, 230), 2.0f * k);
+            std::snprintf(b, sizeof b, "%d", u.bg);
+            put(nf, vs * 0.8f, colRight, rowY[3], true, IM_COL32(236, 240, 232, 255), b);
+        }
     }
 }
 
