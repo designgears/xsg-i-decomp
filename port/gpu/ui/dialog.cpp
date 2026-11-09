@@ -74,6 +74,7 @@ void Jis(std::string& o, uint8_t hi, uint8_t lo) {
     else if (u == 0x30fb) u = 0xb7;
     else if (u == 0x2019 || u == 0x2018) u = '\'';
     else if (u == 0x201c || u == 0x201d) u = '"';
+    else if (u == 0x21d4) u = '=';   // the GTW legend's double arrow: not in the UI fonts
     AppendUtf8(o, u);
 }
 

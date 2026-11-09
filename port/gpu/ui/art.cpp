@@ -2,6 +2,7 @@
 #include "art.h"
 
 #include "../menu/menu_render.h"
+#include "../menu/cfg.h"
 #include "../native.h"
 #include "../native_prof.h"
 #include "gs_interface.hpp"
@@ -108,6 +109,20 @@ void ArtSnapshot(uint32_t slot) {
     if (!m) m = std::make_unique<ps2host::gs::Memory>();
     std::memcpy(m->data() + kOff, src, kLen);
     last[key] = h;
+    if (const char* t = xsgcfg::CStr("debug.art_dump"); t && *t) {   // TEX0 (hex, comma list) decoded from the snapshot -> raw RGBA
+        static int n;
+        for (const char* q = t; *q && n < 40;) {
+            char* end;
+            const uint64_t tex0 = std::strtoull(q, &end, 16);
+            if (end == q) break;
+            uint32_t tw = 0, th = 0;
+            std::vector<uint32_t> px = xsgnative::DecodeVramTexture(m->data(), tex0, 0, &tw, &th);
+            char name[256];
+            std::snprintf(name, sizeof name, "/tmp/art_%02d_%llx_%ux%u.rgba", n++, (unsigned long long)tex0, tw, th);
+            if (FILE* f = std::fopen(name, "wb")) { std::fwrite(px.data(), 4, px.size(), f); std::fclose(f); }
+            q = *end ? end + 1 : end;
+        }
+    }
     for (auto& [k, t] : g_tex)
         if (t.set == key) t.gen = ~0u;
 }

@@ -501,6 +501,18 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                 OutlineText(dl, nf, fs, ImVec2(c.x - gs.x * 0.5f, c.y - 1.5f * k - fs * (nf->Ascent / nf->FontSize)), col::kTextDim, g, tw);
                 break;
             }
+            {   // the battle sheet's face buttons (TBP 0x3800, a row of 25 x 25 at v 192: circle, square, triangle,
+                // cross; the battle tutorial's messages draw them beside the text): the controller's prompt
+                const uint64_t bt = uint64_t(o.tex0_lo) | uint64_t(o.tex0_hi) << 32;
+                if ((bt & 0x3fff) == 0x3800 && o.w >= 23 && o.w <= 26 && o.h >= 23 && o.h <= 26 && o.v >= 190 && o.v <= 194 &&
+                    o.u % 24 <= 1 && o.u / 24 < 4) {
+                    static const int kBtl[4] = {1, 2, 3, 0};
+                    if (xsgcfg::GetBool("debug.ui_log")) std::fprintf(stderr, "[ui] battle-sheet button %d -> prompt\n", o.u / 24);
+                    const ImVec2 c = P(x + o.dw * 0.5f, y + o.dh * 0.5f);
+                    Glyph(dl, font, c.x, c.y, std::min(o.dw * kx, o.dh * k) * 0.46f, kBtl[size_t(o.u / 24)], false);
+                    break;
+                }
+            }
             if (o.text[2] == 1 + 2 && o.text[3] >= 0 && o.text[3] < 4) {   // pad_uv[0..3]: the face buttons
                 static const int kPad[4] = {1, 2, 3, 0};   // pad_uv: circle, square, triangle, cross (u 0, 22, 44, 66)
                 const ImVec2 c = P(x + o.dw * 0.5f, y + o.dh * 0.5f);
@@ -660,6 +672,17 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                         return 2 * r + h * 0.22f;
                     }
                     const uint64_t t0 = uint64_t(ic.tex0_lo) | uint64_t(ic.tex0_hi) << 32;
+                    if ((t0 & 0x3fff) == 0x3800 && ic.w >= 23 && ic.w <= 26 && ic.h >= 23 && ic.h <= 26 && ic.v >= 190 && ic.v <= 194 &&
+                        ic.u % 24 <= 1 && ic.u / 24 < 4) {   // the battle sheet's face buttons: the controller's prompt
+                        static const int kBtl[4] = {1, 2, 3, 0};
+                        const float r = h * 0.55f;
+                        Glyph(dl, font, at.x + r + h * 0.08f, cy, r, kBtl[size_t(ic.u / 24)], false);
+                        return 2 * r + h * 0.22f;
+                    }
+                    if (xsgcfg::GetBool("debug.ui_log")) {
+                        static int n;
+                        if (n++ < 40) std::fprintf(stderr, "[ui] inline icon table %d index %d uv %d,%d %dx%d tbp %04x in '%s'\n", ic.text[2], ic.text[3], ic.u, ic.v, ic.w, ic.h, unsigned(t0 & 0x3fff), Decode(std::string(s, size_t(o.u)).c_str()).c_str());
+                    }
                     ArtSprite(dl, t0, 0, float(ic.u), float(ic.v), float(ic.w), float(ic.h), ImVec2(at.x + 1 * kx, cy - ih * 0.5f),
                               ImVec2(at.x + 1 * kx + iw, cy + ih * 0.5f), ic.rgba, tw, false, uint32_t(ic.b));
                     return iw + 2 * kx;
