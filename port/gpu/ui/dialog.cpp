@@ -836,7 +836,13 @@ void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
             dl->AddRectFilled(g0, ImVec2(g0.x + (g1.x - g0.x) * std::min(1.0f, std::max(0, u.bp) / 60.0f), g1.y),
                               IM_COL32(255, 60, 150, 230), 2.0f * k);
             std::snprintf(b, sizeof b, "%d", u.bg);
-            put(nf, vs * 0.8f, colRight, rowY[3], true, IM_COL32(236, 240, 232, 255), b);
+            {   // the count's digit centred on the same line as the gauge
+                const float bs = vs * 0.8f, sc = bs / nf->FontSize;
+                const ImFontGlyph* g = nf->FindGlyph('0');
+                const float mid = g ? (g->Y0 + g->Y1) * 0.5f * sc : bs * 0.5f;
+                const float bx = P(colRight, 0).x - nf->CalcTextSizeA(bs, 1e9f, 0, b).x;
+                OutlineText(dl, nf, bs, ImVec2(bx, cy3 - mid), IM_COL32(236, 240, 232, 255), b, an.a);
+            }
         }
     }
 }
