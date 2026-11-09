@@ -217,6 +217,35 @@ void UnpackElement() {
 /* PATH1: a GIF packet in VU1 data memory from quadword `q` (wrapping) to EOP. */
 void Path1Kick(const u8* data, u32 q) {
     st.p1_packets++;
+    if (!g_soft) {
+        // gpu only: walk the tags to the EOP, then hand the packet over in one or two runs (it may
+        // wrap VU1 memory) instead of one ring append per qword (~10% of the game thread in 3D)
+        const u32 q0 = q;
+        for (u32 guard = 0; guard < 1024; ++guard) {
+            u64 lo;
+            std::memcpy(&lo, data + (q & 0x3ff) * 16, 8);
+            st.p1_tags++;
+            const u32 nloop = u32(lo & 0x7fff), eop = u32(lo >> 15) & 1, pre = u32(lo >> 46) & 1;
+            const u32 prim = u32(lo >> 47) & 0x7ff, flg = u32(lo >> 58) & 3;
+            u32 nreg = u32(lo >> 60) & 15;
+            if (!nreg) nreg = 16;
+            if (pre) { st.p1_prims++; st.p1_prim_type[prim & 7]++; }
+            if (flg != 2) st.p1_nloop += nloop;
+            const u32 body = flg == 0 ? nloop * nreg : flg == 1 ? (nloop * nreg + 1) / 2 : nloop;
+            if (body > 1024) { st.p1_bad++; break; }
+            q += body + 1;
+            st.p1_qw += body + 1;
+            if (eop) break;
+        }
+        u32 n = q - q0, at = q0 & 0x3ff;
+        while (n) {
+            const u32 k = std::min(n, 0x400 - at);
+            xsggpu::GifBlock(1, data + size_t(at) * 16, k);
+            n -= k;
+            at = (at + k) & 0x3ff;
+        }
+        return;
+    }
     for (u32 guard = 0; guard < 1024; ++guard) {
         u64 lo, hi;
         std::memcpy(&lo, data + (q & 0x3ff) * 16, 8);

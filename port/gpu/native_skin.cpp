@@ -110,7 +110,15 @@ void BuildUbo(const Draw& d, SkinUbo* u) {
     std::memcpy(&c1008z, &b.c1008[2], 4);
     u->cfg[0] = d.group;
     u->cfg[1] = d.variant;
-    u->cfg[2] = xsgcfg::Get("renderer.lighting") == "perpixel" ? 1 : 0;
+    {   // read once per settings change, not per draw (the lookup was ~4% of xsg-gpu in battle)
+        static unsigned ver = ~0u;
+        static int ppl;
+        if (ver != xsgcfg::Version()) {
+            ver = xsgcfg::Version();
+            ppl = xsgcfg::Get("renderer.lighting") == "perpixel";
+        }
+        u->cfg[2] = ppl;
+    }
     u->cfg[3] = ((c1008z & 0xffff) ? 1 : 0) | (b.mirror_on ? 2 : 0) | (prev ? 4 : 0) | (prev && d.pmirror_on ? 8 : 0) |
                 (d.group == 4 ? 16 : 0);
     std::memcpy(u->fog, b.fog, 16);
