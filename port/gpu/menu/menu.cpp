@@ -20,7 +20,6 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"
-#include "../ui/text_layer.h"
 #include "../ui/dialog.h"
 #include "../ui/style.h"
 #include "../ui/art.h"
@@ -489,13 +488,11 @@ void TabDisplay(float scale) {
     static const char* kFilter[] = {"Linear", "Nearest"};
     opt_choice("display.filter", "Filter", kFilter, "How the picture is scaled to the window: smooth (linear) or sharp (nearest).");
     opt_group("GAME UI");
-    static const char* kUi[] = {"Original", "Rebuilt", "Enhanced original"};
+    static const char* kUi[] = {"Original", "Rebuilt"};
     opt_choice("display.ui", "Game UI", kUi,
                "Original: the game's own 2D, drawn for a TV at 512 x 448.\n"
                "Rebuilt: redrawn by the port, sharp at any window size: dialog, menus, shops, save screens and the "
-               "battle HUD.\n"
-               "Enhanced original: the game's own UI exactly as on the PS2, with its text redrawn sharp from the "
-               "game's font, upscaled.");
+               "battle HUD.");
     static const char* kPrompts[] = {"Auto", "Xbox", "PlayStation", "Nintendo", "Keyboard"};
     opt_choice("display.prompts", "Button prompts", kPrompts,
                "Which buttons the game's prompts show. Auto: the connected controller ([gamepad] layout), the keyboard "
@@ -1309,7 +1306,6 @@ void Frame(uint32_t vsync, const Stats& s) {
     const bool dialog = rebuilt && xsgui::DialogActive(vsync);
     const bool battle = rebuilt && xsgui::BattleActive(vsync);
     const bool menus = rebuilt && xsgui::MenuActive(vsync);
-    const bool text = s.game_w > 0 && xsgtext::Active();   // ui = enhanced: the game's own text, upscaled
     g_game_menu_up = menus && xsgui::MenuWantsSettings();
     if (g_shared) {   // the game asked for the settings menu (the title's Settings choice)
         static uint32_t seen = ~0u;
@@ -1317,7 +1313,7 @@ void Frame(uint32_t vsync, const Stats& s) {
         if (seen == ~0u) seen = r;
         else if (r != seen) { seen = r; if (!g_open) SetOpen(true); }
     }
-    if (!g_open && !g_overlay && !dialog && !battle && !menus && !text) { PadFrame(); return; }
+    if (!g_open && !g_overlay && !dialog && !battle && !menus) { PadFrame(); return; }
 
     ImGuiIO& io = ImGui::GetIO();
     float fb = 1.0f;
@@ -1359,8 +1355,6 @@ void Frame(uint32_t vsync, const Stats& s) {
     xsgui::AnimFrame(Now());
     xsgui::ArtFrame();
     xsgui::AnimGc();
-    if (text)
-        xsgtext::Draw(ImGui::GetBackgroundDrawList(), s.game_x / fb, s.game_y / fb, s.game_w / fb, s.game_h / fb);
     if (menus)   // the game's menus, under the battle HUD and dialog
         xsgui::MenuDraw(ImGui::GetBackgroundDrawList(), ImGui::GetFont(), s.game_x / fb, s.game_y / fb, s.game_w / fb,
                         s.game_h / fb);

@@ -30,7 +30,7 @@ XSG_SETTING("display.present", "XSG_GPU_PRESENT", "mailbox", "mailbox|fifo|immed
 XSG_SETTING("display.aspect", "XSG_GPU_ASPECT", "4:3", "4:3|16:9|stretch", 1, "Display aspect ratio.")
 XSG_SETTING("display.scale_mode", "XSG_GPU_SCALEMODE", "fit", "fit|integer", 1, "Fit the window or integer scaling.")
 XSG_SETTING("display.filter", "XSG_GPU_FILTER", "linear", "linear|nearest", 1, "Blit filter.")
-XSG_SETTING("display.ui", "XSG_GPU_UI", "original", "original|rebuilt|enhanced", 1, "Game UI: the original PS2 2D, rebuilt in Dear ImGui (sharp at any size), or enhanced (the original with its text redrawn sharp).")
+XSG_SETTING("display.ui", "XSG_GPU_UI", "original", "original|rebuilt", 1, "Game UI: the original PS2 2D, or rebuilt in Dear ImGui (sharp at any size).")
 XSG_SETTING("display.prompts", 0, "auto", "auto|xbox|playstation|nintendo|keyboard", 1, "Button prompts in the rebuilt UI (auto: the connected controller, or the keyboard).")
 XSG_SETTING("display.prompt_style", 0, "default", "default|light|retro|alt|alt2|drawn", 1, "Prompt icon style (JulioCacko Free Input Prompts, CC0); drawn: simple vector glyphs.")
 XSG_SETTING("display.ui_layout", 0, "game", "game|wide", 1, "Rebuilt UI layout: on the picture (game) or anchored to the window edges (wide).")
