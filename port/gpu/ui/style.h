@@ -23,6 +23,8 @@ inline ImFont* UiFont(UiFontKind k, ImFont* fallback) { return g_ui_font[k] ? g_
 /* Small caps the way the original sets its labels: the first letter of each word at full size,
    the rest uppercase at 78%.  Returns the width. */
 float SmallCaps(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t, bool draw = true);
+/* The y to draw text at so its capital letters are centred on `mid` (not the font's line box). */
+float CapCentreY(ImFont* font, float size, float mid);
 /* Text with a crisp dark outline (the original's style for numbers and labels). */
 void OutlineText(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t);
 

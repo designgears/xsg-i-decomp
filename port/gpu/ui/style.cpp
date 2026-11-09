@@ -79,8 +79,14 @@ void Shadow(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, float rounding
     }
 }
 
+float CapCentreY(ImFont* font, float size, float mid) {
+    const ImFontGlyph* g = font ? font->FindGlyph('H') : nullptr;
+    if (!g || font->FontSize <= 0) return mid - size * 0.5f;
+    return mid - (g->Y0 + g->Y1) * 0.5f * size / font->FontSize;
+}
+
 void Panel(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, bool accent, ImU32 tint, int corners) {
-    Shadow(dl, a, b, k, t);
+    // no drop shadow: it smeared a dark halo under every box
     dl->AddRectFilledMultiColor(a, b, Alpha(kTop, t), Alpha(kTop, t), Alpha(kBottom, t), Alpha(kBottom, t));
     if (tint) dl->AddRectFilled(a, b, Alpha(tint, t));
     // a faint diagonal hatch, like the game's window texture

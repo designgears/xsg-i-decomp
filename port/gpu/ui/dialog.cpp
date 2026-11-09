@@ -90,7 +90,7 @@ std::string Decode(const char* s) {
         if (c == 0xd1) {
             if (const char* sym = Symbol(p[1])) o += sym;
             else if (unknown.insert(0xd100u | p[1]).second) {
-                std::fprintf(stderr, "[ui] unknown symbol d1%02x\n", p[1]);
+                std::fprintf(stderr, "[ui] unknown symbol d1%02x in \"%s<?>%s\"\n", p[1], o.c_str(), Decode(reinterpret_cast<const char*>(p + 2)).c_str());
                 o += '?';
             }
             p += 2;
@@ -154,7 +154,6 @@ void DialogDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
         const float ns = 16.0f * k;
         const ImVec2 tsz = font->CalcTextSizeA(ns, 1e9f, 0, name.c_str());
         const float px0 = x0 + 12 * k, px1 = px0 + tsz.x + 20 * k, py1 = y0 + 1 * k, py0 = py1 - ns - 7 * k;
-        Shadow(dl, ImVec2(px0, py0), ImVec2(px1, py1), k, t);
         dl->AddRectFilledMultiColor(ImVec2(px0, py0), ImVec2(px1, py1), IM_COL32(48, 50, 112, int(245 * t)),
                                     IM_COL32(34, 36, 90, int(245 * t)), IM_COL32(24, 24, 64, int(245 * t)),
                                     IM_COL32(30, 30, 80, int(245 * t)));
@@ -401,18 +400,17 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
             const ImVec2 c = P(rx + 17, ry + rh * 0.5f);
             Glyph(dl, font, c.x, c.y, 10.0f * k, kPos[(r.btn - 1) & 3], false);   // the label shows availability; the button stays legible
         }
-        {   // centred in the row right of the button, as the original
+        {   // left-aligned beside the button, capitals centred in the row, lightly tracked
             std::string up = r.label;
             for (char& ch : up) if (ch >= 'a' && ch <= 'z') ch = char(ch - 32);
-            // left-aligned beside the button, lightly tracked
-            const float track = ls * 0.10f;
+            const float track = ls * 0.05f;
             const ImVec2 lsz = rf->CalcTextSizeA(ls, 1e9f, 0, up.c_str());
             size_t nch = 0;
             for (unsigned char c : up) nch += (c & 0xc0) != 0x80;
             const float tw = lsz.x + track * float(std::max<size_t>(nch, 1) - 1);
             (void)tw;
             float lx = P(rx + 34, 0).x;
-            const float ly = P(0, ry + rh * 0.5f).y - lsz.y * 0.5f;
+            const float ly = CapCentreY(rf, ls, P(0, ry + rh * 0.5f).y);
             const ImU32 lc = off ? col::kTextOff : IM_COL32(236, 240, 232, 255);
             std::string one;   // one UTF-8 character at a time (a multi-byte character must not be split)
             for (size_t q = 0; q < up.size();) {
@@ -545,11 +543,11 @@ void KgDraw(ImDrawList* dl, ImFont* font_in, float gx, float gy, float gw, float
             break;
         }
         case GPU_KG_TEXT: {
-            // centred in the captured frame it sits in (the game centres it by character count)
-            // the original sets names in letter-spaced type: the label face with tracking
+            // left-aligned past the plate's accent bar, capitals centred on the plate, plain spacing
+            // (the original centres it by character count in letter-spaced type)
             const std::string t = Decode(o.text);
             ImFont* const font = UiFont(kFontLabel, font_in);
-            const float fs = 24.0f * k, track = fs * 0.14f;
+            const float fs = 24.0f * k, track = fs * 0.02f;
             ImVec2 ts = font->CalcTextSizeA(fs, 1e9f, 0, t.c_str());
             ts.x += track * float(t.size() > 0 ? t.size() - 1 : 0);
             float fl = float(o.x) - 2, fr = fl + 10 * float(std::strlen(o.text)) + 4;
@@ -564,8 +562,9 @@ void KgDraw(ImDrawList* dl, ImFont* font_in, float gx, float gy, float gw, float
             const float dx = x - float(o.x);
             const ImVec2 l = P(fl + dx, y), r = P(fr + dx, y);
             {
-                float cx = (l.x + r.x - ts.x) * 0.5f;
-                const float cy = P(x, y + 12).y - ts.y * 0.5f;
+                (void)r;
+                float cx = l.x + 12 * kx;
+                const float cy = CapCentreY(font, fs, P(x, y + 12).y);
                 std::string one;   // one UTF-8 character at a time (a multi-byte character must not be split)
                 for (size_t q = 0; q < t.size();) {
                     size_t n = 1;
@@ -594,7 +593,6 @@ void KgDraw(ImDrawList* dl, ImFont* font_in, float gx, float gy, float gw, float
             if (o.u == 0xC8 && o.v == 0xA0) break;   // the game's turn glow (a blue box): the panel's own glow replaces it
             if (o.w == 0x28 && o.h == 0x50 && o.dw == 0x28) {   // a party portrait: framed like the panel
                 const ImVec2 pa = P(x, y), pb = P(x + o.dw, y + o.dh);
-                Shadow(dl, pa, pb, k, rt);
                 uint32_t set;
                 std::memcpy(&set, o.text + 4, 4);
                 ArtSprite(dl, uint64_t(o.tex0_lo) | uint64_t(o.tex0_hi) << 32, 0, float(o.u), float(o.v), float(o.w), float(o.h), pa, pb,
