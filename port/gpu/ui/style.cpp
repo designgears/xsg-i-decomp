@@ -36,32 +36,25 @@ AnimState& Anim(uint64_t key, float x, float y) {
     return s;
 }
 
+/* No eased motion: the rebuilt UI follows the game's own positions at once.  Springs, fades and
+   tweens added on top read as input lag (a cursor ~150 ms behind the press, every page change
+   fading in again); the game animates its windows itself. */
 ImVec2 Spring(AnimState& s, float tx, float ty, float stiffness) {
-    // critically damped: x'' = k^2 (t - x) - 2k x'
-    const float k = stiffness, dt = float(g_dt);
-    for (int i = 0; i < 2; ++i) {
-        const float h = dt * 0.5f;
-        s.vx += (k * k * (tx - s.x) - 2 * k * s.vx) * h;
-        s.vy += (k * k * (ty - s.y) - 2 * k * s.vy) * h;
-        s.x += s.vx * h;
-        s.y += s.vy * h;
-    }
-    if (std::fabs(tx - s.x) < 0.01f && std::fabs(s.vx) < 0.01f) s.x = tx, s.vx = 0;
-    if (std::fabs(ty - s.y) < 0.01f && std::fabs(s.vy) < 0.01f) s.y = ty, s.vy = 0;
-    return ImVec2(s.x, s.y);
+    (void)stiffness;
+    s.x = tx; s.y = ty; s.vx = s.vy = 0;
+    return ImVec2(tx, ty);
 }
 
 float FadeIn(AnimState& s, float rate) {
-    s.a = std::min(1.0f, s.a + rate * float(g_dt));
-    // ease-out cubic
-    const float u = 1 - s.a;
-    return 1 - u * u * u;
+    (void)rate;
+    s.a = 1.0f;
+    return 1.0f;
 }
 
 float Tween(AnimState& s, float target, float rate) {
-    s.v += (target - s.v) * (1 - std::exp(-rate * float(g_dt)));
-    if (std::fabs(target - s.v) < 0.01f) s.v = target;
-    return s.v;
+    (void)rate;
+    s.v = target;
+    return target;
 }
 
 void AnimGc(double ttl) {

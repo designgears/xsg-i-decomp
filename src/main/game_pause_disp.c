@@ -101,6 +101,17 @@ void GamePauseDispCf(void)
 
 void GamePauseDispEvent(void)
 {
+#ifdef PORT_HOST
+    {   /* rebuilt UI: the card (Skip scene / Resume, with the controller's buttons) is xsg-gpu's */
+        extern int xsg_ui_rebuilt(void);
+        extern int xsg_ui_mop(int type, int x, int y, int w, int h, int z, unsigned rgba, int b);
+        if (xsg_ui_rebuilt()) {
+            GamePauseDispBG();
+            xsg_ui_mop(14, 0, 0, 512, 448, 0xFFFFFF, 0, 1);
+            return;
+        }
+    }
+#endif
     GamePauseDispCf();
     xglFontPrint(256 - xglFontGetStringWidth(msg1_1) / 2,
                  256, 0x00ffffff, msg1_1);

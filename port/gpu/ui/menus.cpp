@@ -831,7 +831,13 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             const int fam = PromptFamily();
             const char* start = fam == 3 ? "ENTER" : lay == "playstation" ? "OPTIONS" : lay == "nintendo" ? "+" : "MENU";
             const char* view = fam == 3 ? "BKSP" : lay == "playstation" ? "SHARE" : lay == "nintendo" ? "\xe2\x88\x92" : "VIEW";
+            // b = 1: a cutscene's pause (Skip / Resume), else the field's (Resume / Settings)
+            const char* north = fam == 3 ? "I" : lay == "playstation" ? "\xe2\x96\xb3" : lay == "nintendo" ? "X" : "Y";
             struct Row { int icon; const char *b, *l; } rows2[2] = {{kStart, start, "Resume"}, {kBack, view, "Settings"}};
+            if (o.b == 1) {
+                rows2[0] = {kNorth, north, "Skip scene"};
+                rows2[1] = {kStart, start, "Resume"};
+            }
             const float hs = 13.0f * k, slot = 22.0f;
             for (int r = 0; r < 2; ++r) {
                 const float ry = cy0 + 62 + 22.0f * float(r);
