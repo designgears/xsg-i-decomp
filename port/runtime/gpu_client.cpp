@@ -16,6 +16,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <csignal>
+#include <algorithm>
 #include <cstring>
 #include <strings.h>
 #include <ctime>
@@ -926,4 +927,42 @@ extern "C" int xsg_ui_settings_open(void) {
     if (!xsggpu::shm) return 0;
     const GpuSettings* p = reinterpret_cast<const GpuSettings*>(reinterpret_cast<uint8_t*>(xsggpu::shm) + XSG_GPU_SETTINGS_OFF);
     return __atomic_load_n(&p->menu_open, __ATOMIC_ACQUIRE) != 0;
+}
+
+/* Audio ring (gpu_ipc.h GpuAudio): the sound driver's output when xsg-gpu plays the audio
+   (iop_sound.c).  Single producer: the IOP audio thread. */
+static GpuAudio* AudioRing() {
+    return xsggpu::shm ? reinterpret_cast<GpuAudio*>(reinterpret_cast<uint8_t*>(xsggpu::shm) + XSG_GPU_AUDIO_OFF) : nullptr;
+}
+/* 1 once xsg-gpu is up (the ring exists); marks the ring live at `rate`. */
+extern "C" int xsg_audio_ring_open(unsigned rate) {
+    GpuAudio* a = AudioRing();
+    if (!a) return 0;
+    if (!a->on) {
+        a->rate = rate;
+        __atomic_store_n(&a->on, 1u, __ATOMIC_RELEASE);
+        xsg_logf("[audio] output through xsg-gpu (SDL3), %u Hz stereo\n", rate);
+    }
+    return 1;
+}
+/* Frames written but not yet taken by the device (-1: no ring). */
+extern "C" long xsg_audio_ring_queued(void) {
+    GpuAudio* a = AudioRing();
+    if (!a) return -1;
+    return long(__atomic_load_n(&a->wpos, __ATOMIC_RELAXED) - __atomic_load_n(&a->rpos, __ATOMIC_ACQUIRE));
+}
+/* Appends what fits; returns the frames written. */
+extern "C" long xsg_audio_ring_write(const short* s, unsigned frames) {
+    GpuAudio* a = AudioRing();
+    if (!a) return 0;
+    const uint32_t w = a->wpos, r = __atomic_load_n(&a->rpos, __ATOMIC_ACQUIRE);
+    const uint32_t room = XSG_GPU_AUDIO_FRAMES - (w - r);
+    const uint32_t n = frames < room ? frames : room;
+    for (uint32_t i = 0; i < n;) {
+        const uint32_t at = (w + i) & (XSG_GPU_AUDIO_FRAMES - 1), k = std::min(n - i, XSG_GPU_AUDIO_FRAMES - at);
+        std::memcpy(const_cast<int16_t*>(a->pcm) + size_t(at) * 2, s + size_t(i) * 2, size_t(k) * 4);
+        i += k;
+    }
+    __atomic_store_n(&a->wpos, w + n, __ATOMIC_RELEASE);
+    return long(n);
 }

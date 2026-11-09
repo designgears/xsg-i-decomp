@@ -31,12 +31,28 @@
 #include <stdint.h>
 
 #define XSG_GPU_MAGIC 0x55504758u /* "XGPU" */
-#define XSG_GPU_VERSION 7u
+#define XSG_GPU_VERSION 8u
 #define XSG_GPU_FD 3
 #define XSG_GPU_HDR (256u << 10)
 #define XSG_GPU_RING (64u << 20)
 #define XSG_GPU_REPLY (4u << 20)
-#define XSG_GPU_SHM_SIZE (XSG_GPU_HDR + XSG_GPU_RING + XSG_GPU_REPLY)
+#define XSG_GPU_AUDIO (256u << 10)
+#define XSG_GPU_AUDIO_OFF (XSG_GPU_HDR + XSG_GPU_RING + XSG_GPU_REPLY)
+#define XSG_GPU_SHM_SIZE (XSG_GPU_HDR + XSG_GPU_RING + XSG_GPU_REPLY + XSG_GPU_AUDIO)
+
+/* Audio (port/gpu/audio.cpp): the game's sound driver renders the SPU2 mix (48 kHz
+   stereo s16) into this single-producer / single-consumer ring; xsg-gpu plays it
+   through an SDL3 audio stream (PipeWire / Pulse / ALSA), pulled at the device's own
+   pace.  wpos / rpos count frames (wrap at 2^32); the game keeps about `target_ms`
+   queued.  When the game stalls and the ring runs dry, xsg-gpu holds the last sample
+   decaying to silence and ramps the audio back in (no clicks); `underruns` counts those.
+   on = 1 once the game writes (audio enabled); 0: xsg-gpu keeps the device closed. */
+#define XSG_GPU_AUDIO_FRAMES 32768u /* power of two: 683 ms */
+typedef struct GpuAudio {
+    volatile uint32_t on, rate, wpos, rpos;
+    volatile uint32_t underruns, played_lo, played_hi, pad[9];
+    int16_t pcm[XSG_GPU_AUDIO_FRAMES * 2];
+} GpuAudio;
 
 enum {
     GPU_MSG_PAD = 0,       /* skip to the end of the ring */
@@ -321,6 +337,7 @@ typedef struct {
 } GpuSettings;
 
 #ifdef __cplusplus
+static_assert(sizeof(GpuAudio) == 64 + XSG_GPU_AUDIO_FRAMES * 4 && sizeof(GpuAudio) <= XSG_GPU_AUDIO, "audio ring layout");
 static_assert(sizeof(GpuUiKgOp) == 68 && sizeof(GpuUiKeyGuide) == 16 + 68 * XSG_GPU_UI_KG_OPS, "ui op layout (32 / 64-bit)");
 static_assert(sizeof(GpuUiBattleCmd) == 28 + 5 * 20 && sizeof(GpuUiUnit) == 52, "battle layout (32 / 64-bit)");
 static_assert(XSG_GPU_UI_KG_OFF + XSG_GPU_UI_KG_CHANNELS * sizeof(GpuUiKeyGuide) <= XSG_GPU_UI_MENU_OFF, "ui capture channels overlap the menu list");

@@ -47,6 +47,10 @@
 void *xsg_alsa_open(unsigned rate, unsigned latency_us);
 long xsg_alsa_write(void *pcm, const short *s, unsigned frames);
 long xsg_alsa_avail(void *pcm);
+/* gpu_client.cpp: the audio ring xsg-gpu plays (gpu_ipc.h GpuAudio) */
+int xsg_audio_ring_open(unsigned rate);
+long xsg_audio_ring_queued(void);
+long xsg_audio_ring_write(const short *s, unsigned frames);
 void xsg_iop_call_ee(unsigned rpc, unsigned command, const void *data, int size);
 
 /* the driver (prefixed) */
@@ -57,6 +61,9 @@ static FILE *wav;
 static pthread_mutex_t wav_lock = PTHREAD_MUTEX_INITIALIZER;
 static unsigned long long wav_frames;
 static void *pcm;
+/* [renderer] gs = gpu: the mix goes to xsg-gpu's audio ring (played through SDL3 there);
+ * live once xsg-gpu is up (it starts after the sound driver).  Otherwise ALSA here. */
+static int use_ring, ring_live;
 static volatile unsigned long long rendered;
 static unsigned long long alsa_dropped, alsa_underruns;
 static unsigned stream_blocks, stream_irqs; /* 0xb5 data commands, SPU2 IRQs */
@@ -508,6 +515,7 @@ static void wav_header(void)
 #define FADE_FRAMES 96
 #define ALSA_BUF_MS 250
 #define FILL_FLOOR_MS 20
+#define RING_TARGET_MS 40 /* queued in xsg-gpu's ring (its device buffer comes on top) */
 static double target_ms = 60;
 static int fade_in, in_gap;
 static int16_t last_out[2];
@@ -550,7 +558,11 @@ static void output(const int16_t *s, int frames)
         }
     }
     pthread_mutex_unlock(&wav_lock);
-    if (pcm) {
+    if (ring_live) {
+        long r = xsg_audio_ring_write(s, (unsigned)frames);
+        if (r < frames)
+            alsa_dropped += frames - r;
+    } else if (pcm) {
         /* after a filled gap the device resumes from silence: ramp in over 2 ms */
         static int16_t ramp_buf[2 * 2048];
         if (fade_in > 0 && frames <= 2048) {
@@ -643,7 +655,18 @@ static void *audio_thread(void *p)
          * output_fill): the device clock drifts against CLOCK_MONOTONIC, so
          * render a little more or less */
         long queued = -1;
-        if (pcm) {
+        if (use_ring && !ring_live)
+            ring_live = xsg_audio_ring_open(RATE);
+        if (ring_live) {
+            /* xsg-gpu's device pulls from the ring at its own clock: keep ~target queued
+             * (the ring's fill steers how much is rendered, so the two clocks stay locked) */
+            queued = xsg_audio_ring_queued();
+            const long tgt = (long)(RATE * RING_TARGET_MS / 1000);
+            if (queued < tgt - RATE * 10 / 1000)
+                budget += 8;
+            else if (queued > tgt + RATE * 10 / 1000)
+                budget -= 8;
+        } else if (pcm) {
             long avail = xsg_alsa_avail(pcm);
             if (avail < 0)
                 alsa_underruns++; /* xrun: the next write recovers */
@@ -690,7 +713,7 @@ static void *audio_thread(void *p)
         if (frames)
             output(buf, frames);
         /* the game is behind real time and the device is about to run dry */
-        if (pcm && gated && queued >= 0 && queued + frames < RATE * FILL_FLOOR_MS / 1000) {
+        if (pcm && !ring_live && gated && queued >= 0 && queued + frames < RATE * FILL_FLOOR_MS / 1000) {
             output_fill(RATE * FILL_FLOOR_MS / 1000 - (int)(queued + frames));
             target_ms = target_ms + 20 > 200 ? 200 : target_ms + 20;
         }
@@ -763,7 +786,13 @@ void xsg_sound_start(void)
             xsg_logf("[sound] recording the mix to %s (48 kHz stereo s16)\n", w);
         }
     }
-    pcm = xsg_alsa_open(RATE, ALSA_BUF_MS * 1000);
+    {
+        const char *gs = xsg_cfg("renderer.gs"), *en = xsg_cfg("audio.enabled");
+        const int enabled = !(en && atoi(en) == 0);
+        use_ring = enabled && gs && (!strcmp(gs, "gpu") || !strcmp(gs, "both"));
+    }
+    if (!use_ring)
+        pcm = xsg_alsa_open(RATE, ALSA_BUF_MS * 1000);
     pthread_mutex_lock(&L);
     ssdiop_sceSdInit(0);
     ssdiop_start();

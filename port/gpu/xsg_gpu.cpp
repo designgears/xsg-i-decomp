@@ -30,6 +30,7 @@
 #include "ui/menus.h"
 #include "ui/dialog.h"
 #include "native_prof.h"
+#include "audio.h"
 #include "menu/cfg.h"
 #include "menu/menu.h"
 
@@ -811,6 +812,7 @@ struct Renderer {
         uint64_t pt[8] = {xsgprof::g_on ? xsgprof::Now() : 0};
         auto mark = [&](int i) { if (xsgprof::g_on) pt[i] = xsgprof::Now(); };
         ApplyLive();
+        xsgaudio::Poll();
         if (xsgnative::On()) xsgnative::Vsync(frame, gs);
         mark(1);
         VSyncInfo info = {};
@@ -911,9 +913,9 @@ struct Renderer {
         }
         if (vsyncs % 600 == 0) {
             double s = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-            Log("vsync %u: %.1f vsyncs/s, %.1f MB/s GIF, %llu presents (%llu native); worst %.1f ms at vsync %u, %u over 20 ms, %llu repeats not presented", frame,
+            Log("vsync %u: %.1f vsyncs/s, %.1f MB/s GIF, %llu presents (%llu native); worst %.1f ms at vsync %u, %u over 20 ms, %llu repeats not presented, %u audio underruns", frame,
                 600.0 / s, gif_bytes / s / 1e6, (unsigned long long)presents, (unsigned long long)native_presents, worst_ms,
-                worst_at, slow_frames, (unsigned long long)repeats);
+                worst_at, slow_frames, (unsigned long long)repeats, xsgaudio::Underruns());
             worst_ms = 0;
             slow_frames = 0;
             t0 = std::chrono::steady_clock::now();
@@ -968,6 +970,7 @@ int main(int argc, char** argv) {
     if (shm->magic != XSG_GPU_MAGIC || shm->version != XSG_GPU_VERSION) { Log("bad shm header"); return 1; }
     ring = static_cast<uint8_t*>(m) + XSG_GPU_HDR;
     reply = ring + XSG_GPU_RING;
+    xsgaudio::Init(m);
 
     if (const char* s = stream; s && *s) {
         g_stream = new ::Stream;

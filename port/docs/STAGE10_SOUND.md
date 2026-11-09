@@ -295,3 +295,18 @@ and the two cores' studio-C reverbs ran in one work area and fed each other. EEA
 * `sfx_pitch_check` finds the predicted frequency as the window's *dominant* one for only 19
   of 254 key-ons: in a polyphonic mix the dominant peak is usually another voice, so this tool
   is not meant for music.
+
+## Output through xsg-gpu (SDL3), 2026-11-08
+
+With `[renderer] gs = gpu` (or `both`) the sound driver no longer opens ALSA in the 32-bit
+game process.  It renders the same 48 kHz stereo mix into a shared ring (`gpu_ipc.h`
+`GpuAudio`, 683 ms, at `XSG_GPU_AUDIO_OFF`), and xsg-gpu (`port/gpu/audio.cpp`) plays it through an
+SDL3 audio stream: PipeWire, PulseAudio or ALSA, whichever SDL picks, on the default device.
+
+* **Pull model.** SDL's audio thread takes frames from the ring at the device's pace, so a
+  stalled render loop does not stall the sound.  The game steers how much it renders by the
+  ring's fill (about 40 ms queued, `RING_TARGET_MS`), which locks the two clocks without resampling.
+* **Gaps.** If the game itself stalls past the buffer, the device holds the last sample, decaying
+  to silence (about 1 ms), and ramps the sound back in over 2 ms.  xsg-gpu's 600-vsync log line
+  counts these as "audio underruns".
+* `gs = soft` keeps the ALSA path described above.  `[debug] wav` still records game time.
