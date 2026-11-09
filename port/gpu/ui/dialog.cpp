@@ -791,6 +791,13 @@ void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
             OutlineText(dl, f, size, ImVec2(xx, base - size * asc), c, s2, an.a);
         };
         const float ls = 19.0f * k, vs = 30.0f * k, ss = 16.0f * k;
+        // the screen y of a label's cap-height centre on row `row` (the gauges centre on it)
+        auto capMid = [&](int row) {
+            const float asc = lf->Ascent / lf->FontSize, base = P(0, rowY[row]).y + ls * 0.35f, top = base - ls * asc;
+            const ImFontGlyph* g = lf->FindGlyph('H');
+            const float sc = ls / lf->FontSize;
+            return g ? top + (g->Y0 + g->Y1) * 0.5f * sc : P(0, rowY[row]).y;
+        };
         auto label = [&](int row, const char* t) {
             const bool blue = t[0] == 'A' || t[0] == 'B';
             put(lf, ls, colLabel, rowY[row], false, blue ? IM_COL32(90, 160, 255, 255) : IM_COL32(110, 236, 240, 255), t);
@@ -814,15 +821,17 @@ void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
             // the same span as the BG gauge below: first chevron at its left edge, last ending at its right
             const float h = 9.0f, w = 6.5f, span = (colRight - 14) - colGauge - w, step = span / 5.0f;
             for (int i2 = 0; i2 < 6; ++i2) {
-                const ImVec2 o = P(colGauge + i2 * step, rowY[2] - h * 0.5f);
+                const float cy2 = capMid(2);
+                const ImVec2 o(P(colGauge + i2 * step, 0).x, cy2 - h * 0.5f * k);
                 const ImU32 cc = i2 < u.ap ? col::kCyan : IM_COL32(118, 214, 255, 45);
-                dl->AddTriangleFilled(o, ImVec2(o.x + w * kx, o.y + h * 0.5f * k), ImVec2(o.x, o.y + h * k), cc);
+                dl->AddTriangleFilled(o, ImVec2(o.x + w * kx, cy2), ImVec2(o.x, cy2 + h * 0.5f * k), cc);
             }
         }
         // BG: the gauge, then the boost count right-aligned to the panel's content edge
         label(3, "BG");
         {
-            const ImVec2 g0 = P(colGauge, rowY[3] - 2), g1 = P(colRight - 14, rowY[3] + 2);
+            const float cy3 = capMid(3);
+            const ImVec2 g0(P(colGauge, 0).x, cy3 - 2 * k), g1(P(colRight - 14, 0).x, cy3 + 2 * k);
             dl->AddRectFilled(g0, g1, IM_COL32(255, 32, 128, 50), 2.0f * k);
             dl->AddRectFilled(g0, ImVec2(g0.x + (g1.x - g0.x) * std::min(1.0f, std::max(0, u.bp) / 60.0f), g1.y),
                               IM_COL32(255, 60, 150, 230), 2.0f * k);
