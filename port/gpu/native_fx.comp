@@ -26,6 +26,9 @@ layout(std430, set = 0, binding = 0) readonly buffer Prims { Prim prims[]; };
 layout(rgba8, set = 0, binding = 1) uniform image2D o_col;
 layout(r32ui, set = 0, binding = 2) uniform uimage2D o_z;
 layout(set = 0, binding = 3) uniform sampler2D src;    // texture (1x texels) or the surface copy (s x)
+// Batch mode (p.prim == -2): workgroup z draws batch[p.ox + z] = (prim, ox, oy, zmax): many small primitives
+// with the same source and no overlap in one dispatch (per-dispatch cost dominated 8000-strip effects).
+layout(std430, set = 0, binding = 4) readonly buffer Batch { uvec4 batch[]; };
 layout(push_constant) uniform P {
     int prim, s, w, h;          // w, h: surface at 1x
     int ox, oy, mx, pad1;       // bbox origin (s x samples); mx: widescreen side bands (1x, each side)
@@ -109,10 +112,19 @@ void PmodePass(ivec2 o) {
 }
 
 void main() {
-    ivec2 o = ivec2(gl_GlobalInvocationID.xy) + ivec2(p.ox, p.oy);
+    int prim_i = p.prim;
+    ivec2 org = ivec2(p.ox, p.oy);
+    uint zmax = p.zmax;
+    if (prim_i == -2) {
+        const uvec4 e = batch[uint(p.ox) + gl_WorkGroupID.z];   // p.ox: the batch's first entry
+        prim_i = int(e.x);
+        org = ivec2(e.yz);
+        zmax = e.w;
+    }
+    ivec2 o = ivec2(gl_GlobalInvocationID.xy) + org;
     if (o.x >= (p.w + 2 * p.mx) * p.s || o.y >= p.h * p.s) return;
-    if (p.prim < 0) { PmodePass(o); return; }
-    Prim r = prims[p.prim];
+    if (prim_i < 0) { PmodePass(o); return; }
+    Prim r = prims[prim_i];
     // Sample point in 1x pixel space: pixel X samples at X.0 (the GS corner).
     vec2 pt = (vec2(o) + 0.5) / float(p.s) - 0.5 - vec2(float(p.mx), 0.0);
     if (pt.x < float(r.sc.x) - 0.5 / p.s || pt.y < float(r.sc.y) - 0.5 / p.s ||
@@ -176,7 +188,7 @@ void main() {
     } else {
         return;
     }
-    z = min(z, p.zmax);
+    z = min(z, zmax);
     // STQ: s/q is normalised; to texels.
     if (!fst) uv *= vec2(r.tsz.xy);
     ivec4 c = ivec4(col);

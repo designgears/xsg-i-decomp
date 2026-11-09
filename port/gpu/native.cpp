@@ -745,8 +745,13 @@ void ProfGpu() {
     const double tick = double(g_dev->get_gpu_properties().limits.timestampPeriod) * 1e-6;
     while (!g_ts.empty() && g_ts.front()[3]->is_signalled()) {
         auto& t = g_ts.front();
-        for (int k = 0; k < 3; ++k)
-            xsgprof::g_gpu_ms[k] += double(t[k + 1]->get_timestamp_ticks() - t[k]->get_timestamp_ticks()) * tick;
+        double ms[3];
+        for (int k = 0; k < 3; ++k) {
+            ms[k] = double(t[k + 1]->get_timestamp_ticks() - t[k]->get_timestamp_ticks()) * tick;
+            xsgprof::g_gpu_ms[k] += ms[k];
+        }
+        if (ms[0] + ms[1] + ms[2] > 8.0)
+            Log("[prof] vsync %u: slow live pass on the GPU: Sx %.1f, 1x %.1f, post %.1f ms", g_last_vsync, ms[0], ms[1], ms[2]);
         xsgprof::g_gpu_n++;
         g_ts.pop_front();
     }
