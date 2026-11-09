@@ -157,7 +157,17 @@ bool MenuActive(uint32_t vsync) {
                          g_m->fade, g_m->fade_frame, g_snap->nops, t.c_str());
         }
     }
-    return g_snap->frame && age <= 4 && age >= -2000 && g_snap->nops;   // the game may run far ahead (uncapped)
+    if (!(g_snap->frame && age <= 4 && age >= -2000 && g_snap->nops)) return false;   // the game may run far ahead (uncapped)
+    // frames with nothing in them (a subtitle box left open while a skipped scene loads): not drawn
+    for (uint32_t i = 0; i < g_snap->nops; ++i) {
+        const GpuUiKgOp& o = g_snap->op[i];
+        if (o.type == GPU_KG_TEXT || o.type == GPU_KG_TAG) {
+            const char* ps = g_snap->pool + std::min<uint32_t>(uint32_t(o.b), XSG_GPU_UI_MENU_POOL - 1);
+            if (o.u > 0 && !Decode(std::string(ps, size_t(o.u)).c_str()).empty()) return true;
+        } else if (o.type != GPU_KG_WINDOW && o.type != GPU_KG_RECT && o.type != GPU_KG_LINE && o.type != GPU_KG_SCISSOR)
+            return true;   // art, numbers, the pause card, the title...
+    }
+    return false;
 }
 
 bool MenuWantsSettings() {

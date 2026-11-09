@@ -127,7 +127,11 @@ bool DialogActive(uint32_t vsync) {
     }
     // the game runs a few vblanks ahead of the renderer (the command ring): signed age
     const int32_t age = int32_t(vsync - g_snap.frame);
-    return g_snap.frame && g_snap.w > 0 && age <= 3 && age >= -120;
+    if (!(g_snap.frame && g_snap.w > 0 && age <= 3 && age >= -120)) return false;
+    // a window with nothing typed in it (left open while a skipped scene ends and loads): not drawn
+    for (uint32_t i = 0; i < g_snap.nlines && i < XSG_GPU_UI_LINES; ++i)
+        if (!Decode(g_snap.line[i]).empty()) return true;
+    return false;
 }
 
 void DialogDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh, double now) {
