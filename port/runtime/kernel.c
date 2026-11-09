@@ -261,6 +261,25 @@ void xsg_vblank(void)
         clock_gettime(CLOCK_MONOTONIC, &now);
         long long behind = (now.tv_sec - next_vblank.tv_sec) * 1000000000LL +
                            (now.tv_nsec - next_vblank.tv_nsec);
+        { /* [debug] fps: vblanks the game reached late (the host thread ran past the deadline) */
+            static int on = -1;
+            static unsigned late, n;
+            static long long worst;
+            if (on < 0)
+                on = xsg_cfg("debug.fps") != NULL;
+            if (on) {
+                if (behind > 2000000LL) {
+                    late++;
+                    if (behind > worst)
+                        worst = behind;
+                }
+                if (++n % 600 == 0) {
+                    xsg_logf("[pace] vblank %u: %u of 600 vblanks late, worst %.1f ms\n", xsg_frame, late, worst / 1e6);
+                    late = 0;
+                    worst = 0;
+                }
+            }
+        }
         if (behind > 4LL * frame_ns)
             next_vblank = now; /* too far behind: resync */
         else

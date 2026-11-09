@@ -29,6 +29,7 @@
 #include "ui/art.h"
 #include "ui/menus.h"
 #include "ui/dialog.h"
+#include "native_prof.h"
 #include "menu/cfg.h"
 #include "menu/menu.h"
 
@@ -807,8 +808,11 @@ struct Renderer {
 
 
     void Vsync(uint32_t frame, uint32_t field) {
+        uint64_t pt[8] = {xsgprof::g_on ? xsgprof::Now() : 0};
+        auto mark = [&](int i) { if (xsgprof::g_on) pt[i] = xsgprof::Now(); };
         ApplyLive();
         if (xsgnative::On()) xsgnative::Vsync(frame, gs);
+        mark(1);
         VSyncInfo info = {};
         info.phase = field;
         info.dst_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -819,7 +823,9 @@ struct Renderer {
         info.anti_blur = true;
         info.high_resolution_scanout = hires != 0;
         gs.flush();
+        mark(6);
         ScanoutResult so = gs.vsync(info);
+        mark(2);
         xsginput::BeginFrame(frame);
 #ifdef XSG_GPU_SDL
         if (windowed) platform->poll_input();
@@ -861,7 +867,9 @@ struct Renderer {
         st.native_batches = native_last;
         st.native_on = xsgnative::On();
         st.game_x = game_rect[0]; st.game_y = game_rect[1]; st.game_w = game_rect[2]; st.game_h = game_rect[3];
+        mark(3);
         xsgmenu::Frame(frame, st);
+        mark(4);
         // A 30 fps scene shows each frame for two vsyncs: the native composite is then the
         // same image, and presenting it again only doubles the present work (and, with DLSS 5,
         // the neural model's).  Skipped while the menu is open (it animates).
@@ -876,6 +884,14 @@ struct Renderer {
         }
         if (!repeat) Present(so, !test);
         else repeats++;
+        mark(5);
+        if (xsgprof::g_on) {
+            const double tot = double(pt[5] - pt[0]) * 1e-6;
+            if (tot > 12.0)
+                Log("[prof] slow vsync %u: %.1f ms = native %.1f, gs %.1f (flush %.1f), input %.1f, menu/ui %.1f, present %.1f", frame, tot,
+                    double(pt[1] - pt[0]) * 1e-6, double(pt[2] - pt[1]) * 1e-6, double(pt[6] - pt[1]) * 1e-6, double(pt[3] - pt[2]) * 1e-6,
+                    double(pt[4] - pt[3]) * 1e-6, double(pt[5] - pt[4]) * 1e-6);
+        }
         if (std::string p = xsgmenu::TestShot(&tw, &th); !p.empty()) WritePngOf(so, p, tw, th, true);
         if (!shot_path.empty()) {
             WritePngOf(so, shot_path, 0, 0, false);
@@ -991,6 +1007,7 @@ int main(int argc, char** argv) {
         std::memcpy(&h, ring + (rpos & mask), sizeof h);
         const uint8_t* payload = ring + ((rpos + 16) & mask);
         uint32_t adv = 16 + h.len;
+        const uint64_t prof_t0 = xsgprof::g_on ? xsgprof::Now() : 0;
         switch (h.type) {
         case GPU_MSG_PAD: adv = XSG_GPU_RING - (rpos & mask); break;
         case GPU_MSG_GIF: {
@@ -1038,6 +1055,11 @@ int main(int argc, char** argv) {
         default:
             Log("bad message type %u at %u", h.type, rpos);
             return 1;
+        }
+        if (xsgprof::g_on) {   // [debug] gpu_prof: one message that stalls the loop
+            const double ms = double(xsgprof::Now() - prof_t0) * 1e-6;
+            if (ms > 8.0) Log("[prof] slow message type %u (a %u b %u, %u bytes) at vsync %llu: %.1f ms", h.type, h.a, h.b, h.len,
+                              (unsigned long long)r.vsyncs, ms);
         }
         rpos += adv;
         __atomic_store_n(&shm->rpos, rpos, __ATOMIC_SEQ_CST);
