@@ -31,6 +31,7 @@
 #include "ui/dialog.h"
 #include "native_prof.h"
 #include "audio.h"
+#include "ui/text_layer.h"
 #include "menu/cfg.h"
 #include "menu/menu.h"
 
@@ -377,6 +378,7 @@ struct Renderer {
         xsgglyph::Init();
         xsgglyph::SetGs(&gs);
         xsgui::ArtInit(&gs);
+        xsgtext::Init(&gs);
         xsgui::Init(shm);
         xsgui::MenuInit(shm);
         const auto& p = dev->get_gpu_properties();
@@ -813,6 +815,7 @@ struct Renderer {
         auto mark = [&](int i) { if (xsgprof::g_on) pt[i] = xsgprof::Now(); };
         ApplyLive();
         xsgaudio::Poll();
+        xsgtext::Vsync();
         if (xsgnative::On()) xsgnative::Vsync(frame, gs);
         mark(1);
         VSyncInfo info = {};
@@ -1014,6 +1017,7 @@ int main(int argc, char** argv) {
         switch (h.type) {
         case GPU_MSG_PAD: adv = XSG_GPU_RING - (rpos & mask); break;
         case GPU_MSG_GIF: {
+            if (xsgtext::On()) xsgtext::Gif(h.a, const_cast<uint8_t*>(payload), h.len);   // ui = enhanced: glyphs out of the GS
             if (xsgnative::On()) xsgnative::Gif(h.a, payload, h.len, r.gs);   // transfers too (native_fx.cpp)
             else r.gs.gif_transfer(h.a, payload, h.len);
             // button glyphs: replacement uploads right after the icon they replace (glyphs.cpp)
