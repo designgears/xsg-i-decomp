@@ -393,25 +393,25 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
         float right = rx + rw;
         const float costW = r.cost.empty() ? 0.0f : 116.0f;
         const ImVec2 a = P(rx, ry), b = P(right + costW, ry + rh);
-        Panel(dl, a, b, k, t * (off ? 0.75f : 1.0f));
+        Panel(dl, a, b, k, t * (off ? 0.75f : 1.0f), false, 0, 0);   // no corner brackets: rows stack cleanly
         const ImU32 acc = kAccent[size_t(r.kind)];
         dl->AddRectFilledMultiColor(a, P(rx + 40, ry + rh), Alpha(acc, 0.20f * t), Alpha(acc, 0), Alpha(acc, 0), Alpha(acc, 0.20f * t));
         dl->AddRectFilled(a, P(rx + 3, ry + rh), Alpha(acc, t));
         if (r.btn >= 1) {
             const ImVec2 c = P(rx + 17, ry + rh * 0.5f);
-            Glyph(dl, font, c.x, c.y, 10.0f * k, kPos[(r.btn - 1) & 3], off);
+            Glyph(dl, font, c.x, c.y, 10.0f * k, kPos[(r.btn - 1) & 3], false);   // the label shows availability; the button stays legible
         }
         {   // centred in the row right of the button, as the original
             std::string up = r.label;
             for (char& ch : up) if (ch >= 'a' && ch <= 'z') ch = char(ch - 32);
-            if (r.label == "Menu") up = "Menu";
-            // letter-spaced, as the original's plates
-            const float track = ls * 0.22f;
+            // left-aligned beside the button, lightly tracked
+            const float track = ls * 0.10f;
             const ImVec2 lsz = rf->CalcTextSizeA(ls, 1e9f, 0, up.c_str());
             size_t nch = 0;
             for (unsigned char c : up) nch += (c & 0xc0) != 0x80;
             const float tw = lsz.x + track * float(std::max<size_t>(nch, 1) - 1);
-            float lx = (P(rx + 28, 0).x + P(right, 0).x - tw) * 0.5f;
+            (void)tw;
+            float lx = P(rx + 34, 0).x;
             const float ly = P(0, ry + rh * 0.5f).y - lsz.y * 0.5f;
             const ImU32 lc = off ? col::kTextOff : IM_COL32(236, 240, 232, 255);
             std::string one;   // one UTF-8 character at a time (a multi-byte character must not be split)
@@ -432,23 +432,28 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
                 if (c->type == GPU_KG_NUMBER && ni < 3) nums[ni++] = c->a;
             if (ni == 2) nums[2] = nums[1], nums[1] = nums[0], nums[0] = -1;   // no ammo count
             char buf[16];
-            const float cy = P(0, ry + rh * 0.5f).y, ns = 20.0f * k, ts = 15.0f * k;
+            const float cy = P(0, ry + rh * 0.5f).y, ns = 20.0f * k, ts = 13.0f * k;
             ImFont* const font = UiFont(kFontNumber, rf);   // the cost box: heavy, as the original
             auto num = [&](float xr, int v, int digits) {
                 if (v < 0) return;
                 std::snprintf(buf, sizeof buf, "%0*d", digits, v);
                 const ImVec2 sz = font->CalcTextSizeA(ns, 1e9f, 0, buf);
-                OutlineText(dl, font, ns, ImVec2(P(xr, 0).x - sz.x, cy - sz.y * 0.5f), IM_COL32(236, 240, 232, 255), buf, t);
+                const float asc = font->Ascent / font->FontSize;
+                OutlineText(dl, font, ns, ImVec2(P(xr, 0).x - sz.x, cy + ns * 0.35f - ns * asc), IM_COL32(236, 240, 232, 255), buf, t);
             };
             auto tag = [&](float xl, const char* s) {
                 const ImVec2 sz = font->CalcTextSizeA(ts, 1e9f, 0, s);
-                OutlineText(dl, font, ts, ImVec2(P(xl, 0).x, cy - sz.y * 0.5f + 1), s[0] == 'E' ? IM_COL32(110, 236, 240, 255) : IM_COL32(90, 160, 255, 255), s, t);
+                (void)sz;
+                const float asc = font->Ascent / font->FontSize;   // on the numbers' baseline
+                OutlineText(dl, font, ts, ImVec2(P(xl, 0).x, cy + ns * 0.35f - ts * asc), s[0] == 'E' ? IM_COL32(110, 236, 240, 255) : IM_COL32(90, 160, 255, 255), s, t);
             };
+            // three equal cells: [ammo][EP cost][AP cost], each value right-aligned before its tag
+            // ammo, then "EP nn", then "AP n": each tag directly before its value
             num(right + 26, nums[0], 2);
-            tag(right + 34, "EP");
-            num(right + 70, nums[1], 2);
-            tag(right + 78, "AP");
-            num(right + 106, nums[2], 1);
+            tag(right + 40, "EP");
+            num(right + 72, nums[1], 2);
+            tag(right + 84, "AP");
+            num(right + 108, nums[2], 1);
         }
     }
     if (strip) {   // the footer: LB Change ... Boost RB, in a bar under the stack
