@@ -52,6 +52,9 @@ void opt_text(const char* text, bool warn = false);
 bool opt_toggle(const char* key, const char* label, const char* desc);
 bool opt_choice(const char* key, const char* label, const char* const* names, const char* desc);
 bool opt_slider(const char* key, const char* label, int lo, int hi, int step, const char* fmt, const char* desc);
+/* A row cycling through `names` that is not one setting (`id` only identifies the row):
+   *cur is the shown entry (-1: `none` is shown); returns true and sets *cur when changed. */
+bool opt_list(const char* id, const char* label, const char* const* names, int n, int* cur, const char* none, const char* desc);
 /* A free-text row (paths, lists, numbers): Enter / A / a click opens a text
    field, Enter keeps it, Esc cancels. */
 bool opt_edit(const char* key, const char* label, const char* desc);

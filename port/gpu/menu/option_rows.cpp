@@ -292,6 +292,16 @@ bool opt_choice(const char* key, const char* label, const char* const* names, co
     return true;
 }
 
+bool opt_list(const char* id, const char* label, const char* const* names, int n, int* cur, const char* none, const char* desc) {
+    RowView v = {*cur >= 0 && *cur < n ? names[*cur] : none, false, true, nullptr};
+    const int step = Row(id, label, desc, v);
+    if (!step || n == 0) return false;
+    const int nv = *cur < 0 ? 0 : step == 2 ? (*cur + 1) % n : std::max(0, std::min(n - 1, *cur + step));
+    if (nv == *cur) return false;
+    *cur = nv;
+    return true;
+}
+
 bool opt_slider(const char* key, const char* label, int lo, int hi, int step, const char* fmt, const char* desc) {
     const xsgcfg::Meta* m = xsgcfg::Find(key);
     int v = xsgcfg::GetInt(key), def = m ? std::atoi(m->def) : lo;

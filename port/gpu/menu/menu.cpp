@@ -390,8 +390,77 @@ void Panel(ImDrawList* dl, ImVec2 a, ImVec2 b, float scale, float alpha, bool gr
 /* ------------------------------------------------------------- pages */
 std::string g_mc_dir;
 
+/* Presets: whole looks, from the PS2 as it was to the most modern.  Each sets every key
+   it lists; the row shows "Custom" when the settings match none of them. */
+struct Preset { const char* name; const char* desc; const char* kv[16][2]; };
+const Preset kPresets[] = {
+    {"Original", "The PS2's own picture and 2D, unchanged.",
+     {{"renderer.native", "0"}, {"display.ui", "original"}, {"display.crt", "off"}, {"renderer.ssaa", "1"},
+      {"renderer.ssaa_textures", "0"}, {"renderer.hires_scanout", "0"}, {"display.filter", "linear"}, {"display.aspect", "4:3"},
+      {"display.widescreen", "0"}, {"renderer.lighting", "ps2"}, {"renderer.shadows", "0"}, {"display.ui_layout", "game"}}},
+    {"Original + CRT", "The original picture on a consumer CRT TV.",
+     {{"renderer.native", "0"}, {"display.ui", "original"}, {"display.crt", "consumer"}, {"display.crt_strength", "100"},
+      {"renderer.ssaa", "1"}, {"renderer.ssaa_textures", "0"}, {"renderer.hires_scanout", "0"}, {"display.filter", "linear"},
+      {"display.aspect", "4:3"}, {"display.widescreen", "0"}, {"renderer.lighting", "ps2"}, {"renderer.shadows", "0"},
+      {"display.ui_layout", "game"}}},
+    {"Sharp", "The original look, super-sampled 4x: cleaner edges, nothing else changed.",
+     {{"renderer.native", "0"}, {"display.ui", "original"}, {"display.crt", "off"}, {"renderer.ssaa", "4"},
+      {"renderer.ssaa_textures", "1"}, {"renderer.hires_scanout", "1"}, {"display.filter", "linear"}, {"display.aspect", "4:3"},
+      {"display.widescreen", "0"}, {"renderer.lighting", "ps2"}, {"renderer.shadows", "0"}, {"display.ui_layout", "game"}}},
+    {"Native", "The 3D drawn natively at 4x resolution; the PS2's 2D.",
+     {{"renderer.native", "1"}, {"renderer.native_scale", "4"}, {"display.ui", "original"}, {"display.crt", "off"},
+      {"renderer.ssaa", "1"}, {"display.filter", "linear"}, {"display.aspect", "4:3"}, {"display.widescreen", "0"},
+      {"renderer.lighting", "ps2"}, {"renderer.shadows", "0"}, {"display.ui_layout", "game"}}},
+    {"Native + CRT", "The native 3D on a Trinitron-style tube.",
+     {{"renderer.native", "1"}, {"renderer.native_scale", "4"}, {"display.ui", "original"}, {"display.crt", "trinitron"},
+      {"display.crt_strength", "100"}, {"renderer.ssaa", "1"}, {"display.filter", "linear"}, {"display.aspect", "4:3"},
+      {"display.widescreen", "0"}, {"renderer.lighting", "ps2"}, {"renderer.shadows", "0"}, {"display.ui_layout", "game"}}},
+    {"Native + rebuilt UI", "Native 3D and the game's menus, dialog and HUD redrawn sharp.",
+     {{"renderer.native", "1"}, {"renderer.native_scale", "4"}, {"display.ui", "rebuilt"}, {"display.crt", "off"},
+      {"renderer.ssaa", "1"}, {"display.filter", "linear"}, {"display.aspect", "4:3"}, {"display.widescreen", "0"},
+      {"renderer.lighting", "ps2"}, {"renderer.shadows", "0"}, {"display.ui_layout", "game"}}},
+    {"Enhanced", "Native 3D, rebuilt UI, per-pixel character lighting and real shadows.",
+     {{"renderer.native", "1"}, {"renderer.native_scale", "4"}, {"display.ui", "rebuilt"}, {"display.crt", "off"},
+      {"renderer.ssaa", "1"}, {"display.filter", "linear"}, {"display.aspect", "4:3"}, {"display.widescreen", "0"},
+      {"renderer.lighting", "perpixel"}, {"renderer.shadows", "60"}, {"display.ui_layout", "game"}}},
+    {"Widescreen", "Enhanced, in native 16:9 with the UI at the picture's edges.",
+     {{"renderer.native", "1"}, {"renderer.native_scale", "4"}, {"display.ui", "rebuilt"}, {"display.crt", "off"},
+      {"renderer.ssaa", "1"}, {"display.filter", "linear"}, {"display.aspect", "16:9"}, {"display.widescreen", "1"},
+      {"renderer.lighting", "perpixel"}, {"renderer.shadows", "60"}, {"display.ui_layout", "wide"}}},
+};
+constexpr int kNumPresets = int(sizeof kPresets / sizeof kPresets[0]);
+
+int PresetNow() {
+    for (int i = 0; i < kNumPresets; ++i) {
+        bool all = true;
+        for (const auto& kv : kPresets[i].kv)
+            if (kv[0] && xsgcfg::Get(kv[0]) != kv[1]) { all = false; break; }
+        if (all) return i;
+    }
+    return -1;
+}
+
+void PresetRow() {
+    static const char* names[kNumPresets];
+    static std::string desc;
+    if (desc.empty()) {
+        desc = "A whole look in one step, from the PS2 as it was to the most modern:";
+        for (int i = 0; i < kNumPresets; ++i) {
+            names[i] = kPresets[i].name;
+            desc += std::string("\n") + kPresets[i].name + ": " + kPresets[i].desc;
+        }
+        desc += "\nChanging any setting below shows Custom.";
+    }
+    int cur = PresetNow();
+    if (opt_list("preset", "Preset", names, kNumPresets, &cur, "Custom", desc.c_str()))
+        for (const auto& kv : kPresets[cur].kv)
+            if (kv[0]) xsgcfg::Set(kv[0], kv[1]);
+}
+
 void TabDisplay(float scale) {
     opt_begin("##display", scale);
+    opt_group("LOOK");
+    PresetRow();
     opt_group("WINDOW");
     opt_toggle("display.fullscreen", "Fullscreen",
                "Borderless fullscreen on the current display. F11 toggles it at any time.");
