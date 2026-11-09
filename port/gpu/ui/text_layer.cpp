@@ -21,6 +21,7 @@
 #include "../menu/cfg.h"
 #include "../menu/menu_render.h"
 #include "../native.h"
+#include "prompts.h"
 #include "gs_interface.hpp"
 #include "ps2host/gs.h"
 
@@ -53,6 +54,7 @@ struct Glyph {
     uint32_t fbp;
     bool hidden;            // covered by a shape drawn after it (the overlay is on top of everything)
     float vis;              // how much of it still shows through the shapes drawn over it later (1: all)
+    int button = -1;        // a PlayStation button icon (xsgui::PromptButton) instead of a glyph
 };
 std::vector<Glyph> g_cur, g_show;
 // glyphs of this frame by 32 x 32 cell of the frame (shapes check only the cells they touch)
@@ -74,10 +76,17 @@ uint32_t g_prim;           // PRIM: the shape being drawn
 float g_vx[3], g_vy[3];    // its last vertices (frame pixels)
 uint32_t g_vz[3];
 uint32_t g_nv;
+uint64_t g_tex0;                 // TEX0_1
+uint32_t g_uvu, g_uvv;           // UV (texels x 16)
+uint32_t g_vu[3], g_vv[3];       // per vertex
+uint8_t* g_vp[3];                // per vertex: its XY in the GIF data (to empty a replaced sprite)
+bool g_vad[3];                   // ... written through A+D (X, Y in bits 0..31) or PACKED (X 0..15, Y 32..47)
+void Icon(uint32_t a, uint32_t b);
 uint64_t g_zbuf;   // ZBUF_1 (bit 32: ZMSK)
 uint32_t g_alpha = 0x80;   // RGBAQ alpha (0x80 = 1)
+uint32_t g_rgb = 0x808080;   // RGBAQ colour
 uint64_t g_alphareg;       // ALPHA_1
-void Kick(uint32_t x16, uint32_t y16, uint32_t z);
+void Kick(uint32_t x16, uint32_t y16, uint32_t z, uint8_t* p, bool ad);
 
 /* ---- the font memory: a copy of local memory from TBP 0x3800 on, kept from the uploads */
 constexpr uint32_t kFontBase = 0x3800;
@@ -227,15 +236,20 @@ uint64_t AtlasKey(uint64_t tex0, uint32_t* tw, uint32_t* th) {
 
 /* A shape drawn after glyphs hides those it covers completely (in the GS it is painted over
    them; here the glyphs are drawn on top of the picture afterwards). */
-void Kick(uint32_t x16, uint32_t y16, uint32_t z) {
+void Kick(uint32_t x16, uint32_t y16, uint32_t z, uint8_t* p, bool ad) {
     const float x = float(int32_t(x16) - g_ofx) / 16.0f, y = float(int32_t(y16) - g_ofy) / 16.0f;
     const uint32_t type = g_prim & 7;
     g_vx[g_nv % 3] = x;
     g_vy[g_nv % 3] = y;
     g_vz[g_nv % 3] = z;
+    g_vu[g_nv % 3] = g_uvu;
+    g_vv[g_nv % 3] = g_uvv;
+    g_vp[g_nv % 3] = p;
+    g_vad[g_nv % 3] = ad;
     ++g_nv;
     const uint32_t need = type == 6 ? 2 : (type >= 3 && type <= 5) ? 3 : 0;
     if (!need || g_nv < need) return;
+    if (type == 6 && Bits(g_prim, 4, 1) && Bits(g_prim, 8, 1)) Icon(0, 1);   // a textured sprite: a button icon?
     if (g_cur.empty()) { g_nv = 0; return; }
     float x0 = 1e9f, y0 = 1e9f, x1 = -1e9f, y1 = -1e9f;
     for (uint32_t k = 0; k < need; ++k) {
@@ -294,6 +308,107 @@ void Kick(uint32_t x16, uint32_t y16, uint32_t z) {
     }
 }
 
+/* ---- button icons: the game's PlayStation buttons, recognised by their texels */
+struct IconKey { uint64_t page, state; uint32_t u, v, w, h; bool operator==(const IconKey& o) const {
+    return page == o.page && state == o.state && u == o.u && v == o.v && w == o.w && h == o.h; } };
+struct IconHash { size_t operator()(const IconKey& k) const {
+    return size_t(k.page * 31 ^ k.state * 131 ^ (uint64_t(k.u) << 1) ^ (uint64_t(k.v) << 13) ^ (uint64_t(k.w) << 26) ^ (uint64_t(k.h) << 40)); } };
+std::unordered_map<IconKey, int, IconHash> g_icon_ids;   // -> button, -1: not one
+std::unordered_map<uint64_t, std::vector<uint32_t>> g_pages;   // decoded pages (page ^ state)
+
+// The catalogue: FNV-1a of a button's texels (RGBA as decoded) -> xsgui::PromptButton.
+struct CatEntry { uint64_t hash; int button; };
+// (catalogued with [debug] text_dump: every candidate's hash is logged)
+const CatEntry kCatalogue[] = {
+    {0xec98045994056400ull, 0},   // battle commands: cross  -> south
+    {0x8a5d9708cd6d9647ull, 2},   //                  square -> west
+    {0xccd519395bea6727ull, 3},   //                  triangle -> north
+    {0x6c1d354062f512dbull, 3},   // menus: triangle (Sort, help text), 16 and 17 texels
+    {0xdf7f9ced690d2b91ull, 3},
+    {0x0a77db53901699b8ull, 3},   // menus: the round triangle (Sort)
+    {0xbebf138e2f0df4c8ull, 3},   // help text: the inline triangle
+    {0x703fffe713cfd5eeull, 4},   // menu tabs: L1 -> LB
+    {0xe84056d9b20da6c7ull, 5},   //            R1 -> RB
+};
+// By place, for icons not yet seen drawn: (TBP, CBP, u, v) -> button
+struct PlaceEntry { uint32_t tbp, cbp, u, v, button; };
+const PlaceEntry kPlaces[] = {
+    {0x3800, 0x3ae4, 0, 192, 1},   // battle commands: circle -> east (the row is circle, square, triangle, cross)
+};
+
+int IconId(uint64_t tex0, uint32_t u, uint32_t v, uint32_t w, uint32_t h) {
+    const uint64_t page = (tex0 & 0x3ffffffffull) | (tex0 & (0x7ffffull << 37));
+    const IconKey key{page, g_font_state, u, v, w, h};
+    auto it = g_icon_ids.find(key);
+    if (it != g_icon_ids.end()) return it->second;
+    const uint64_t pk = page * 0x9e3779b97f4a7c15ull ^ g_font_state;
+    auto pit = g_pages.find(pk);
+    uint32_t tw = 1u << std::min(10u, Bits(tex0, 26, 4)), th = 1u << std::min(10u, Bits(tex0, 30, 4));
+    if (pit == g_pages.end()) {
+        if (g_pages.size() > 16) g_pages.clear();
+        uint32_t dw = 0, dh = 0;
+        pit = g_pages.emplace(pk, xsgnative::DecodeVramTexture(g_mem->data(), tex0, 0, &dw, &dh)).first;
+    }
+    int id = -1;
+    const std::vector<uint32_t>& px = pit->second;
+    if (px.size() >= size_t(tw) * th && u + w <= tw && v + h <= th) {
+        uint64_t hsh = 0xcbf29ce484222325ull;
+        for (uint32_t y = 0; y < h; ++y)
+            for (uint32_t x = 0; x < w; ++x) hsh = (hsh ^ px[size_t(v + y) * tw + u + x]) * 0x100000001b3ull;
+        for (const CatEntry& c : kCatalogue)
+            if (c.hash == hsh) id = c.button;
+        for (const PlaceEntry& pe : kPlaces)
+            if (id < 0 && pe.tbp == Bits(tex0, 0, 14) && pe.cbp == Bits(tex0, 37, 14) && pe.u == u && pe.v == v) id = int(pe.button);
+        if (const char* d = xsgcfg::CStr("debug.text_dump"); d && *d) {   // its texels, raw RGBA
+            char n[256];
+            std::snprintf(n, sizeof n, "%s/icon_%016llx_%ux%u.rgba", d, (unsigned long long)hsh, w, h);
+            if (FILE* f = std::fopen(n, "wb")) {
+                for (uint32_t y = 0; y < h; ++y) std::fwrite(&px[size_t(v + y) * tw + u], 4, w, f);
+                std::fclose(f);
+            }
+        }
+        if (xsgcfg::CStr("debug.text_dump"))
+            std::fprintf(stderr, "[text] icon candidate tbp %04x psm %02x cbp %04x uv %u,%u %ux%u hash %016llx -> %d\n", Bits(tex0, 0, 14),
+                         Bits(tex0, 20, 6), Bits(tex0, 37, 14), u, v, w, h, (unsigned long long)hsh, id);
+    }
+    g_icon_ids.emplace(key, id);
+    return id;
+}
+
+/* A textured sprite from vertices a, b: a catalogued button becomes an overlay icon. */
+void Icon(uint32_t a, uint32_t b) {
+    if (Bits(g_tex0, 0, 14) < kFontBase || Bits(g_tex0, 37, 14) < kFontBase) return;
+    const uint32_t u0 = std::min(g_vu[a], g_vu[b]) >> 4, u1 = (std::max(g_vu[a], g_vu[b]) + 8) >> 4;
+    const uint32_t v0 = std::min(g_vv[a], g_vv[b]) >> 4, v1 = (std::max(g_vv[a], g_vv[b]) + 8) >> 4;
+    const uint32_t w = u1 - u0, h = v1 - v0;
+    if (w < 10 || h < 10 || w > 40 || h > 40) return;
+    // a button is drawn in its own colours (vertex grey); the same art tinted is something else (the radar's marks)
+    const int r = int(g_rgb & 255), gg = int((g_rgb >> 8) & 255), bb = int((g_rgb >> 16) & 255);
+    if (std::abs(r - gg) > 24 || std::abs(r - bb) > 24 || r < 0x40) return;
+    if (std::find(g_shown_fbs.begin(), g_shown_fbs.end(), Bits(g_frame, 0, 9)) == g_shown_fbs.end()) return;
+    const int id = IconId(g_tex0, u0, v0, w, h);
+    if (id < 0) return;
+    Glyph g;
+    g.button = id;
+    g.key = 0;
+    g.tw = g.th = 1;
+    g.x0 = std::min(g_vx[a], g_vx[b]); g.x1 = std::max(g_vx[a], g_vx[b]);
+    g.y0 = std::min(g_vy[a], g_vy[b]); g.y1 = std::max(g_vy[a], g_vy[b]);
+    g.u0 = g.v0 = 0; g.u1 = g.v1 = 1;
+    g.rgba = 0x80808080u | (std::min(0x80u, g_alpha) << 24);
+    g.z = g_vz[b];
+    g.seq = uint32_t(g_cur.size());
+    g.sc[0] = 0; g.sc[1] = 511; g.sc[2] = 0; g.sc[3] = 447;
+    g.fbp = Bits(g_frame, 0, 9);
+    g.hidden = false;
+    g.vis = 1;
+    if (std::find(g_fbs.begin(), g_fbs.end(), g.fbp) == g_fbs.end()) g_fbs.push_back(g.fbp);
+    g_mark.push_back(0);   // (icons are not occlusion-tracked: few, and drawn on top of their panels)
+    g_cur.push_back(g);
+    // empty it in the GS: the second corner onto the first
+    if (g_vp[a] && g_vp[b]) std::memcpy(g_vp[b], g_vp[a], g_vad[b] == g_vad[a] ? (g_vad[a] ? 4 : 8) : 0);
+}
+
 void TakeGlyph(uint8_t* q) {
     uint64_t r[6][2];
     std::memcpy(r, q, sizeof r);
@@ -319,6 +434,23 @@ void TakeGlyph(uint8_t* q) {
     g.vis = 1;
 
     g.seq = uint32_t(g_cur.size());
+    {   // a button among the font's symbols (the help text's inline triangle): the controller's prompt
+        const uint32_t iu = uint32_t(g.u0), iv = uint32_t(g.v0), iw = uint32_t(g.u1 - g.u0 + 0.5f), ih = uint32_t(g.v1 - g.v0 + 0.5f);
+        const int id = IconId(tex0, iu, iv, iw, ih);
+        if (id >= 0) {
+            std::memcpy(q + 5 * 16, q + 3 * 16, 8);   // out of the GS
+            const uint32_t r = g.rgba & 255;
+            if (r < 0x40) return;   // the outline's dark stamps: the prompt has its own
+            g.button = id;
+            g.key = 0;
+            g.tw = g.th = 1;
+            g.rgba = 0x80808080u;
+            if (std::find(g_fbs.begin(), g_fbs.end(), g.fbp) == g_fbs.end()) g_fbs.push_back(g.fbp);
+            g_mark.push_back(0);
+            g_cur.push_back(g);
+            return;
+        }
+    }
     g.key = AtlasKey(tex0, &g.tw, &g.th);
     if (std::find(g_fbs.begin(), g_fbs.end(), g.fbp) == g_fbs.end()) g_fbs.push_back(g.fbp);
     {
@@ -387,11 +519,15 @@ void Gif(uint32_t path, uint8_t* data, uint32_t len) {
             if (d == 0xe) {
                 const uint32_t reg = uint32_t(hi & 0xff);
                 if (reg == 0x00) { g_prim = Bits(lo, 0, 11); g_nv = 0; }
-                else if (reg == 0x01) g_alpha = Bits(lo, 24, 8);
-                else if (reg == 0x05 || reg == 0x04) Kick(Bits(lo, 0, 16), Bits(lo, 16, 16), uint32_t(lo >> 32));
+                else if (reg == 0x01) { g_alpha = Bits(lo, 24, 8); g_rgb = Bits(lo, 0, 24); }
+                else if (reg == 0x03) { g_uvu = Bits(lo, 0, 14); g_uvv = Bits(lo, 16, 14); }
+                else if (reg == 0x06) g_tex0 = lo;
+                else if (reg == 0x05 || reg == 0x04) Kick(Bits(lo, 0, 16), Bits(lo, 16, 16), uint32_t(lo >> 32), data + i, true);
                 else SetReg(reg, lo);
-            } else if (d == 0x1) g_alpha = Bits(hi, 32, 8);
-            else if (d == 0x5 || d == 0x4) Kick(Bits(lo, 0, 16), Bits(lo, 32, 16), d == 0x5 ? uint32_t(hi) : Bits(hi, 4, 24));
+            } else if (d == 0x1) { g_alpha = Bits(hi, 32, 8); g_rgb = Bits(lo, 0, 8) | Bits(lo, 32, 8) << 8 | Bits(hi, 0, 8) << 16; }
+            else if (d == 0x3) { g_uvu = Bits(lo, 0, 14); g_uvv = Bits(lo, 32, 14); }
+            else if (d == 0x6) g_tex0 = lo;
+            else if (d == 0x5 || d == 0x4) Kick(Bits(lo, 0, 16), Bits(lo, 32, 16), d == 0x5 ? uint32_t(hi) : Bits(hi, 4, 24), data + i, false);
         } else {   // REGLIST
             for (int k = 0; k < 2; ++k) {
                 const uint32_t d = uint32_t(p.regs >> (4 * p.idx)) & 15;
@@ -469,6 +605,11 @@ void Draw(ImDrawList* dl, float gx, float gy, float gw, float gh) {
     const float sx = gw / 512.0f, sy = gh / 448.0f;
     for (const Glyph& g : g_show) {
         if (g.hidden) continue;
+        if (g.button >= 0) {   // the controller's own prompt, sharp, where the game drew its PlayStation icon
+            const ImVec2 c(gx + (g.x0 + g.x1) * 0.5f * sx, gy + (g.y0 + g.y1) * 0.5f * sy);
+            xsgui::PromptDraw(dl, g.button, c, (g.y1 - g.y0) * sy * 1.05f, float(g.rgba >> 24) / 128.0f);
+            continue;
+        }
         auto it = g_atlas.find(g.key);
         if (it == g_atlas.end() || !it->second.id) continue;
         auto ch = [&](int s) { return std::min(255u, ((g.rgba >> s) & 0xffu) * 2); };
