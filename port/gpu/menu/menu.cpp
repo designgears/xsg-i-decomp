@@ -1355,6 +1355,8 @@ void Frame(uint32_t vsync, const Stats& s) {
     xsgui::AnimFrame(Now());
     xsgui::ArtFrame();
     xsgui::AnimGc();
+    ImDrawList* const ui_dl = ImGui::GetBackgroundDrawList();
+    const int ui_v0 = ui_dl->VtxBuffer.Size;
     if (menus)   // the game's menus, under the battle HUD and dialog
         xsgui::MenuDraw(ImGui::GetBackgroundDrawList(), ImGui::GetFont(), s.game_x / fb, s.game_y / fb, s.game_w / fb,
                         s.game_h / fb);
@@ -1364,6 +1366,16 @@ void Frame(uint32_t vsync, const Stats& s) {
     if (dialog)   // the rebuilt game UI (port/gpu/ui/), under the menu
         xsgui::DialogDraw(ImGui::GetBackgroundDrawList(), ImGui::GetFont(), s.game_x / fb, s.game_y / fb, s.game_w / fb,
                           s.game_h / fb, Now());
+    {   // the game's screen fade covers its UI too (the original draws it over everything)
+        const uint32_t fade = xsgui::ScreenFade();
+        const float fa = std::min(1.0f, float(fade >> 24) / 128.0f);
+        if (fa > 0.0f)
+            for (int i = ui_v0; i < ui_dl->VtxBuffer.Size; ++i) {
+                ImU32& c = ui_dl->VtxBuffer[i].col;
+                auto mix = [&](int sh) { return uint32_t(float((c >> sh) & 255) * (1 - fa) + float((fade >> sh) & 255) * fa) << sh; };
+                c = mix(0) | mix(8) | mix(16) | (c & 0xff000000u);
+            }
+    }
     if (g_open) LayoutMenu(scale);
     OverlayDraw(scale);
     ImGui::Render();

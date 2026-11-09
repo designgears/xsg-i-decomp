@@ -57,7 +57,9 @@ void PauseMenu(void)
             extern int xsg_ui_rebuilt(void);
             extern int xsg_ui_mop(int type, int x, int y, int w, int h, int z, unsigned rgba, int b);
             if (xsg_ui_rebuilt()) {
+                extern void xsg_ui_pause_keepalive(void);
                 xsg_ui_mop(14, 0, 0, 512, 448, 0xFFFFFF, 0, 0);
+                xsg_ui_pause_keepalive();
                 return;
             }
         }

@@ -755,8 +755,39 @@ extern "C" void xsg_ui_title(int sel, int hdd, int fade) {
 
 /* The end of the frame's font flush: publish whatever was captured (possibly nothing). */
 extern "C" void xsg_ui_menu_end(void);
+/* The screen fade (xgl_render.c xglRenderGlobalFade), for the rebuilt UI to fade with the picture. */
+extern "C" void xsg_ui_fade(unsigned rgba) {
+    if (!xsggpu::shm) return;
+    GpuUiMenuList* m = reinterpret_cast<GpuUiMenuList*>(reinterpret_cast<uint8_t*>(xsggpu::shm) + XSG_GPU_UI_MENU_OFF);
+    __atomic_store_n(&m->fade, rgba, __ATOMIC_RELAXED);
+    __atomic_store_n(&m->fade_frame, xsg_frame, __ATOMIC_RELEASE);
+}
+
+/* A fade drawn on top this frame (nml_model_set.c fade_render, after xglRenderGlobalFade's own):
+   the strongest one is the one the rebuilt UI fades with. */
+extern "C" void xsg_ui_fade_add(unsigned rgba) {
+    if (!xsggpu::shm) return;
+    GpuUiMenuList* m = reinterpret_cast<GpuUiMenuList*>(reinterpret_cast<uint8_t*>(xsggpu::shm) + XSG_GPU_UI_MENU_OFF);
+    if ((rgba >> 24) > (m->fade >> 24)) __atomic_store_n(&m->fade, rgba, __ATOMIC_RELEASE);
+}
+
+static bool g_hold;
+/* A wait that draws nothing while the picture stays frozen (the cutscene and movie pauses): the
+   text captured before it stays published until the wait ends. */
+extern "C" void xsg_ui_hold(int on) { g_hold = on != 0; }
 extern "C" void xsg_ui_frame_end(void) {
     // an empty flush does not replace a list published earlier in the same frame (the title)
+    if (g_hold && !g_mop_n) {   // keep the held list fresh (xsg-gpu drops lists older than a few frames)
+        if (xsggpu::shm) {
+            GpuUiMenuList* m = reinterpret_cast<GpuUiMenuList*>(reinterpret_cast<uint8_t*>(xsggpu::shm) + XSG_GPU_UI_MENU_OFF);
+            const uint32_t s = m->seq;
+            __atomic_store_n(&m->seq, s + 1, __ATOMIC_RELAXED);
+            __atomic_thread_fence(__ATOMIC_RELEASE);
+            m->frame = xsg_frame;
+            __atomic_store_n(&m->seq, s + 2, __ATOMIC_RELEASE);
+        }
+        return;
+    }
     if (xsg_ui_rebuilt() && (g_mop_n || g_published_frame != xsg_frame)) xsg_ui_menu_end();
 }
 extern "C" void xsg_ui_menu_end(void) {
@@ -776,6 +807,12 @@ extern "C" void xsg_ui_menu_end(void) {
     g_mop_n = 0;
     g_mpool_n = 0;
     g_menu_last = xsg_frame;
+}
+
+/* The pause card (game_pause_disp.c): published here when no font flush publishes the frame's list
+   (a paused cutscene stops flushing; the card then aged out after a frame). */
+extern "C" void xsg_ui_pause_keepalive(void) {
+    if (xsg_frame - g_menu_last > 2) xsg_ui_menu_end();
 }
 
 /* eMessageDrawType01's stream for one message box: in a captured menu (a list flushed in

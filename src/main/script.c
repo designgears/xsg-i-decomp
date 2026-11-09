@@ -1001,6 +1001,13 @@ static int PauseSkipCheck(void)
         GamePauseDispEvent();
         xglSleep();
         PartyTimePauseStart();
+#ifdef PORT_HOST
+        {   /* rebuilt UI: the overlay was captured from the two frames above; the wait draws nothing
+               (the picture stays frozen), so the captured text is held until it ends */
+            extern void xsg_ui_hold(int on);
+            xsg_ui_hold(1);
+        }
+#endif
         if (!(pad->half_2a & 0x10)) {
             for (;;) {
                 if (gs->pause_wait != 0) {
@@ -1014,6 +1021,12 @@ static int PauseSkipCheck(void)
                 if (pad->half_2a & 0x10) break;
             }
         }
+#ifdef PORT_HOST
+        {
+            extern void xsg_ui_hold(int on);
+            xsg_ui_hold(0);
+        }
+#endif
         PartyTimePauseEnd();
         xglSoundEffectNormalDirect(4);
         sRender.pause = 0;

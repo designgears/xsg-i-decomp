@@ -1037,6 +1037,12 @@ static void xglRenderGlobalFade(void)
     u64 *restore_entry;
 
     alpha = (unsigned int)s_nGblFade >> 24;
+#ifdef PORT_HOST
+    {   /* the rebuilt UI (xsg-gpu) is drawn over the picture: it fades with it */
+        extern void xsg_ui_fade(unsigned rgba);
+        xsg_ui_fade(s_nGblFadeInit != 0 ? (unsigned)s_nGblFade : 0u);
+    }
+#endif
     packet = xglPacketGetCurrent();
     if (sRender.fade_callback != 0) {
         sRender.fade_callback(packet);

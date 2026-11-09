@@ -1229,6 +1229,13 @@ static void fade_render(NmlPacket packet, FadeControl *control)
                     sceVif1PkOpenDirectHLCode(packet, 0);
                     sceVif1PkAddDirectDataN(packet, pk.d, 8);
                     sceVif1PkCloseDirectHLCode(packet);
+#ifdef PORT_HOST
+                    {   /* the rebuilt UI (xsg-gpu) is drawn over the picture: it fades with it */
+                        extern void xsg_ui_fade_add(unsigned rgba);
+                        xsg_ui_fade_add((unsigned)(c->r & 0xFF) | (unsigned)(c->g & 0xFF) << 8 | (unsigned)(c->b & 0xFF) << 16 |
+                                        (unsigned)(c->alpha & 0xFF) << 24);
+                    }
+#endif
                     frame = c->frame;
                     disp = c->dispose;
                 }

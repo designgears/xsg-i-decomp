@@ -105,6 +105,14 @@ void DrawText(ImDrawList* dl, ImFont* font, const char* s, int len, ImVec2 p, fl
 
 }  // namespace
 
+uint32_t ScreenFade() {
+    if (!g_m) return 0;
+    const uint32_t at = __atomic_load_n(&g_m->fade_frame, __ATOMIC_ACQUIRE);
+    const uint32_t now = __atomic_load_n(&g_m->frame, __ATOMIC_ACQUIRE);
+    if (int32_t(now - at) > 8) return 0;   // not drawn lately: no fade
+    return __atomic_load_n(&g_m->fade, __ATOMIC_ACQUIRE);
+}
+
 void MenuInit(void* shm_base) {
     g_m = reinterpret_cast<GpuUiMenuList*>(static_cast<uint8_t*>(shm_base) + XSG_GPU_UI_MENU_OFF);
     if (!g_snap) g_snap = new GpuUiMenuList();
@@ -112,16 +120,19 @@ void MenuInit(void* shm_base) {
 
 bool MenuActive(uint32_t vsync) {
     if (!g_m || !g_snap) return false;
+    static GpuUiMenuList* in = new GpuUiMenuList();
     for (int tries = 0; tries < 4; ++tries) {
         const uint32_t s0 = __atomic_load_n(&g_m->seq, __ATOMIC_ACQUIRE);
         if (s0 & 1) continue;
         const uint32_t n = std::min<uint32_t>(g_m->nops, XSG_GPU_UI_MENU_OPS);
         const uint32_t pu = std::min<uint32_t>(g_m->pool_used, XSG_GPU_UI_MENU_POOL);
         const uint32_t fr = g_m->frame;
-        std::memcpy(g_snap->op, const_cast<const GpuUiKgOp*>(g_m->op), n * sizeof(GpuUiKgOp));
-        std::memcpy(g_snap->pool, const_cast<const char*>(g_m->pool), pu);
+        std::memcpy(in->op, const_cast<const GpuUiKgOp*>(g_m->op), n * sizeof(GpuUiKgOp));
+        std::memcpy(in->pool, const_cast<const char*>(g_m->pool), pu);
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
         if (__atomic_load_n(&g_m->seq, __ATOMIC_ACQUIRE) == s0) {
+            std::memcpy(g_snap->op, in->op, n * sizeof(GpuUiKgOp));
+            std::memcpy(g_snap->pool, in->pool, pu);
             g_snap->nops = n;
             g_snap->pool_used = pu;
             g_snap->frame = fr;
@@ -129,6 +140,23 @@ bool MenuActive(uint32_t vsync) {
         }
     }
     const int32_t age = int32_t(vsync - g_snap->frame);
+    if (xsgcfg::GetBool("debug.ui_log")) {   // the menu list as received
+        static uint32_t last;
+        if (vsync - last >= 30) {
+            last = vsync;
+            std::string t;
+            for (uint32_t i = 0; i < g_snap->nops && i < 40; ++i) {
+                const GpuUiKgOp& o = g_snap->op[i];
+                t += " " + std::to_string(o.type);
+                if (o.type == GPU_KG_TEXT || o.type == GPU_KG_TAG) {
+                    const char* ps = g_snap->pool + std::min<uint32_t>(uint32_t(o.b), XSG_GPU_UI_MENU_POOL - 1);
+                    t += "'" + Decode(std::string(ps, size_t(std::max<int16_t>(0, o.u))).c_str()) + "'";
+                } else if (o.type == GPU_KG_WINDOW) t += "[" + std::to_string(o.x) + "," + std::to_string(o.y) + " " + std::to_string(o.dw) + "x" + std::to_string(o.dh) + " a" + std::to_string(o.rgba >> 24) + "]";
+            }
+            std::fprintf(stderr, "[ui] vsync %u: menu list frame %u (age %d), fade %08x at %u, %u ops:%s\n", vsync, g_snap->frame, age,
+                         g_m->fade, g_m->fade_frame, g_snap->nops, t.c_str());
+        }
+    }
     return g_snap->frame && age <= 4 && age >= -2000 && g_snap->nops;   // the game may run far ahead (uncapped)
 }
 

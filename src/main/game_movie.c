@@ -85,6 +85,9 @@ extern void xglFontPrintDirect(const char *text);
 extern void GamePauseDispBG(void);
 
 extern void GamePauseDispEvent(void);
+#ifdef PORT_HOST
+extern void xsg_ui_hold(int on);
+#endif
 
 extern void PartyTimePauseStart(void);
 
@@ -359,6 +362,9 @@ void GameMpeg2Play(char *name, int mode)
                             xglSleep();
                         }
                         PartyTimePauseStart();
+#ifdef PORT_HOST
+                        xsg_ui_hold(1);   /* rebuilt UI: keep the overlay captured above through the wait */
+#endif
                         for (;;) {
                             if (PadData.half_2a & PAD_BUTTON_SKIP) {
                                 movie_skip(&mode);
@@ -370,6 +376,9 @@ void GameMpeg2Play(char *name, int mode)
                             }
                             xglSleep();
                         }
+                        #ifdef PORT_HOST
+                        xsg_ui_hold(0);
+#endif
                         PartyTimePauseEnd();
                         break;
                     }
@@ -392,6 +401,9 @@ void GameMpeg2Play(char *name, int mode)
                         GamePauseDispEvent();
                         xglSleep();
                         PartyTimePauseStart();
+#ifdef PORT_HOST
+                        xsg_ui_hold(1);   /* rebuilt UI: keep the overlay captured above through the wait */
+#endif
                         for (;;) {
                             pad = PadData.half_2a;
                             if (pad & PAD_BUTTON_SKIP) {
@@ -407,6 +419,9 @@ void GameMpeg2Play(char *name, int mode)
                             xglSleep();
                         }
 finish_movie_pause:
+                        #ifdef PORT_HOST
+                        xsg_ui_hold(0);
+#endif
                         PartyTimePauseEnd();
                         xglSoundEffectNormalDirect(4);
                         sRender.scene_disabled = 0;

@@ -315,9 +315,12 @@ typedef struct {
 typedef struct {
     volatile uint32_t seq;
     volatile uint32_t frame;
-    uint32_t nops, pad_;
+    uint32_t nops;
+    volatile uint32_t fade;         /* the game's screen fade now (xglRenderGlobalFade): R G B, alpha << 24 (0x80 = full);
+                                       the rebuilt UI fades with the picture (written every frame, outside seq) */
     uint32_t texa_lo, texa_hi;      /* TEXA at capture (16 / 24-bit alpha expansion) */
-    uint32_t pool_used, pad2_;
+    uint32_t pool_used;
+    volatile uint32_t fade_frame;   /* the vblank `fade` was written (stale: no fade) */
     GpuUiKgOp op[XSG_GPU_UI_MENU_OPS];
     char pool[XSG_GPU_UI_MENU_POOL];
 } GpuUiMenuList;
