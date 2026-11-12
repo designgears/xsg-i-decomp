@@ -622,3 +622,21 @@ GPU_NATIVE_SET2_ENV marks the env-pass packet, so the ownership GS draws all cha
 the marker colour; `NativeFbp` gets each pass's FRAME. In the live resolve the order is
 composite, effect replay, PMODE, then the motion-vector pass, so MV sees the final image and
 gives post-effect and GS-owned pixels zero motion.
+
+### Deferred effects, texture order and the CLUT buffer (2026-11-09)
+
+- **Deferred effects** (`native_fx.cpp` `Defer`, `g_ov`): a blended triangle / sprite drawn into a
+  buffer that native batches drew into this frame is recorded and replayed at S× (before any post
+  phase) instead of left to the 1x GS. Its vertex kicks reach the ownership GS without their drawing
+  bit (ADC, or XYZ2 -> XYZ3), so the native pixels under it stay owned; inside its box the composite
+  takes the non-native GS colour from the ownership GS (the scene without it). Not deferred, and kept
+  on the GS with a "veto" box (main GS colour there): masked colour writes, DATE, frame / Z / fresh
+  render-target textures, points / lines, REGLIST kicks. Before, battle sparks, barriers and glows
+  took everything behind them down to 1x. `[debug] fx_defer = 0` turns it off.
+- **Texture order**: `native.cpp` `Gif` now feeds the upload mirror qword by qword with the effect
+  parser (`xsgfx::Gif` `pre`); recorded draws used to decode the *last* upload of a message (one
+  texture area is reloaded a dozen times per message in battle: the garbled effect squares).
+- **CLUT buffer** (`ClutLoad`): indexed textures take their colours from a CLUT buffer loaded on
+  TEX0 / TEX2 per CLD (and CSA for 4-bit), as the GS does, not from palette memory at decode time.
+- **GS-rendered textures** (`GsRenderedTexture`): a native batch sampling pages the GS rendered into
+  after their last upload decodes its texture from the GS memory at composite time.

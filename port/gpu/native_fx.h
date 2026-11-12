@@ -24,6 +24,7 @@
 #define XSG_GPU_NATIVE_FX_H
 
 #include <cstdint>
+#include <functional>
 #include <vector>
 
 #include "image.hpp"
@@ -36,7 +37,11 @@ namespace xsgfx {
 bool Init(Vulkan::Device* dev);
 /* One GPU_MSG_GIF: parse it and hand it to paraLLEl-GS (gs) and to the
    ownership GS, split where a snapshot has to be taken. */
-void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterface& gs);
+/* pre: called with each qword before it is parsed here (native.cpp's register state and upload
+   mirror), so a draw recorded mid-message sees the textures uploaded before it in that message,
+   not the last upload of the message (one texture area is reloaded many times per message). */
+void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterface& gs,
+         const std::function<void(const uint8_t*)>& pre = nullptr);
 /* GPU_MSG_NATIVE arrived: the next `ntags` PATH1 GIF tags are that batch's
    output (set 0: one; set-2 two-pass programs: both tags of their packet). */
 void NativeNext(uint32_t ntags = 1);
@@ -65,6 +70,14 @@ void SeedOwn(const uint8_t* vram);
    ((w + 2 mx) * s wide); full-width sprites (fades, the defocus blur) are stretched across them. */
 void Replay(Vulkan::CommandBuffer& cmd, uint32_t fbp, int s, uint32_t w, uint32_t h, const Vulkan::Image& color,
             const Vulkan::Image& z, uint32_t mx = 0);
+/* Deferred effects (native_fx.cpp g_ov): the displayed buffer's frame has some.  Replay()
+   redraws them (before any post phase); OverlayColour() puts the ownership GS's colour (the
+   scene without them) into the composite's GS colour (the first w*h of gs) inside their boxes. */
+bool Overlay(uint32_t fbp);
+/* A texture the GS rendered (a render target drawn into after the last upload of its pages):
+   the upload mirror does not have it; decode it from the GS memory instead. */
+bool GsRenderedTexture(uint64_t tex0);
+void OverlayColour(const Surface& sf, std::vector<uint32_t>& gs);
 /* The PMODE circuit blend over `color`, when the read circuits ask for one. */
 bool Pmode(Vulkan::CommandBuffer& cmd, const ParallelGS::GSInterface& gs, int s, uint32_t w, uint32_t h,
            const Vulkan::Image& color, const Vulkan::Image& z);

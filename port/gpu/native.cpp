@@ -152,8 +152,69 @@ struct PathParse {
 };
 PathParse g_path[4];
 
+/* The GS's CLUT buffer: 512 halfword slots (a 32-bit entry: low half at slot b, high at
+   b + 256), loaded from local memory when TEX0 / TEX2 is written with CLD asking for it, as the
+   GS does.  Indexed textures read their colours from here, not from memory at decode time (the
+   game reloads a palette's memory while textures loaded from it are still drawn). */
+struct ClutBuf {
+    uint16_t slot[512] = {};
+    uint32_t cbp0 = ~0u, cbp1 = ~0u;
+    uint64_t hash = 1;   // of slot[], for the texture caches
+} g_cbuf;
+void ClutLoad(uint64_t tex0) {
+    using namespace ps2host::gs;
+    const uint32_t psm = Bits(tex0, 20, 6);
+    const bool eight = psm == PSMT8 || psm == PSMT8H, four = psm == PSMT4 || psm == PSMT4HL || psm == PSMT4HH;
+    if (!eight && !four) return;
+    const uint32_t cld = Bits(tex0, 61, 3), cbp = Bits(tex0, 37, 14);
+    switch (cld) {
+    case 0: return;
+    case 1: break;
+    case 2: g_cbuf.cbp0 = cbp; break;
+    case 3: g_cbuf.cbp1 = cbp; break;
+    case 4: if (cbp == g_cbuf.cbp0) return; g_cbuf.cbp0 = cbp; break;
+    case 5: if (cbp == g_cbuf.cbp1) return; g_cbuf.cbp1 = cbp; break;
+    default: return;
+    }
+    const uint32_t cpsm = Bits(tex0, 51, 4), csa = Bits(tex0, 56, 5);
+    const uint32_t fmt = cpsm == 0 ? PSMCT32 : cpsm;
+    const bool c32 = fmt == PSMCT32 || fmt == PSMCT24;
+    const uint32_t count = eight ? 256 : 16;
+    const uint32_t base = eight ? 0 : (c32 ? (csa & 15) : csa) * 16;
+    for (uint32_t i = 0; i < count; ++i) {
+        uint32_t x, y, nib = 0;
+        if (eight) { const uint32_t p = (i & 0xE7) | ((i & 0x08) << 1) | ((i & 0x10) >> 1); x = p % 16; y = p / 16; }
+        else { x = i % 8; y = i / 8; }
+        const uint32_t ad = Memory::Address(cbp, 1, x, y, fmt, &nib) & 0x3fffff;
+        uint32_t raw;
+        std::memcpy(&raw, g_mem.data() + ad, 4);
+        const uint32_t b = (base + i) & 511;
+        if (c32) {
+            g_cbuf.slot[b & 255] = uint16_t(raw);
+            g_cbuf.slot[(b & 255) + 256] = uint16_t(raw >> 16);
+        } else {
+            g_cbuf.slot[b] = uint16_t(raw);
+        }
+    }
+    uint64_t h = 1469598103934665603ull;
+    for (int i = 0; i < 512; ++i) h = (h ^ g_cbuf.slot[i]) * 1099511628211ull;
+    g_cbuf.hash = h | 1;
+}
+
 void SetReg(uint32_t a, uint64_t v) {
     a &= 0xff;
+    if (a == 0x06 || a == 0x07) {   // TEX0: the CLUT load it asks for
+        g_reg[a] = v;
+        ClutLoad(v);
+        return;
+    }
+    if (a == 0x16 || a == 0x17) {   // TEX2: PSM and the CLUT fields of TEX0, then its load
+        const uint64_t m = (0x3full << 20) | (~0ull << 37);
+        g_reg[a - 0x10] = (g_reg[a - 0x10] & ~m) | (v & m);
+        g_reg[a] = v;
+        ClutLoad(g_reg[a - 0x10]);
+        return;
+    }
     if (a == 0x3f && (v >> 32) == 0x5853474Du) {   // rebuilt-UI marker (end_print.c xsgMark, a TEXFLUSH)
         if (v & 0x200) xsgui::ArtSnapshotTex(0x5B000000u + uint32_t(v & 0xff), g_reg[0x06], g_mem.data());
         else xsgui::ArtSnapshot(uint32_t(v & 0xff));
@@ -265,6 +326,7 @@ struct Stored {
     int pass = 0;                                // set 2: 0 tag 1011, 1 specular strip (1012), 2 env strip (1010)
     float mprev[16];                             // set 0: last frame's M962 (v[i].pad = last frame's position)
     bool hasprev = false;
+    bool vram_tex = false;                       // its texture is GS-rendered: decoded from the GS memory at Live
     uint64_t prim, tex0, clamp, tex1, xyoff, texa, fogcol, scissor, alpha, test, frame, zbuf;
 };
 /* The batches of the last frame drawn into each frame buffer (FRAME.FBP).  A
@@ -316,7 +378,8 @@ uint32_t ReadU32(const uint8_t* vram, uint32_t a) {
 }
 
 /* A TEX0 texture as RGBA8 (alpha = the GS byte), decoded from local memory. */
-std::vector<uint32_t> DecodeTexture(const uint8_t* vram, uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h) {
+std::vector<uint32_t> DecodeTexture(const uint8_t* vram, uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h,
+                                    const uint16_t* cbuf = nullptr) {
     using namespace ps2host::gs;
     const uint32_t tbp = Bits(tex0, 0, 14), tbw = std::max(1u, Bits(tex0, 14, 6)), psm = Bits(tex0, 20, 6);
     const uint32_t tw = std::min(10u, Bits(tex0, 26, 4)), th = std::min(10u, Bits(tex0, 30, 4));
@@ -335,7 +398,17 @@ std::vector<uint32_t> DecodeTexture(const uint8_t* vram, uint64_t tex0, uint64_t
     // CLUT (CSM1): entries at their swizzled spots in the CLUT's buffer.
     uint32_t clut[256] = {};
     const bool eight = psm == PSMT8 || psm == PSMT8H, four = psm == PSMT4 || psm == PSMT4HL || psm == PSMT4HH;
-    if (eight || four) {
+    if ((eight || four) && cbuf) {   // the CLUT buffer as loaded (ClutLoad), CSA for 4-bit
+        const uint32_t fmt = cpsm == 0 ? PSMCT32 : cpsm;
+        const bool w32 = fmt == PSMCT32 || fmt == PSMCT24;
+        const uint32_t csa = Bits(tex0, 56, 5);
+        const uint32_t count = eight ? 256 : 16, base = eight ? 0 : (w32 ? (csa & 15) : csa) * 16;
+        for (uint32_t i = 0; i < count; ++i) {
+            const uint32_t b = (base + i) & 511;
+            const uint32_t raw = w32 ? uint32_t(cbuf[b & 255]) | uint32_t(cbuf[(b & 255) + 256]) << 16 : cbuf[b];
+            clut[i] = fmt == PSMCT32 ? raw : fmt == PSMCT24 ? c24(raw) : c16(raw & 0xffff);
+        }
+    } else if (eight || four) {
         const uint32_t fmt = cpsm == 0 ? PSMCT32 : cpsm;
         const uint32_t count = eight ? 256 : 16;
         for (uint32_t i = 0; i < count; ++i) {
@@ -929,11 +1002,26 @@ void Live(ParallelGS::GSInterface& gs) {
         gs.flush();
         if (!vram) vram = static_cast<const uint8_t*>(gs.map_vram_read(0, 4u << 20));
     }
+    {   // GS-rendered textures (render targets the scene samples): from the GS memory now
+        const uint8_t* mem = nullptr;
+        std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<Tex>> done;
+        for (const Stored* s : list) {
+            if (!s->vram_tex) continue;
+            if (!mem) mem = static_cast<const uint8_t*>(gs.map_vram_read(0, 4u << 20));
+            auto& t = done[{s->tex0, s->texa}];
+            if (!t) {
+                t = std::make_shared<Tex>();
+                t->px = DecodeTexture(mem, s->tex0, s->texa, &t->w, &t->h);
+            }
+            const_cast<Stored*>(s)->tex = t;
+        }
+    }
     static std::vector<uint32_t> gsbuf;
     bool own;
     {
         xsgprof::Scope ps(xsgprof::LiveDecode);
         DecodeGs(vram, rg, gsbuf);
+        xsgfx::OverlayColour(Surf(rg), gsbuf);   // the scene without the deferred effects (replayed below)
         own = xsgfx::OwnerPlane(Surf(rg), gsbuf);
         if (!own) gsbuf.resize(gsbuf.size() + size_t(rg.w) * rg.h);
     }
@@ -987,7 +1075,7 @@ void Live(ParallelGS::GSInterface& gs) {
     if (const int strength = xsgcfg::GetInt("renderer.shadows"); strength > 0 && g_shadow)
         ShadowPass(*cmd, list, rg, *ns.depth, *out, *zimg, strength);
     // Effects after the scenery (native_fx.cpp), then the PMODE circuit blend, at scale g_scale.
-    if (post == xsgfx::Post::Replay) xsgfx::Replay(*cmd, fbp, g_scale, rg.w, rg.h, *out, *zimg, rg.mx);
+    if (post == xsgfx::Post::Replay || xsgfx::Overlay(fbp)) xsgfx::Replay(*cmd, fbp, g_scale, rg.w, rg.h, *out, *zimg, rg.mx);
     xsgfx::Pmode(*cmd, gs, g_scale, rg.W(), rg.h, *out, *zimg);
     cmd->barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT);
@@ -1301,11 +1389,8 @@ bool On() { return g_on; }
 
 void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterface& gs) {
     PathParse& p = g_path[path & 3];
-    {
-        xsgprof::Scope ps(xsgprof::GifParse);
-        for (uint32_t i = 0; i + 16 <= len; i += 16) GifQword(p, data + i);
-    }
-    xsgfx::Gif(path, data, len, gs);
+    // qword by qword together with the effect parser, so its draws see the uploads before them
+    xsgfx::Gif(path, data, len, gs, [&p](const uint8_t* q) { GifQword(p, q); });
 }
 
 namespace {
@@ -1350,20 +1435,22 @@ void Snap(Stored& s, const uint32_t* tagw) {
             uint64_t h = 1469598103934665603ull;
             auto mix = [&](uint32_t page) { h = (h ^ PageHash(page & 511)) * 1099511628211ull; };
             for (uint32_t i = 0; i < np; ++i) mix(p0 + i);
-            if (Bits(t0, 20, 6) >= 0x13) { mix(cpage); mix(cpage + 1); }   // CLUT formats
+            (void)cpage;
             vv.gen = gen;
             vv.hash = h | 1;
         }
-        auto key = std::make_tuple(t0, s.texa, vv.hash);
+        const bool indexed = Bits(t0, 20, 6) >= 0x13;   // its colours: the CLUT buffer now
+        auto key = std::make_tuple(t0, s.texa, vv.hash ^ (indexed ? g_cbuf.hash * 31 : 0));
         auto it = cache.find(key);
         if (it == cache.end()) {
             auto t = std::make_shared<Tex>();
             xsgprof::Scope ps(xsgprof::TexDecode);
-            t->px = DecodeTexture(g_mem.data(), s.tex0, s.texa, &t->w, &t->h);
+            t->px = DecodeTexture(g_mem.data(), s.tex0, s.texa, &t->w, &t->h, g_cbuf.slot);
             it = cache.emplace(key, t).first;
             g_ntex++;
         }
         s.tex = it->second;
+        s.vram_tex = xsgfx::GsRenderedTexture(s.tex0);
     }
 }
 /* A content hash per 8 KB page of the mirror, recomputed only after an upload
@@ -1510,8 +1597,9 @@ const Vulkan::ImageHandle& LiveImage(uint32_t* fb_w, uint32_t* fb_h, uint32_t* m
 int Scale() { return g_scale; }
 
 std::vector<uint32_t> DecodeMirrorTexture(uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h) {
-    return DecodeTexture(g_mem.data(), tex0, texa, w, h);
+    return DecodeTexture(g_mem.data(), tex0, texa, w, h, g_cbuf.slot);
 }
+uint64_t ClutHash() { return g_cbuf.hash; }
 uint32_t MirrorGen() { return g_upload_gen; }
 const uint8_t* MirrorData() { return g_mem.data(); }
 uint32_t TextureGen(uint64_t tex0) {
@@ -1520,6 +1608,12 @@ uint32_t TextureGen(uint64_t tex0) {
     for (uint32_t i = 0; i < np; ++i) gen = std::max(gen, g_page_gen[(p0 + i) & 511]);
     const uint32_t cpage = Bits(tex0, 37, 14) / 32;
     return std::max(gen, std::max(g_page_gen[cpage & 511], g_page_gen[(cpage + 1) & 511]));
+}
+uint32_t TextureGenMin(uint64_t tex0) {
+    uint32_t p0, np, gen = ~0u;
+    PageRange(Bits(tex0, 0, 14), std::max(1u, Bits(tex0, 14, 6)), Bits(tex0, 20, 6), 1u << std::min(10u, Bits(tex0, 30, 4)), &p0, &np);
+    for (uint32_t i = 0; i < np; ++i) gen = std::min(gen, g_page_gen[(p0 + i) & 511]);
+    return np ? gen : 0;
 }
 std::vector<uint32_t> DecodeVramTexture(const uint8_t* vram, uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h) {
     return DecodeTexture(vram, tex0, texa, w, h);

@@ -114,6 +114,19 @@ struct PostFrame {
     std::vector<std::shared_ptr<Tex>> texs;   // per prim (null: none / frame)
 };
 std::map<uint32_t, PostFrame> g_post;
+/* Deferred effects (the battle's sparks, barriers, glows): blended draws into a buffer that
+   native batches drew into this frame, recorded and redrawn at S× over the composite instead of
+   left to the 1x GS (whose pixels would take the scene behind them down to 1x).  The ownership GS
+   does not draw them (their vertex kicks lose their drawing bit there), so the native pixels under
+   them stay owned; the composite takes the GS colour inside their boxes from the ownership GS,
+   which has the scene without them.  Per FBP; nat_frame as g_post's. */
+std::map<uint32_t, PostFrame> g_ov;
+struct OvBox { float x0, y0, x1, y1; };
+std::map<uint32_t, std::vector<OvBox>> g_ov_box;
+bool g_kick_rw;      // the vertex kick being parsed can be rewritten for the ownership GS
+bool g_defer_kick;   // ... and it was deferred: rewrite it so the ownership GS does not draw
+uint64_t g_ndefer;
+uint64_t g_nrefuse[8];   // blended draws over native content not deferred: 0 not rewritable, 1 point/line, 2 texture, 3 record
 /* The VRAM of both GSes at the post-phase trigger, per FBP.  4 MB images of
    which only the frame buffer's (and for the main GS the Z buffer's) pages
    are copied; kept across frames so they are not reallocated. */
@@ -123,7 +136,8 @@ struct SnapVram {
 std::map<uint32_t, SnapVram> g_snap;
 std::set<uint32_t> g_drawn;      // FBPs drawn this interval
 std::set<uint32_t> g_rendered;   // FBPs the GS has ever drawn into (render targets)
-std::map<uint32_t, uint32_t> g_rt_read;   // render-target FBP -> frame an effect last read it as a texture
+std::map<uint32_t, uint32_t> g_rt_read;
+std::map<uint32_t, uint32_t> g_rt_gen;    // render-target FBP -> upload generation when the GS last drew into it   // render-target FBP -> frame an effect last read it as a texture
 
 /* ---------------------------------------------------------------- GIF parse with vertices */
 struct Vtx {
@@ -151,6 +165,7 @@ uint32_t g_copy_off, g_copy_len;
 uint64_t g_ndraw, g_npost_frames, g_nbad, g_ncancel;
 uint64_t g_saved[4];   // PRMODECONT, FOGCOL, FOG, DTHE around a native packet
 
+bool g_trace_def;   // the primitive being traced was deferred (g_ov)
 /* trace: consecutive primitives with the same state */
 struct Run {
     bool open = false;
@@ -170,7 +185,7 @@ void FlushRun() {
     Log("v%u p%u %s prim %u%s%s%s%s ctx%u x%u | FRAME fbp %#x fbw %u psm %#x msk %08x | ZBUF zbp %#x psm %#x msk %u | "
         "TEST %08x ALPHA %#llx | TEX0 tbp %#x tbw %u psm %#x %ux%u tcc %u tfx %u cbp %#x | CLAMP %#llx TEX1 %#llx | "
         "rect (%d,%d)-(%d,%d) uv (%.1f,%.1f)-(%.1f,%.1f) rgba %08x | FBA %u PABE %u DTHE %u COLCLAMP %u",
-        g_frame, r.path, r.native ? "NAT" : "gs ", Bits(prim, 0, 3), Bits(prim, 4, 1) ? " TME" : "",
+        g_frame, r.path, (prim >> 20) & 1 ? "DEF" : r.native ? "NAT" : "gs ", Bits(prim, 0, 3), Bits(prim, 4, 1) ? " TME" : "",
         Bits(prim, 6, 1) ? " ABE" : "", Bits(prim, 8, 1) ? " FST" : "", Bits(prim, 5, 1) ? " FGE" : "",
         Bits(prim, 9, 1), r.n, Bits(frame, 0, 9), Bits(frame, 16, 6), Bits(frame, 24, 6), Bits(frame, 32, 32),
         Bits(zbuf, 0, 9), Bits(zbuf, 24, 4), Bits(zbuf, 32, 1), uint32_t(test), (unsigned long long)alpha,
@@ -184,7 +199,7 @@ void TraceDraw(uint32_t path, const Vtx* v, int n) {
     const uint64_t prim = g.reg[0x00];
     const int c = Bits(prim, 9, 1);
     const uint64_t xyoff = g.reg[0x18 + c];
-    uint64_t key[12] = {prim & 0x7ff, g.reg[0x06 + c] & ~(7ull << 61), g.reg[0x08 + c], g.reg[0x14 + c],
+    uint64_t key[12] = {(prim & 0x7ff) | (g_trace_def ? 1ull << 20 : 0), g.reg[0x06 + c] & ~(7ull << 61), g.reg[0x08 + c], g.reg[0x14 + c],
                         g.reg[0x4c + c], g.reg[0x4e + c], g.reg[0x47 + c], g.reg[0x42 + c], g.reg[0x4a + c],
                         g.reg[0x49], g.reg[0x45], g.reg[0x46]};
     Run& r = g_run;
@@ -228,7 +243,7 @@ bool Overlaps(uint32_t tbp, uint32_t tsize_blocks, uint32_t fbp_blocks) {
     return tbp < fbp_blocks + fb_blocks && fbp_blocks < tbp + tsize_blocks;
 }
 
-void Record(PostFrame& pf, uint32_t fbp, const Vtx* v, int n, uint32_t type) {
+void Record(PostFrame& pf, uint32_t fbp, const Vtx* v, int n, uint32_t type, bool mirror_ok = false) {
     if (pf.bad) return;
     if (pf.prims.size() >= 32768) { Bad(pf, "more than 32768 post draws"); return; }
     const uint64_t prim = g.reg[0x00];
@@ -294,7 +309,7 @@ void Record(PostFrame& pf, uint32_t fbp, const Vtx* v, int n, uint32_t type) {
             // (unless an upload replaced those pages since).
             bool rt = false;
             for (uint32_t d : g_rendered)
-                if (Overlaps(tbp, tblocks, d * 32)) {
+                if (!mirror_ok && Overlaps(tbp, tblocks, d * 32)) {
                     // Snapshots copy this target's pages from now on; this frame's was taken
                     // already, so the first frame that reads it is not replayed.
                     if (!g_rt_read.count(d)) { g_rt_read[d] = g_frame; Bad(pf, "render target read first time (snapshotted from now on)"); return; }
@@ -316,9 +331,10 @@ void Record(PostFrame& pf, uint32_t fbp, const Vtx* v, int n, uint32_t type) {
                 pf.texs.push_back(nt);
                 return;
             }
-            static std::map<std::tuple<uint64_t, uint64_t, uint32_t>, std::shared_ptr<Tex>> cache;
+            static std::map<std::tuple<uint64_t, uint64_t, uint64_t>, std::shared_ptr<Tex>> cache;
             if (cache.size() > 256) cache.clear();
-            const auto key = std::make_tuple(tex0 & ((1ull << 61) - 1), g.reg[0x3b], xsgnative::MirrorGen());
+            const auto key = std::make_tuple(tex0 & ((1ull << 61) - 1), g.reg[0x3b],
+                                             uint64_t(xsgnative::MirrorGen()) ^ (xsgnative::ClutHash() << 20));
             auto it = cache.find(key);
             if (it == cache.end()) {
                 pf.texels += uint64_t(1u << tw) << th;
@@ -353,6 +369,7 @@ void Draw(uint32_t path, const Vtx* v, int n, uint32_t type) {
     if (writes) {
         g_drawn.insert(fbp);
         g_rendered.insert(fbp);
+        g_rt_gen[fbp] = xsgnative::MirrorGen();
         for (auto& [f, q] : g_post)
             if (q.active && f != fbp) q.post_drawn.insert(fbp);
     }
@@ -415,6 +432,107 @@ void Draw(uint32_t path, const Vtx* v, int n, uint32_t type) {
     Record(pf, fbp, v, n, type);
 }
 
+/* A blended draw over native content that stays on the GS: inside its box the composite keeps
+   the main GS's colour (the ownership GS drew it over the marker).  Returns false. */
+struct VetoList { uint32_t frame = ~0u; std::vector<OvBox> boxes; };
+std::map<uint32_t, VetoList> g_ov_veto;   // per FBP, for the frame it was drawn in
+bool Veto(uint32_t fbp, const Vtx* v, int n) {
+    VetoList& vl = g_ov_veto[fbp];
+    if (vl.frame != g_frame) { vl.frame = g_frame; vl.boxes.clear(); }
+    const int c = Bits(g.reg[0x00], 9, 1);
+    const uint64_t xyoff = g.reg[0x18 + c];
+    OvBox b = {1e9f, 1e9f, -1e9f, -1e9f};
+    for (int i = 0; i < n; ++i) {
+        const float x = (float(v[i].x) - float(Bits(xyoff, 0, 16))) / 16.0f;
+        const float y = (float(v[i].y) - float(Bits(xyoff, 32, 16))) / 16.0f;
+        b.x0 = std::min(b.x0, x); b.y0 = std::min(b.y0, y); b.x1 = std::max(b.x1, x); b.y1 = std::max(b.y1, y);
+    }
+    auto& boxes = vl.boxes;
+    if (!boxes.empty()) {
+        OvBox& l = boxes.back();
+        if ((b.x0 <= l.x1 + 2 && l.x0 <= b.x1 + 2 && b.y0 <= l.y1 + 2 && l.y0 <= b.y1 + 2) || boxes.size() >= 4096) {
+            l.x0 = std::min(l.x0, b.x0); l.y0 = std::min(l.y0, b.y0); l.x1 = std::max(l.x1, b.x1); l.y1 = std::max(l.y1, b.y1);
+            return false;
+        }
+    }
+    boxes.push_back(b);
+    return false;
+}
+
+/* Defer this primitive (see g_ov)?  Records it when so. */
+bool Defer(const Vtx* v, int n, uint32_t type) {
+    static const bool on = !(xsgcfg::CStr("debug.fx_defer") && std::atoi(xsgcfg::CStr("debug.fx_defer")) == 0);
+    if (!on || g_in_native || !g_own) return false;
+    const uint64_t prim = g.reg[0x00];
+    if (!Bits(prim, 6, 1)) return false;      // opaque: the ownership plane handles it
+    const int c = Bits(prim, 9, 1);
+    const uint64_t frame = g.reg[0x4c + c];
+    if (Bits(frame, 32, 32) == 0xffffffffu) return false;
+    const uint32_t fbp = Bits(frame, 0, 9);
+    auto it = g_post.find(fbp);
+    if (it == g_post.end() || it->second.nat_frame != g_frame || it->second.active) return false;
+    // masked colour writes (the afterimage's alpha-bit marks) and destination-alpha tests depend on
+    // exactly what the ownership GS has drawn: they stay on the GS (a pure alpha mark changes no colour)
+    if ((Bits(frame, 32, 32) & 0x00ffffffu) == 0x00ffffffu) return false;
+    if (Bits(frame, 32, 32) & 0x00ffffffu) { g_nrefuse[4]++; return Veto(fbp, v, n); }
+    if (Bits(g.reg[0x47 + c], 14, 1)) { g_nrefuse[4]++; return Veto(fbp, v, n); }
+    if (!g_kick_rw) { g_nrefuse[0]++; return Veto(fbp, v, n); }
+    if (type < 3 || type > 6) { g_nrefuse[1]++; return Veto(fbp, v, n); }   // points / lines stay on the GS
+    if (Bits(prim, 4, 1)) {   // its texture must be decodable from the upload mirror
+        const uint64_t tex0 = g.reg[0x06 + c];
+        const uint32_t tbp = Bits(tex0, 0, 14);
+        const uint32_t tw = std::min(10u, Bits(tex0, 26, 4)), th = std::min(10u, Bits(tex0, 30, 4));
+        const uint32_t tblocks = std::max(1u, (1u << tw) * (1u << th) * 4 / 256);
+        // a render target's pages only when an upload replaced them since the GS last drew there
+        const uint32_t tgen = xsgnative::TextureGenMin(tex0);
+        for (uint32_t d : g_rendered)
+            if (Overlaps(tbp, tblocks, d * 32) && (d == fbp || tgen <= g_rt_gen[d])) { g_nrefuse[2]++; return Veto(fbp, v, n); }
+        if (Overlaps(tbp, tblocks, Bits(g.reg[0x4e + c], 0, 9) * 32)) { g_nrefuse[2]++; return Veto(fbp, v, n); }
+    }
+    PostFrame& ov = g_ov[fbp];
+    if (ov.nat_frame != g_frame) {
+        ov = PostFrame();
+        ov.nat_frame = g_frame;
+        g_ov_box[fbp].clear();
+    }
+    ov.fbw = std::max(1u, Bits(frame, 16, 6));
+    ov.psm = Bits(frame, 24, 6);
+    ov.zbp = Bits(g.reg[0x4e + c], 0, 9);
+    ov.zpsm = Bits(g.reg[0x4e + c], 24, 4);
+    ov.trig_gen = xsgnative::MirrorGen();
+    const size_t before = ov.prims.size();
+    Record(ov, fbp, v, n, type, true);
+    if (ov.bad || ov.prims.size() == before) {   // could not record: this one stays on the GS
+        if (Tracing() || g_nrefuse[3] < 5) Log("defer: not recorded (%s)", ov.why.c_str());
+        g_nrefuse[3]++;
+        ov.bad = false;
+        ov.prims.resize(before);
+        ov.texs.resize(before);
+        return Veto(fbp, v, n);
+    }
+    // its box (1x pixels), for the composite's choice of GS colour
+    const uint64_t xyoff = g.reg[0x18 + c];
+    OvBox b = {1e9f, 1e9f, -1e9f, -1e9f};
+    for (int i = 0; i < n; ++i) {
+        const float x = (float(v[i].x) - float(Bits(xyoff, 0, 16))) / 16.0f;
+        const float y = (float(v[i].y) - float(Bits(xyoff, 32, 16))) / 16.0f;
+        b.x0 = std::min(b.x0, x); b.y0 = std::min(b.y0, y); b.x1 = std::max(b.x1, x); b.y1 = std::max(b.y1, y);
+    }
+    auto& boxes = g_ov_box[fbp];
+    // merged into the last box when they meet (strips, particle bursts): fewer boxes to test
+    if (!boxes.empty()) {
+        OvBox& l = boxes.back();
+        if ((b.x0 <= l.x1 + 2 && l.x0 <= b.x1 + 2 && b.y0 <= l.y1 + 2 && l.y0 <= b.y1 + 2) || boxes.size() >= 4096) {
+            l.x0 = std::min(l.x0, b.x0); l.y0 = std::min(l.y0, b.y0); l.x1 = std::max(l.x1, b.x1); l.y1 = std::max(l.y1, b.y1);
+            g_ndefer++;
+            return true;
+        }
+    }
+    boxes.push_back(b);
+    g_ndefer++;
+    return true;
+}
+
 void Kick(uint32_t path, uint32_t x, uint32_t y, uint32_t z, bool draw) {
     Vtx nv;
     nv.x = x; nv.y = y; nv.z = z;
@@ -427,7 +545,13 @@ void Kick(uint32_t path, uint32_t x, uint32_t y, uint32_t z, bool draw) {
     if (g.nv < 3) g.vq[g.nv++] = nv;
     if (g.nv < need) return;
     if (draw) {
-        Draw(path, g.vq, need, type);
+        if (Defer(g.vq, need, type)) {
+            g_defer_kick = true;
+            g_ndraw++;
+            if (Tracing()) { g_trace_def = true; TraceDraw(path, g.vq, need); g_trace_def = false; }
+        } else {
+            Draw(path, g.vq, need, type);
+        }
     }
     switch (type) {
     case 2: g.vq[0] = g.vq[1]; g.nv = 1; break;
@@ -471,6 +595,7 @@ void SetReg(uint32_t path, uint32_t a, uint64_t v) {
             const uint32_t rows = Bits(pos, 48, 11) + Bits(rg, 32, 12);
             const uint32_t bpp = dpsm == 0 || dpsm == 1 ? 4 : dpsm == 2 || dpsm == 0xa ? 2 : 4;
             g_rendered.insert(dbp / 32);
+            g_rt_gen[dbp / 32] = xsgnative::MirrorGen();
             g_copy_off = (dbp * 256) & 0x3fffff;
             g_copy_len = std::min<uint32_t>((4u << 20) - g_copy_off, ((dbw * 64 * rows * bpp + 8191) / 8192 + 1) * 8192);
             for (auto& [fbp, pf] : g_post) g_copy_req |= pf.active && pf.snapped;
@@ -658,12 +783,39 @@ void Qword(uint32_t path, PathParse& p, const uint8_t* q, uint8_t* oq) {
             case 0x4:
                 if (g_in_native && g_own) { uint64_t h2 = hiw & ~(0xffull << 36); std::memcpy(oq + 8, &h2, 8); }
                 g.fog = Bits(hiw, 36, 8);
+                g_kick_rw = true;
                 Kick(path, Bits(v, 0, 16), Bits(v, 32, 16), Bits(hiw, 4, 24), !Bits(hiw, 47, 1));
+                g_kick_rw = false;
+                if (g_defer_kick) {   // deferred: the ownership GS takes the vertex without drawing (ADC)
+                    g_defer_kick = false;
+                    uint64_t h2;
+                    std::memcpy(&h2, oq + 8, 8);
+                    h2 |= 1ull << 47;
+                    std::memcpy(oq + 8, &h2, 8);
+                }
                 break;
-            case 0x5: Kick(path, Bits(v, 0, 16), Bits(v, 32, 16), uint32_t(hiw), !Bits(hiw, 47, 1)); break;
+            case 0x5:
+                g_kick_rw = true;
+                Kick(path, Bits(v, 0, 16), Bits(v, 32, 16), uint32_t(hiw), !Bits(hiw, 47, 1));
+                g_kick_rw = false;
+                if (g_defer_kick) {
+                    g_defer_kick = false;
+                    uint64_t h2;
+                    std::memcpy(&h2, oq + 8, 8);
+                    h2 |= 1ull << 47;
+                    std::memcpy(oq + 8, &h2, 8);
+                }
+                break;
             case 0xa: g.fog = Bits(hiw, 36, 8); break;
             case 0xe:
+                g_kick_rw = (hiw & 0xff) == 0x04 || (hiw & 0xff) == 0x05;
                 SetReg(path, uint32_t(hiw & 0xff), v);
+                g_kick_rw = false;
+                if (g_defer_kick) {   // XYZF2 / XYZ2 -> XYZF3 / XYZ3 for the ownership GS: no drawing
+                    g_defer_kick = false;
+                    const uint64_t h2 = (hiw & ~0xffull) | ((hiw & 0xff) + 8);
+                    std::memcpy(oq + 8, &h2, 8);
+                }
                 // The ownership GS never answers a local->host transfer (only the main GS's FIFO is read).
                 if ((hiw & 0xff) == 0x53 && (v & 3) == 1) { const uint64_t off = 3; std::memcpy(oq, &off, 8); }
                 break;
@@ -820,7 +972,8 @@ void SeedOwn(const uint8_t* vram) {
     g_own->end_vram_write(0, 4u << 20);
 }
 
-void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterface& gs) {
+void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterface& gs,
+         const std::function<void(const uint8_t*)>& pre) {
     path &= 3;
     PathParse& p = g_path[path];
     OwnPath(path);
@@ -828,6 +981,7 @@ void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterfa
     uint8_t oq[16];
     const uint64_t t0 = xsgprof::g_on ? xsgprof::Now() : 0;
     for (uint32_t i = 0; i + 16 <= len; i += 16) {
+        if (pre) pre(data + i);
         Qword(path, p, data + i, oq);
         if (g_snap_req) {
             g_snap_req = false;
@@ -905,6 +1059,10 @@ void Vsync(uint32_t frame, ParallelGS::GSInterface& gs) {
         else g_own->flush();
     }
     if (frame % 600 == 0)
+        Log("vsync %u: %llu deferred effect draws; refused: %llu not rewritable, %llu point/line, %llu texture, %llu record",
+            frame, (unsigned long long)g_ndefer, (unsigned long long)g_nrefuse[0], (unsigned long long)g_nrefuse[1],
+            (unsigned long long)g_nrefuse[2], (unsigned long long)g_nrefuse[3]);
+    if (frame % 600 == 0)
         Log("vsync %u: %llu post phases (%llu cancelled by a later native batch, %llu not replayable)", frame,
             (unsigned long long)g_npost_frames, (unsigned long long)g_ncancel, (unsigned long long)g_nbad);
     g_frame = frame + 1;
@@ -962,11 +1120,10 @@ bool OwnerPlane(const Surface& sf, std::vector<uint32_t>& out) {
     return true;
 }
 
-void Replay(Vulkan::CommandBuffer& cmd, uint32_t fbp, int s, uint32_t w, uint32_t h, const Vulkan::Image& color,
-            const Vulkan::Image& z, uint32_t mx) {
-    auto it = g_post.find(fbp);
-    if (it == g_post.end() || it->second.prims.empty()) return;
-    PostFrame& pf = it->second;
+namespace {
+void ReplayList(Vulkan::CommandBuffer& cmd, uint32_t fbp, PostFrame& pf, int s, uint32_t w, uint32_t h,
+                const Vulkan::Image& color, const Vulkan::Image& z, uint32_t mx) {
+    if (pf.prims.empty()) return;
     auto& dev = *g_dev;
     // Widescreen: a sprite over the whole width under a full-width scissor (fade, flash, the
     // defocus blur's frame reads) is stretched across the side bands.  A frame read keeps its
@@ -1180,6 +1337,89 @@ void Replay(Vulkan::CommandBuffer& cmd, uint32_t fbp, int s, uint32_t w, uint32_
     if (xsgprof::g_on && pf.prims.size() >= 500)
         Log("[prof] replay fbp %u: %zu prims (frame-read %zu, textured %zu), %zu dispatches (%zu batches)", fbp, pf.prims.size(),
             prof_frame, prof_tex, prof_disp, prof_batches);
+}
+}  // namespace
+
+/* The deferred effects of the frame the buffer last showed (g_ov), or null. */
+static PostFrame* OverlayOf(uint32_t fbp) {
+    auto it = g_ov.find(fbp);
+    auto pt = g_post.find(fbp);
+    if (it == g_ov.end() || pt == g_post.end() || it->second.prims.empty()) return nullptr;
+    if (it->second.nat_frame != pt->second.nat_frame) return nullptr;
+    return &it->second;
+}
+
+bool Overlay(uint32_t fbp) { return OverlayOf(fbp) != nullptr; }
+
+bool GsRenderedTexture(uint64_t tex0) {
+    const uint32_t tbp = Bits(tex0, 0, 14);
+    const uint32_t tw = std::min(10u, Bits(tex0, 26, 4)), th = std::min(10u, Bits(tex0, 30, 4));
+    const uint32_t tblocks = std::max(1u, (1u << tw) * (1u << th) * 4 / 256);
+    const uint32_t tgen = xsgnative::TextureGenMin(tex0);
+    for (uint32_t d : g_rendered)
+        if (Overlaps(tbp, tblocks, d * 32)) {
+            auto it = g_rt_gen.find(d);
+            if (it != g_rt_gen.end() && tgen <= it->second) return true;
+        }
+    return false;
+}
+
+void Replay(Vulkan::CommandBuffer& cmd, uint32_t fbp, int s, uint32_t w, uint32_t h, const Vulkan::Image& color,
+            const Vulkan::Image& z, uint32_t mx) {
+    if (PostFrame* ov = OverlayOf(fbp)) {   // the deferred effects first (they came before any post phase)
+        ReplayList(cmd, fbp, *ov, s, w, h, color, z, mx);
+        cmd.barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                    VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_2_COPY_BIT,
+                    VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT | VK_ACCESS_2_TRANSFER_READ_BIT);
+    }
+    auto it = g_post.find(fbp);
+    if (it == g_post.end() || !it->second.done || it->second.bad) return;
+    ReplayList(cmd, fbp, it->second, s, w, h, color, z, mx);
+}
+
+void OverlayColour(const Surface& sf, std::vector<uint32_t>& gs) {
+    PostFrame* ov = OverlayOf(sf.fbp);
+    if (!ov || !g_own || gs.size() < size_t(sf.w) * sf.h) return;
+    const uint8_t* v = nullptr;
+    auto it = g_post.find(sf.fbp);
+    if (it != g_post.end() && it->second.done && it->second.snapped) {
+        OwnSync();
+        v = g_snap[sf.fbp].own.data();
+    }
+    if (!v) {
+        OwnSync();
+        g_own->flush();
+        v = static_cast<const uint8_t*>(g_own->map_vram_read(0, 4u << 20));
+    }
+    const uint32_t m = MarkerOut(), m2 = kMarker;
+    const bool c16 = sf.psm == 0x02 || sf.psm == 0x0a;
+    const uint32_t mask = c16 ? 0xf8f8f8u : 0xffffffu;
+    static std::vector<uint8_t> veto;
+    veto.assign(size_t(sf.w) * sf.h, 0);
+    if (std::getenv("XSG_FX_OVLOG")) {
+        static int n;
+        if (n++ % 120 == 0) {
+            Log("overlay fbp %#x frame %u: %zu prims, %zu boxes, %zu veto (veto frame %u)", sf.fbp, ov->nat_frame, ov->prims.size(),
+                g_ov_box[sf.fbp].size(), g_ov_veto[sf.fbp].boxes.size(), g_ov_veto[sf.fbp].frame);
+        }
+    }
+    if (g_ov_veto[sf.fbp].frame == ov->nat_frame)
+        for (const OvBox& b : g_ov_veto[sf.fbp].boxes) {
+            const int x0 = std::max(0, int(std::floor(b.x0)) - 1), y0 = std::max(0, int(std::floor(b.y0)) - 1);
+            const int x1 = std::min(int(sf.w), int(std::ceil(b.x1)) + 2), y1 = std::min(int(sf.h), int(std::ceil(b.y1)) + 2);
+            for (int y = y0; y < y1; ++y) std::memset(veto.data() + size_t(y) * sf.w + x0, 1, size_t(std::max(0, x1 - x0)));
+        }
+    for (const OvBox& b : g_ov_box[sf.fbp]) {
+        const int x0 = std::max(0, int(std::floor(b.x0)) - 1), y0 = std::max(0, int(std::floor(b.y0)) - 1);
+        const int x1 = std::min(int(sf.w), int(std::ceil(b.x1)) + 2), y1 = std::min(int(sf.h), int(std::ceil(b.y1)) + 2);
+        for (int y = y0; y < y1; ++y)
+            for (int x = x0; x < x1; ++x) {
+                if (veto[size_t(y) * sf.w + x]) continue;   // a GS-kept blend here: the main GS's colour
+                const uint32_t c = GsPixel(v, sf.fbp, sf.fbw, sf.psm, uint32_t(x), uint32_t(y));
+                if ((c & mask) == (m & mask) || (c & mask) == (m2 & mask)) continue;   // native: the composite's anyway
+                gs[size_t(y) * sf.w + x] = c;
+            }
+    }
 }
 
 bool Pmode(Vulkan::CommandBuffer& cmd, const ParallelGS::GSInterface& gs, int s, uint32_t w, uint32_t h,
