@@ -5,6 +5,9 @@
 #include "shared.h"
 #include "main/xgl_2.h"
 #include "title.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+#endif
 
 #define TITLE_PARTICLE_STRIDE 16
 #define TITLE_PARTICLE_AT(storage, index) \
@@ -464,6 +467,32 @@ sel_done:
         if (--timer <= 0) {
             return &D_2A007F8;
         }
+#ifdef PORT_HOST
+        {   /* the mouse (port/docs/MOUSE.md): hover a choice, click it.  Rebuilt UI: xsg-gpu reports
+               the row under the pointer; the original: rows of 18 from y 0x120, x 166..346. */
+            extern int xsg_ui_rebuilt(void);
+            const XsgMouse *m = xsg_mouse();
+            int item = -1;
+            if (m->ui_kind == XSG_UI_TITLE) {
+                item = m->ui_index;
+            } else if (!xsg_ui_rebuilt() && m->active && m->x >= 166 && m->x < 346 && m->y >= 0x120) {
+                item = (m->y - 0x120) / 18;
+                if (item > ((hdd < 0) ? 1 : 2)) item = -1;
+            }
+            if (m->moved || m->pressed) timer = 600;   /* using the mouse holds off the demo */
+            if (item >= 0 && fade == 0) {
+                if (item != sel && m->moved && m->hover) {
+                    sel = item;
+                    xglSoundEffectNormalID(3, 0);
+                }
+                if (xsg_mouse_click(XSG_MB_LEFT)) {
+                    sel = item;
+                    xsg_mouse_tap(XSG_PAD_CIRCLE);
+                }
+            }
+            xsg_mouse_capture();   /* a click between the choices does nothing */
+        }
+#endif
         if (wait > 0) {
             wait -= 1;
         } else if (fade == 0 && (((TitlePadView *)&PadData)->trigger & 0x820)) {
