@@ -24,6 +24,9 @@ void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
 void Glyph(ImDrawList* dl, ImFont* font, float cx, float cy, float r, int pos, bool dim);
 /* A shoulder button: 0 left, 1 right, as "LB" / "L1" / "L" in a rounded tag. */
 float ShoulderGlyph(ImDrawList* dl, ImFont* font, float x, float cy, float h, int side);
+/* The one drawn keycap (no icon pack): a dark rounded square with the label; h tall, at x, centred
+   on cy.  Returns the width. */
+float KeyTag(ImDrawList* dl, ImFont* font, float x, float cy, float h, const char* label, float t);
 /* UTF-8 text with a soft halo (style.h HaloText) where the PlayStation button symbols
    (U+25B3 triangle, U+25CB circle, U+25A1 square, U+00D7 cross) become controller
    glyphs (Glyph) for the layout.  Returns the width drawn. */

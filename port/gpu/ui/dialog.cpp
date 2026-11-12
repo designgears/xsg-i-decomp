@@ -1,5 +1,6 @@
 /* Rebuilt UI: the dialog window.  See dialog.h. */
 #include "dialog.h"
+#include "pointer.h"
 #include "gpu_ipc.h"
 #include "../menu/cfg.h"
 #include "../menu/option_rows.h"
@@ -19,6 +20,11 @@
 #include <iconv.h>
 #include <set>
 #include <vector>
+
+namespace {
+/* uvTbl icon ids 1..4 (square, triangle, cross, circle) -> DS2 masks, for the mouse */
+constexpr uint32_t kBtnMask[4] = {0x0080, 0x0010, 0x0040, 0x0020};
+}  // namespace
 
 namespace xsgui {
 namespace {
@@ -165,7 +171,7 @@ void DialogDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
                                     IM_COL32(34, 36, 90, int(245 * t)), IM_COL32(24, 24, 64, int(245 * t)),
                                     IM_COL32(30, 30, 80, int(245 * t)));
         dl->AddRect(ImVec2(px0, py0), ImVec2(px1, py1), IM_COL32(150, 180, 235, int(150 * t)), 0, 0, 1.0f * k);
-        SweepRule(dl, ImVec2(px0, py1), ImVec2(x1 - 12 * k, py1), k, t * 0.55f, float(now - an.born), col::kCyan);
+        dl->AddLine(ImVec2(px0, py1), ImVec2(x1 - 12 * k, py1), Alpha(col::kCyan, 0.55f * t), 1.0f);
         dl->AddRectFilled(ImVec2(px0, py1 - 1.5f * k), ImVec2(px0 + 28 * k, py1 + 0.5f * k), Alpha(col::kCyan, t));
         HaloText(dl, font, ns, ImVec2(px0 + 10 * k, py0 + 3 * k), col::kText, name.c_str(), t);
     }
@@ -298,13 +304,16 @@ float ShoulderGlyph(ImDrawList* dl, ImFont* font, float x, float cy, float h, in
     }
     const int lay = Layout();
     static const char* const k[3][2] = {{"LB", "RB"}, {"L1", "R1"}, {"L", "R"}};
-    const char* t = k[lay][side & 1];
+    return KeyTag(dl, font, x, cy, h, k[lay][side & 1], 1.0f);
+}
+
+float KeyTag(ImDrawList* dl, ImFont* font, float x, float cy, float h, const char* label, float t) {
     const float fs = h * 0.78f;
-    const ImVec2 ts = font->CalcTextSizeA(fs, 1e9f, 0, t);
+    const ImVec2 ts = font->CalcTextSizeA(fs, 1e9f, 0, label);
     const float w = ts.x + h * 0.7f;
-    dl->AddRectFilled(ImVec2(x, cy - h * 0.5f), ImVec2(x + w, cy + h * 0.5f), IM_COL32(12, 12, 30, 230), h * 0.3f);
-    dl->AddRect(ImVec2(x, cy - h * 0.5f), ImVec2(x + w, cy + h * 0.5f), IM_COL32(150, 180, 235, 160), h * 0.3f, 0, 1.0f);
-    dl->AddText(font, fs, ImVec2(x + (w - ts.x) * 0.5f, cy - ts.y * 0.5f), xsgmenu::col::kText, t);
+    dl->AddRectFilled(ImVec2(x, cy - h * 0.5f), ImVec2(x + w, cy + h * 0.5f), IM_COL32(12, 12, 30, int(230 * t)), h * 0.25f);
+    dl->AddRect(ImVec2(x, cy - h * 0.5f), ImVec2(x + w, cy + h * 0.5f), IM_COL32(150, 180, 235, int(160 * t)), h * 0.25f, 0, 1.0f);
+    dl->AddText(font, fs, ImVec2(x + (w - ts.x) * 0.5f, cy - ts.y * 0.5f), Alpha(xsgmenu::col::kText, t), label);
     return w;
 }
 
@@ -417,6 +426,13 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
         const ImU32 acc = kAccent[size_t(r.kind)];
         dl->AddRectFilledMultiColor(a, P(rx + 40, ry + rh), Alpha(acc, 0.20f * t), Alpha(acc, 0), Alpha(acc, 0), Alpha(acc, 0.20f * t));
         dl->AddRectFilled(a, P(rx + 3, ry + rh), Alpha(acc, t));
+        if (r.btn >= 1 && !off) {   // the mouse: the row presses its button; hover / press in the settings' row look
+            const int mask = int(kBtnMask[(r.btn - 1) & 3]);
+            PointerHit(a, b, GPU_MOUSE_UI_PROMPT, mask);
+            bool pressed = false;
+            const bool hov = PointerHovered(GPU_MOUSE_UI_PROMPT, mask, &pressed);
+            RowState(dl, ImVec2(a.x + 3 * k, a.y), b, k, t, false, hov, pressed, col::kCyan);
+        }
         if (r.btn >= 1) {
             const ImVec2 c = P(rx + 17, ry + rh * 0.5f);
             Glyph(dl, font, c.x, c.y, 10.0f * k, kPos[(r.btn - 1) & 3], false);   // the label shows availability; the button stays legible
@@ -476,9 +492,17 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
         }
     }
     if (strip) {   // the footer: LB Change ... Boost RB, in a bar under the stack
-        const float fy = float(strip->y) - 3, fw = rw;
-        const ImVec2 a = P(x0, fy), b = P(x0 + fw, fy + 20);
+        const float fy = float(strip->y) - 4, fw = rw;
+        const ImVec2 a = P(x0, fy), b = P(x0 + fw, fy + 22);
         Panel(dl, a, b, k, 0.85f, false, 0, 0);
+        {   // the mouse: each half presses its shoulder button; the hovered half is tinted, no frame
+            const ImVec2 mid_t((a.x + b.x) * 0.5f, a.y), mid_b((a.x + b.x) * 0.5f, b.y);
+            for (int side = 0; side < 2; ++side) {
+                bool pressed = false;
+                if (!PointerHovered(GPU_MOUSE_UI_PROMPT, side ? 0x0008 : 0x0004, &pressed)) continue;
+                dl->AddRectFilled(side ? mid_t : a, side ? b : mid_b, Alpha(col::kCyan, pressed ? 0.25f : 0.11f));
+            }
+        }
         const float cy = (a.y + b.y) * 0.5f, pad = 7 * kx, gap = 6 * kx, ts = 17.0f * k;
         // the glyph fills the bar's height less a margin; the icon art is square with a wide
         // shoulder shape inside, so it is drawn at that height and measured by what it returns
@@ -495,6 +519,8 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
         OutlineText(dl, UiFont(kFontLabel, font), ts, ImVec2(a.x + pad + lbw + gap, cy - cs.y * 0.5f), col::kText, "CHANGE", 1.0f);
         ShoulderGlyph(dl, font, b.x - pad - rbw, cy, h, 1);
         OutlineText(dl, UiFont(kFontLabel, font), ts, ImVec2(b.x - pad - rbw - gap - bs.x, cy - bs.y * 0.5f), col::kText, "BOOST", 1.0f);
+        PointerHit(a, ImVec2((a.x + b.x) * 0.5f, b.y), GPU_MOUSE_UI_PROMPT, 0x0004);   // LB / L1: change
+        PointerHit(ImVec2((a.x + b.x) * 0.5f, a.y), b, GPU_MOUSE_UI_PROMPT, 0x0008);   // RB / R1: boost
     }
 }
 
@@ -552,6 +578,7 @@ void KgDraw(ImDrawList* dl, ImFont* font_in, float gx, float gy, float gw, float
             if (o.a >= 1 && o.a <= 8) {
                 const ImVec2 c = P(x + 11, y + 12);
                 Glyph(dl, font, c.x, c.y, 9.5f * k * (0.7f + 0.3f * rt), kPos[(o.a - 1) & 3], o.a > 4 || rt < 0.5f);
+                if (o.a <= 4) PointerHit(P(x, y), P(x + 0x92, y + 24), GPU_MOUSE_UI_PROMPT, int(kBtnMask[(o.a - 1) & 3]));
             }
             break;
         case GPU_KG_FRAME: {
@@ -740,8 +767,13 @@ void CmdDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float g
         const float rt = FadeIn(ra, 9.0f) * t;
         const float x = float(r.x), y = float(r.y);
         const ImVec2 a = P(x + 0x14, y + 6), b = P(x + 0x8a, y + 0x1b);
+        PointerHit(P(x, y + 4), P(x + 0x8a, y + 0x1d), GPU_MOUSE_UI_BATTLE_CMD, i);
         Panel(dl, a, b, k, rt * (sel ? 1.0f : 0.92f), false);
-        if (sel) GlowBar(dl, a, b, k, rt * (r.enabled ? 1.0f : 0.45f), now, r.enabled ? col::kCyan : col::kTextOff);
+        {   // the settings' row look: selected (the game's cursor), the mouse's hover / press
+            bool pressed = false;
+            const bool hov = PointerHovered(GPU_MOUSE_UI_BATTLE_CMD, i, &pressed);
+            RowState(dl, a, b, k, rt, sel, hov && !sel, pressed, r.enabled ? col::kCyan : col::kTextOff);
+        }
         const ImVec2 m = P(x + 0xa, y + 0x12);
         const float d = 3.6f * k;
         dl->AddQuadFilled(ImVec2(m.x, m.y - d), ImVec2(m.x + d, m.y), ImVec2(m.x, m.y + d), ImVec2(m.x - d, m.y),
@@ -759,14 +791,7 @@ void CmdDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float g
             else dl->AddTriangleFilled(ImVec2(o.x, o.y - h / 2), ImVec2(o.x + h, o.y - h / 2), ImVec2(o.x + h / 2, o.y + h / 2), ac);
         }
     }
-    // the cursor glides to the selected row
-    if (c.sel >= 0 && c.sel < 5) {
-        const GpuUiCmdRow& r = c.row[c.sel];
-        const ImVec2 target = P(float(r.x) + 0x2, float(r.y) + 0x12);
-        AnimState& cur = Anim(0xC0DE0000000000FFull, target.x, target.y);
-        const ImVec2 p = Spring(cur, target.x, target.y, 22.0f);
-        Chevron(dl, p, 7 * k, t, now);
-    }
+    // no chevron: the row's bar is the cursor
 }
 }  // namespace
 

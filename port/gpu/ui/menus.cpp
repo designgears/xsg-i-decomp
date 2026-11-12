@@ -13,6 +13,7 @@
 #include "style.h"
 #include "layout.h"
 #include "prompts.h"
+#include "pointer.h"
 #include "gpu_ipc.h"
 #include "../menu/option_rows.h"
 #include "../menu/cfg.h"
@@ -181,11 +182,8 @@ bool MenuWantsSettings() {
 }
 
 namespace {
-// "[View] Settings": a capsule with the layout's button name, at the top right of the UI area
-// "[View] Settings" as part of the help bar: right-aligned inside it, vertically centred, set off
-// by a thin divider, in the help text's own type and colour (barTop / barBottom / barRight: game px;
-// barTop < 0: no help bar, the top-right corner instead)
-// the camp menu's own row under Money: same width and look as the Reserve / Time / Money rows
+// "[View] Settings": the camp menu's own row under Money, same width and look as the Reserve /
+// Time / Money rows; a click opens the settings menu
 void SettingsHint(ImDrawList* dl, ImFont* font, float t, float x0, float x1, float y) {
     using namespace xsgmenu;
     const float k = LayoutK(), kx = LayoutKx();
@@ -193,22 +191,27 @@ void SettingsHint(ImDrawList* dl, ImFont* font, float t, float x0, float x1, flo
     const std::string lay = xsgcfg::Get("gamepad.layout");
     const char* btn = lay == "playstation" ? "SHARE" : lay == "nintendo" ? "\xe2\x88\x92" : "VIEW";
     const float hs = 17.0f * k, ih = hs * 1.4f;
-    const bool icon = PromptIcon(kBack) != 0;
+    // a panel row like the Money ribbon above it, with the cyan accent; the keyboard's key as a
+    // drawn tag ("BKSP": the two-line icon is unreadable at this height)
+    const bool icon = PromptFamily() != 3 && PromptIcon(kBack) != 0;
     const ImVec2 a = Map(x0, y, kRight), b = Map(x1, y + 22, kRight);
-    dl->AddRectFilledMultiColor(a, b, IM_COL32(52, 64, 140, int(150 * t)), IM_COL32(52, 64, 140, int(60 * t)),
-                                IM_COL32(52, 64, 140, int(60 * t)), IM_COL32(52, 64, 140, int(150 * t)));
-    dl->AddLine(ImVec2(a.x, b.y - 0.5f), ImVec2(b.x, b.y - 0.5f), Alpha(IM_COL32(52, 64, 140, 255), 0.55f * t), 1.0f);
+    Panel(dl, a, b, k, t, false, 0, 0);
+    PointerSettings(a, b);
+    {
+        bool pressed = false;
+        const bool hov = PointerHovered(GPU_MOUSE_UI_SETTINGS, 0, &pressed);
+        RowState(dl, a, b, k, t, false, hov, pressed, col::kCyan);
+    }
+    dl->AddRectFilled(a, ImVec2(a.x + 3 * k, b.y), Alpha(col::kCyan, t));
     const float cy = (a.y + b.y) * 0.5f;
     const ImVec2 lw = bf->CalcTextSizeA(hs, 1e9f, 0, "Settings");
-    const float bw = icon ? ih : bf->CalcTextSizeA(hs * 0.7f, 1e9f, 0, btn).x + 12 * kx;
     const float bx = Map(x0 + 46, 0, kRight).x;
+    float bw;
     if (icon) {
+        bw = ih;
         PromptDraw(dl, kBack, ImVec2(bx + bw * 0.5f, cy), ih, t);
     } else {
-        const float ph = hs * 0.95f;
-        dl->AddRect(ImVec2(bx, cy - ph * 0.5f), ImVec2(bx + bw, cy + ph * 0.5f), Alpha(col::kFrame, 0.7f * t), ph * 0.5f, 0, 1.0f);
-        const ImVec2 bb = bf->CalcTextSizeA(hs * 0.7f, 1e9f, 0, btn);
-        dl->AddText(bf, hs * 0.7f, ImVec2(bx + (bw - bb.x) * 0.5f, cy - bb.y * 0.5f), Alpha(col::kText, t), btn);
+        bw = KeyTag(dl, bf, bx, cy, hs * 0.95f, PromptFamily() == 3 ? "BKSP" : btn, t);
     }
     HaloText(dl, bf, hs, ImVec2(bx + bw + 8 * kx, cy - lw.y * 0.5f), col::kText, "Settings", t);
 }
@@ -409,8 +412,7 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                 // the game's window colour tints the glass a little (its blue / red / green windows)
                 const ImU32 tint = Alpha(Ps2(o.rgba), 0.10f);
                 Panel(dl, a, b, k, t, false, tint, corners);
-                SweepRule(dl, ImVec2(a.x + 3 * k, a.y + 1 * k), ImVec2(b.x - 3 * k, a.y + 1 * k), k, t * 0.6f,
-                          float(now - an.born), col::kCyan);
+                dl->AddLine(ImVec2(a.x + 3 * k, a.y + 1 * k), ImVec2(b.x - 3 * k, a.y + 1 * k), Alpha(col::kCyan, 0.5f * t), 1.2f * k);
             } else {   // the open / close animation's frames (a trail of several): faint outlines
                 dl->AddRect(a, b, Alpha(col::kCyan, 0.28f * t), 0, 0, 1.0f);
             }
@@ -443,16 +445,21 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                 if (r > gr + 60 && r > bl + 60) return (g & 0xff000000u) | IM_COL32(118, 214, 255, 0);  // red accents
                 return g;
             };
+            // a selection ribbon (the game's red accent, now cyan) is capped to the settings' row look
+            const bool selbar = (recolour(o.rgba) & 0x00ffffffu) == (IM_COL32(118, 214, 255, 0) & 0x00ffffffu);
             auto glass = [&](uint32_t c, float cap) {
                 const ImU32 g = recolour(c);
                 const float al = std::min(float((g >> 24) & 0xff) / 255.0f, cap) * tw;
                 return Alpha(g | 0xff000000u, al);
             };
-            const ImU32 l = glass(o.rgba, 0.62f), r = glass(uint32_t(o.b), 0.40f);
+            const ImU32 l = glass(o.rgba, selbar ? 0.35f : 0.62f), r = glass(uint32_t(o.b), selbar ? 0.0f : 0.40f);
             dl->AddRectFilledMultiColor(a, b, l, r, r, l);
-            if (o.dh >= 8) {
+            if (selbar && o.dh >= 8) {
+                dl->AddRect(a, b, Alpha(col::kCyan, 0.63f * tw), 0, 0, 1.0f);
+                dl->AddRectFilled(a, ImVec2(a.x + 3 * k, b.y), Alpha(col::kCyan, tw));
+            } else if (o.dh >= 8) {
                 const ImVec2 c(b.x, a.y + (b.y - a.y) * 0.4f);
-                dl->AddRectFilledMultiColor(a, c, IM_COL32(255, 255, 255, int(18 * tw)), IM_COL32(255, 255, 255, int(5 * tw)),
+                dl->AddRectFilledMultiColor(a, c, IM_COL32(255, 255, 255, int(10 * tw)), IM_COL32(255, 255, 255, int(3 * tw)),
                                             IM_COL32(255, 255, 255, 0), IM_COL32(255, 255, 255, 0));
                 dl->AddLine(ImVec2(a.x, b.y - 0.5f), ImVec2(b.x, b.y - 0.5f), Alpha(l | 0xff000000u, 0.55f * tw), 1.0f);
             }
@@ -719,12 +726,9 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             dl->AddCircleFilled(c, float(o.dw) * k * 0.4f, Ps2(o.rgba, tw), 24);
             break;
         }
-        case GPU_KG_SELECT: {   // a choice menu's selected row: the cursor glides, the bar glows
-            AnimState& cu = Anim(0x53454C00ull, x, y);
-            const ImVec2 q = Spring(cu, x, y, 22.0f);
-            const ImVec2 a = P(q.x, q.y), b = P(q.x + o.dw, q.y + o.dh);
-            GlowBar(dl, a, b, k, tw, now, col::kCyan);
-            Chevron(dl, P(q.x - 2, q.y + o.dh * 0.5f), 6 * k, tw, now);
+        case GPU_KG_SELECT: {   // a choice menu's selected row: the settings' row look
+            const ImVec2 a = P(x, y), b = P(x + o.dw, y + o.dh);
+            RowState(dl, a, b, k, tw, true, false, false, col::kCyan);
             break;
         }
         case GPU_KG_TITLE: {   // the title choices: the original's place and spacing (y 288 + 18 per row)
@@ -805,11 +809,12 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                 const int item = idx[r];   // the game's selection index
                 const bool sel = o.a == item;
                 const float ry = 288 + rowh * float(r);
-                if (sel) {
-                    AnimState& cu = Anim(0x5449544Cull, 0, ry);
-                    const float yy = Spring(cu, 0, ry, 22.0f).y;
-                    GlowBar(dl, P(256 - half + 4, yy - 1), P(256 + half - 4, yy + rowh - 1), k, t, now, col::kCyan);
-                    Chevron(dl, P(256 - half + 14, yy + rowh * 0.5f - 1), 6 * k, t, now);
+                const ImVec2 ra = P(256 - half + 4, ry - 1), rb = P(256 + half - 4, ry + rowh - 1);
+                PointerHit(ra, rb, GPU_MOUSE_UI_TITLE, item);
+                {
+                    bool pressed = false;
+                    const bool hov = PointerHovered(GPU_MOUSE_UI_TITLE, item, &pressed);
+                    RowState(dl, ra, rb, k, t, sel, hov && !sel, pressed, col::kCyan);
                 }
                 const ImVec2 ts = font->CalcTextSizeA(fs, 1e9f, 0, kItem[rows[r]]);
                 const ImVec2 c = P(256, ry + rowh * 0.5f - 1);
@@ -828,37 +833,18 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             AnimState& pa = Anim(0x50415553ull, 0, 8);
             const float t = FadeIn(pa, 6.0f) * tw;
             const float rise = Spring(pa, 0, 0, 16.0f).y;
-            const float age = float(now - pa.born);
             anchor = kCentre;
-            // a vignette over the game's dim layer: the card's area stays clearest
-            {
-                const ImVec4 ar = LayoutArea();
-                const ImVec2 c0(ar.x, ar.y), c1(ar.z, ar.w);
-                const float ex = (c1.x - c0.x) * 0.22f;
-                const ImU32 e = IM_COL32(2, 2, 10, int(150 * t)), z = IM_COL32(2, 2, 10, 0);
-                dl->AddRectFilledMultiColor(c0, ImVec2(c0.x + ex, c1.y), e, z, z, e);
-                dl->AddRectFilledMultiColor(ImVec2(c1.x - ex, c0.y), c1, z, e, e, z);
-                dl->AddRectFilled(c0, c1, IM_COL32(2, 2, 12, int(60 * t)));
-            }
+            // no vignette: the game's own dim layer is enough
             const float cw = 176, chh = 112, cx0 = 256 - cw * 0.5f, cy0 = 224 - chh * 0.5f + rise;
             const ImVec2 a = P(cx0, cy0), b2 = P(cx0 + cw, cy0 + chh);
             Panel(dl, a, b2, k, t);
-            // title
-            const char* title = "P A U S E D";
-            const float fs = 22.0f * k;
+            // title, a static rule under it
+            const char* title = "PAUSED";
+            const float fs = 20.0f * k;
             const ImVec2 ts = font->CalcTextSizeA(fs, 1e9f, 0, title);
-            const ImVec2 tc = P(256, cy0 + 26 + rise * 0);
+            const ImVec2 tc = P(256, cy0 + 26);
             HaloText(dl, font, fs, ImVec2(tc.x - ts.x * 0.5f, tc.y - ts.y * 0.5f), col::kText, title, t);
-            // a short rule under it that sweeps out from the centre
-            {
-                const float u = std::clamp(age / 0.4f, 0.0f, 1.0f), e = 1 - (1 - u) * (1 - u);
-                const float half = 56.0f * e;
-                const ImVec2 l = P(256 - half, cy0 + 44), r = P(256 + half, cy0 + 44);
-                dl->AddRectFilledMultiColor(ImVec2(l.x, l.y), ImVec2((l.x + r.x) * 0.5f, l.y + 1.2f * k), Alpha(col::kCyan, 0), Alpha(col::kCyan, 0.9f * t),
-                                            Alpha(col::kCyan, 0.9f * t), Alpha(col::kCyan, 0));
-                dl->AddRectFilledMultiColor(ImVec2((l.x + r.x) * 0.5f, l.y), ImVec2(r.x, r.y + 1.2f * k), Alpha(col::kCyan, 0.9f * t), Alpha(col::kCyan, 0),
-                                            Alpha(col::kCyan, 0), Alpha(col::kCyan, 0.9f * t));
-            }
+            dl->AddLine(P(cx0 + 16, cy0 + 44), P(cx0 + cw - 16, cy0 + 44), Alpha(col::kCyan, 0.6f * t), 1.0f);
             // two rows: [button] label, the buttons in one column, equal slots
             const std::string lay = xsgcfg::Get("gamepad.layout");
             const int fam = PromptFamily();
@@ -875,17 +861,24 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             for (int r = 0; r < 2; ++r) {
                 const float ry = cy0 + 62 + 22.0f * float(r);
                 const ImVec2 sc = P(cx0 + 46, ry + 9);
-                if (!PromptDraw(dl, rows2[r].icon, sc, slot * k, t)) {
-                    const float bh = 15 * k, bw = std::max(slot * kx, font->CalcTextSizeA(10.0f * k, 1e9f, 0, rows2[r].b).x + 10 * kx);
-                    dl->AddRectFilled(ImVec2(sc.x - bw * 0.5f, sc.y - bh * 0.5f), ImVec2(sc.x + bw * 0.5f, sc.y + bh * 0.5f),
-                                      Alpha(IM_COL32(12, 12, 30, 240), t), bh * 0.5f);
-                    dl->AddRect(ImVec2(sc.x - bw * 0.5f, sc.y - bh * 0.5f), ImVec2(sc.x + bw * 0.5f, sc.y + bh * 0.5f),
-                                Alpha(col::kFrame, 0.8f * t), bh * 0.5f, 0, 1.0f);
-                    const ImVec2 bs = font->CalcTextSizeA(10.0f * k, 1e9f, 0, rows2[r].b);
-                    dl->AddText(font, 10.0f * k, ImVec2(sc.x - bs.x * 0.5f, sc.y - bs.y * 0.5f), Alpha(col::kText, t), rows2[r].b);
+                const ImVec2 ha = P(cx0 + 8, ry - 1), hb = P(cx0 + cw - 8, ry + 19);
+                {   // the mouse: the row presses its button (Settings: the settings menu); hover in the settings' row look
+                    const int ic = rows2[r].icon;
+                    const uint32_t mk = ic == kBack ? 0u : ic == kStart ? 0x0800u : ic == kNorth ? 0x0010u : 0x0020u;
+                    if (mk) PointerHit(ha, hb, GPU_MOUSE_UI_PROMPT, int(mk));
+                    else PointerSettings(ha, hb);
+                    bool pressed = false;
+                    const bool hov = mk ? PointerHovered(GPU_MOUSE_UI_PROMPT, int(mk), &pressed) : PointerHovered(GPU_MOUSE_UI_SETTINGS, 0, &pressed);
+                    RowState(dl, ha, hb, k, t, false, hov, pressed, col::kCyan);
+                }
+                // keyboard: a drawn keycap (the icon pack's "Enter" / "Back Space" art is two lines at this size)
+                if (fam == 3 || !PromptDraw(dl, rows2[r].icon, sc, slot * k, t)) {
+                    const float bh = 15 * k;
+                    const float bw = font->CalcTextSizeA(bh * 0.78f, 1e9f, 0, rows2[r].b).x + bh * 0.7f;
+                    KeyTag(dl, font, sc.x - bw * 0.5f, sc.y, bh, rows2[r].b, t);
                 }
                 const ImVec2 ls = font->CalcTextSizeA(hs, 1e9f, 0, rows2[r].l);
-                HaloText(dl, font, hs, ImVec2(P(cx0 + 66, 0).x, sc.y - ls.y * 0.5f), r == 0 ? col::kText : col::kTextDim, rows2[r].l, t);
+                HaloText(dl, font, hs, ImVec2(P(cx0 + 66, 0).x, sc.y - ls.y * 0.5f), col::kText, rows2[r].l, t);
             }
             break;
         }

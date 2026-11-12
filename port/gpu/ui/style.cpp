@@ -1,5 +1,6 @@
 /* Rebuilt UI: the shared look and motion.  See style.h. */
 #include "style.h"
+#include "pointer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -79,6 +80,7 @@ float CapCentreY(ImFont* font, float size, float mid) {
 }
 
 void Panel(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, bool accent, ImU32 tint, int corners) {
+    if (t > 0.2f) PointerBlock(a, b);   // the mouse: the scene under a panel is not pickable
     // no drop shadow: it smeared a dark halo under every box
     dl->AddRectFilledMultiColor(a, b, Alpha(kTop, t), Alpha(kTop, t), Alpha(kBottom, t), Alpha(kBottom, t));
     if (tint) dl->AddRectFilled(a, b, Alpha(tint, t));
@@ -103,41 +105,16 @@ void Panel(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, bool accent, Im
     if (corners & 8) { dl->AddLine(p1, ImVec2(p1.x - L, p1.y), bc, w); dl->AddLine(p1, ImVec2(p1.x, p1.y - L), bc, w); }
 }
 
-void GlowBar(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, double now, ImU32 col) {
-    const ImU32 c0 = Alpha(col, 0.34f * t), c1 = Alpha(col, 0.06f * t);
-    // outer glow
-    for (int i = 3; i >= 1; --i) {
-        const float g = i * 1.5f * k;
-        dl->AddRectFilled(ImVec2(a.x - g, a.y - g), ImVec2(b.x + g, b.y + g), Alpha(col, 0.05f * t), g);
-    }
-    dl->AddRectFilledMultiColor(a, b, c0, c1, c1, c0);
-    // a light sweep crossing the bar every ~2.4 s
-    const float w = b.x - a.x, ph = float(std::fmod(now, 2.4) / 2.4);
-    const float cx = a.x - w * 0.3f + ph * w * 1.6f, hw = std::max(6 * k, w * 0.12f);
-    dl->PushClipRect(a, b, true);
-    dl->AddRectFilledMultiColor(ImVec2(cx - hw, a.y), ImVec2(cx, b.y), Alpha(col, 0), Alpha(col, 0.22f * t),
-                                Alpha(col, 0.22f * t), Alpha(col, 0));
-    dl->AddRectFilledMultiColor(ImVec2(cx, a.y), ImVec2(cx + hw, b.y), Alpha(col, 0.22f * t), Alpha(col, 0), Alpha(col, 0),
-                                Alpha(col, 0.22f * t));
-    dl->PopClipRect();
-    dl->AddLine(ImVec2(a.x, b.y), ImVec2(b.x, b.y), Alpha(col, 0.7f * t), 1.0f * k);
-    dl->AddRectFilled(a, ImVec2(a.x + 2.5f * k, b.y), Alpha(col, t));
-}
-
-void Chevron(ImDrawList* dl, ImVec2 tip, float size, float t, double now) {
-    const float bob = float(std::sin(now * 5.0)) * size * 0.18f;
-    const ImVec2 p(tip.x + bob, tip.y);
-    const float h = size * 0.55f;
-    dl->AddTriangleFilled(ImVec2(p.x - size, p.y - h), p, ImVec2(p.x - size, p.y + h), Alpha(kCyan, t));
-    dl->AddTriangleFilled(ImVec2(p.x - size * 1.6f, p.y - h * 0.7f), ImVec2(p.x - size * 0.75f, p.y),
-                          ImVec2(p.x - size * 1.6f, p.y + h * 0.7f), Alpha(kCyan, 0.35f * t));
-}
-
-void SweepRule(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, float age, ImU32 col) {
-    const float u = std::clamp(age / 0.45f, 0.0f, 1.0f), e = 1 - (1 - u) * (1 - u);
-    const float x = a.x + (b.x - a.x) * e;
-    dl->AddLine(a, ImVec2(x, b.y), Alpha(col, 0.8f * t), 1.2f * k);
-    if (u < 1) dl->AddCircleFilled(ImVec2(x, b.y), 2.2f * k, Alpha(IM_COL32(220, 245, 255, 255), t));
+void RowState(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, bool sel, bool hover, bool pressed, ImU32 col) {
+    if (!sel && !hover && !pressed) return;
+    if (sel) dl->AddRectFilled(a, b, IM_COL32(60, 76, 150, int(90 * t)));
+    if (pressed) dl->AddRectFilled(a, b, Alpha(col, 0.25f * t));
+    // the sweep from the left, over 60 % of the width (the settings menu's)
+    const float sw = sel ? 46.0f : 28.0f;
+    dl->AddRectFilledMultiColor(a, ImVec2(a.x + (b.x - a.x) * 0.6f, b.y), Alpha(col, sw / 255.0f * t), Alpha(col, 0),
+                                Alpha(col, 0), Alpha(col, sw / 255.0f * t));
+    dl->AddRect(a, b, Alpha(col, (pressed ? 1.0f : sel ? 0.9f : 0.55f) * t), 0, 0, 1.0f);
+    dl->AddRectFilled(a, ImVec2(a.x + (sel || pressed ? 3.0f : 2.0f) * k, b.y), Alpha(col, (sel || pressed ? 1.0f : 0.63f) * t));
 }
 
 namespace {

@@ -1,11 +1,10 @@
 /* Rebuilt UI: the shared look and motion (port/gpu/ui/).
  *
  * Layers, back to front: a soft drop shadow, the panel body (indigo gradient),
- * a sheen along the top edge, the frame, corner brackets.  Selection: a glow
- * bar with a slow light sweep and a cyan chevron that glides between rows.
- * Motion is keyed: every widget the game publishes has a stable key (its
- * address or slot), and Anim() keeps a spring / fade per key across frames, so
- * things ease in, glide, and fade out instead of popping. */
+ * a sheen along the top edge, the frame, corner brackets.  Selection and the
+ * mouse's hover: RowState, the settings menu's row look (static).
+ * Anim() keeps a state per widget key; Spring / FadeIn / Tween are immediate
+ * (no eased motion: it reads as input lag). */
 #pragma once
 #include <cstdint>
 
@@ -56,10 +55,11 @@ void Shadow(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, float rounding
 /* corners: bit 0 top-left, 1 top-right, 2 bottom-left, 3 bottom-right get a bracket (one
    covered by a header or plate gets none). */
 void Panel(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, bool accent = false, ImU32 tint = 0, int corners = 15);
-void GlowBar(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, double now, ImU32 col);
-void Chevron(ImDrawList* dl, ImVec2 tip, float size, float t, double now);
-/* A thin rule with a bright head that sweeps once on open (age seconds since open). */
-void SweepRule(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, float age, ImU32 col);
+/* The one selection / hover language, the settings menu's row (menu/option_rows.cpp RowFrame):
+   sel: indigo fill, a cyan sweep from the left, a 1 px cyan edge and a 3 px left bar;
+   hover (the mouse): the sweep and edge fainter, a 2 px bar; pressed: a cyan wash, full edge.
+   Static: no sweep animation, no chevron.  col: the accent (kCyan; kTextOff for a disabled row). */
+void RowState(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, bool sel, bool hover, bool pressed, ImU32 col);
 /* Text with a soft dark halo (readable over art). */
 void HaloText(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t);
 
