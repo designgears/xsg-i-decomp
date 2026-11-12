@@ -260,7 +260,41 @@ void RgGeomPointPassTime(RgGeomPoint *pPoint, float deltaTime)
     }
 #endif
 
+#ifdef PORT_HOST
+    /* InitRgGeomPoint never stores the weight (the original doesn't either), so a
+       group-made ball (shots) keeps whatever the heap held: 0, or stale bits such
+       as a denormal. The EE flushes denormals to 0, gives x/0 = +-FLT_MAX and
+       clamps overflow to +-FLT_MAX, so 0 force * that = 0; IEEE gives inf and
+       inf * 0 = NaN, which poisons the velocity/position, then the tray check
+       writes past its 3-normal result and smashes the collision loop's frame. */
+    {
+        float w = pPoint->weight;
+        float scale;
+        int k;
+
+        if (w > -1.17549435e-38f && w < 1.17549435e-38f) {
+            w = 0.0f;
+        }
+        scale = xsg_ee_divf(deltaTime, w);
+        if (scale > 3.40282347e+38f) {
+            scale = 3.40282347e+38f;
+        } else if (scale < -3.40282347e+38f) {
+            scale = -3.40282347e+38f;
+        }
+        for (k = 0; k < 4; k++) {
+            float f = pPoint->force[k];
+
+            delta[k] = (f == 0.0f) ? 0.0f : f * scale;
+            if (delta[k] > 3.40282347e+38f) {
+                delta[k] = 3.40282347e+38f;
+            } else if (delta[k] < -3.40282347e+38f) {
+                delta[k] = -3.40282347e+38f;
+            }
+        }
+    }
+#else
     XrgScaleVector(delta, pPoint->force, deltaTime / pPoint->weight);
+#endif
     XrgAddVectorXYZ(pPoint->velocity, pPoint->velocity, delta);
 
     if (pPoint->velocity[0] * pPoint->velocity[0] +
