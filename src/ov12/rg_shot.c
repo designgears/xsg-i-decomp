@@ -163,7 +163,13 @@ static void _ShotCommonPassTimeLife(RgShot *shot, float deltaTime)
     shot->life = remainingLife;
     if (remainingLife < 0.0f) {
         if (shot->hitHistory != 0) {
+#ifdef PORT_HOST
+            /* The expiry callback (_GrenadeShotZeroLife) takes the shot: the
+               original jalr leaves the shot in $a0, the call here passes nothing. */
+            ((void (*)(RgShot *)) shot->hitHistory)(shot);
+#else
             shot->hitHistory();
+#endif
         } else {
             RgCharFree((RgChar *)shot);
             return;
