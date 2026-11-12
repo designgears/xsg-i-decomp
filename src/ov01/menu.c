@@ -5,6 +5,9 @@
 #include "shared.h"
 #include "ov01/battle_init.h"
 #include "ov01/calc.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+#endif
 extern CalcUnitParam *calcUPGet(ObjectTask *unit);
 
 typedef struct MenuEtherStatusEntry {
@@ -132,6 +135,35 @@ void menuBatObjFree(ObjectTask *task) {
     } else {
         var_17 = chaTbl_00A3F038;
     }
+#ifdef PORT_HOST
+    {   /* the mouse (port/docs/MOUSE.md): hover a command row, click it.  Rebuilt UI: xsg-gpu
+           reports the row; the original: the table's row origins (0x8E x 0x20) from the task's place */
+        extern int xsg_ui_rebuilt(void);
+        const XsgMouse *m = xsg_mouse();
+        int item = -1, i;
+        if (m->ui_kind == XSG_UI_BATTLE_CMD) {
+            item = m->ui_index;
+        } else if (!xsg_ui_rebuilt() && m->active) {
+            const float bx = *(float *)((char *)task->work + 0x90), by = *(float *)((char *)task->work + 0x98);
+            for (i = 0; i < 5; i++) {
+                const int *e = (const int *)(var_17 + i * 0x10);
+                if (xsg_mouse_in((int)bx + e[2], (int)by + e[3], 0x8E, 0x20)) item = i;
+            }
+        }
+        xsg_mouse_capture();   /* a click off the rows does nothing */
+        if (item >= 0 && item <= 4) {
+            if (item != menuSel && m->moved && m->hover) {
+                menuSel = item;
+                menuSelCnt = 0;
+                sndSysSePlay(3);
+            }
+            if (xsg_mouse_click(XSG_MB_LEFT)) {
+                if (item != menuSel) menuSel = item, menuSelCnt = 0;
+                xsg_mouse_tap(XSG_PAD_CIRCLE);
+            }
+        }
+    }
+#endif
     if (dataPadRead(1) & 0x4000) {
         temp_2 = 4;
         if (temp_2 < ++menuSel) {
@@ -2900,6 +2932,13 @@ void keyGideDisp(int packet, int x, int y, int id);
 void menuKeyGuideHelp(int packet, ObjectTask *task, int cmd, int x, int y);
 void menuKeyGuideVal(int packet, ObjectTask *task, int cmd, int x, int y);
 
+#ifdef PORT_HOST
+/* the mouse (port/docs/MOUSE.md): the attack rows as drawn this frame (the original UI), for
+   keyCmdGet: x, y, DS2 mask; the vblank they were drawn */
+int xsgKgRow[8][3];
+int xsgKgRowN;
+unsigned xsgKgRowFrame;
+#endif
 void menuKeyGuideDisp(int packet, ObjectTask *task, int phase)
 {
     int gp[4];
@@ -2932,6 +2971,13 @@ void menuKeyGuideDisp(int packet, ObjectTask *task, int phase)
             xsg_ui_kg_begin();
 #endif
         tgt = tgtUnitGet();
+#ifdef PORT_HOST
+        {
+            extern volatile unsigned xsg_frame;
+            xsgKgRowN = 0;
+            xsgKgRowFrame = xsg_frame;
+        }
+#endif
         if (calcUPGet(task)->flags & 0x40) {
             rows = keyGuideTblAgws[phase].rows;
             list = keyGuideTblAgws[phase].list;
@@ -2960,6 +3006,15 @@ void menuKeyGuideDisp(int packet, ObjectTask *task, int phase)
                             id = rows[i].id + 4;
                         }
                         keyGideDisp((int)gp, x, y, id);
+#ifdef PORT_HOST
+                        if (k == 0 && rows[i].id >= 1 && rows[i].id <= 4 && xsgKgRowN < 8) {
+                            static const int mask[4] = {0x80, 0x10, 0x40, 0x20};   /* square triangle cross circle */
+                            xsgKgRow[xsgKgRowN][0] = x;
+                            xsgKgRow[xsgKgRowN][1] = y;
+                            xsgKgRow[xsgKgRowN][2] = mask[rows[i].id - 1];
+                            xsgKgRowN++;
+                        }
+#endif
                         if (battleCtrlHelpGet() != 2) {
                             menuKeyGuideHelp((int)gp, task, rows[i].cmd, x, y);
                             menuKeyGuideVal((int)gp, task, rows[i].cmd, x, y);

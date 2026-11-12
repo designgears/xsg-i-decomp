@@ -6,6 +6,9 @@
 #include "battle_init.h"
 #include "ov01/calc.h"
 #include "main/party.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+#endif
 
 #define CURSOR_STATE_OFF 0x10
 #define STATE_FLAGS_OFF 0x00
@@ -2258,6 +2261,25 @@ int keyCmdGet(ObjectTask *unit)
     int cmd;
     int res;
 
+#ifdef PORT_HOST
+    {   /* the mouse: in the attack phase a click is an attack only on its prompt row (the rebuilt
+           UI's prompts press their button); elsewhere it does nothing */
+        extern int xsg_ui_rebuilt(void);
+        extern volatile unsigned xsg_frame;
+        extern int xsgKgRow[8][3];
+        extern int xsgKgRowN;
+        extern unsigned xsgKgRowFrame;
+        int r;
+        /* the original UI: a click on an attack row presses its button (the rebuilt UI's prompts do it in xsg-gpu) */
+        if (!xsg_ui_rebuilt() && xsg_frame - xsgKgRowFrame < 4)
+            for (r = 0; r < xsgKgRowN; r++)
+                if (xsg_mouse_in(xsgKgRow[r][0], xsgKgRow[r][1], 0x92, 0x1C) && xsg_mouse_click(XSG_MB_LEFT)) {
+                    xsg_mouse_tap((unsigned)xsgKgRow[r][2]);
+                    break;
+                }
+        xsg_mouse_capture();   /* elsewhere a click does nothing (a unit click is curSel's) */
+    }
+#endif
     if (*(unsigned short *)((char *)calcUPGet(unit) + 0x1C) & 0x40) {
         if (((signed char *)calcUPGet(unit))[0x3A] < 3) {
             return 0x1A;
@@ -5623,12 +5645,84 @@ extern int sndSysSePlay(int soundId);
  */
 #define STATE_TARGET_OFF 0x80
 
+#ifdef PORT_HOST
+extern void sefGetNullPosition(void *out, int id, unsigned int a, int b);
+extern int grBBCalc(ObjectTask *task, int *x, int *y);
+/* the actor record (actor[] index) of a battle unit, -1 none */
+static int xsgUnitActor(void *unit)
+{
+    return unit ? xsg_mouse_actor_index(*(void **)((char *)unit + 0x14)) : -1;
+}
+/* The mouse (port/docs/MOUSE.md): the unit under the pointer.  With the native renderer, by its
+   model's pixels (object ids); otherwise by its body on screen: from its root (grBBCalc on the
+   unit) up to its marker point (sefGetNullPosition, projected through the cursor object's
+   place, borrowed and restored, as menuActCurPut does) and a little above.
+   Hovering outlines it (and selects it with [mouse] hover, once the pointer moves), a click
+   selects it, a click on the current target confirms.  Returns the index to select, -1 for none. */
+static int xsgMouseUnitPick(CursorObject *cursor, void **units, int count, int cur)
+{
+    const XsgMouse *m = xsg_mouse();
+    int i, best = -1;
+
+    if (!m->active || count <= 0 || count > 9) return -1;
+    xsg_mouse_capture();   /* a click off the units does nothing */
+    if (m->over_ui) {
+        best = -1;   /* the pointer is on a UI panel, not on the scene */
+    } else if (m->pick >= 0) {   /* the native renderer's object ids: the unit whose model is under the pointer */
+        for (i = 0; i < count; i++)
+            if (units[i] && m->pick > 0 && xsgUnitActor(units[i]) == m->pick - 1) best = i;
+    } else {
+        float *pos = (float *)(*(char **)((char *)cursor + 0x10) + 0x90);
+        long long save[16];
+        int bd = 1 << 30, fx, fy, hx, hy;
+        memcpy(save, pos, sizeof save);
+        for (i = 0; i < count; i++) {
+            int top, bot, half, d;
+            if (!units[i]) continue;
+            if (grBBCalc((ObjectTask *)units[i], &fx, &fy) == 0) continue;
+            sefGetNullPosition(pos, *(int *)((char *)units[i] + 0x14), 0, 0);
+            pos[5] = 1.0f;
+            if (grBBCalc((ObjectTask *)cursor, &hx, &hy) == 0) hx = fx, hy = fy - 60;
+            /* the marker sits on the head (the game's own reticle); the root only gives the height */
+            d = fy > hy ? fy - hy : hy - fy;
+            if (d < 40) d = 40;
+            top = hy - d / 5 - 8;
+            bot = hy + d * 9 / 10;
+            half = (bot - top) * 3 / 10;
+            if (half < 14) half = 14;
+            if (m->x < hx - half || m->x >= hx + half || m->y < top || m->y >= bot) continue;
+            d = (m->x - hx) * (m->x - hx);   /* overlapping bodies: the nearest centre line */
+            if (d < bd) bd = d, best = i;
+        }
+        memcpy(pos, save, sizeof save);
+    }
+    for (i = 0; i < count; i++)   /* the renderer outlines these under the pointer at once */
+        if (units[i]) xsg_mouse_hoverable(xsgUnitActor(units[i]));
+    /* outlines around the models: the target (gold) and the one under the pointer (cyan) */
+    xsg_mouse_outline(cur >= 0 && cur < count ? xsgUnitActor(units[cur]) : -1,
+                      best >= 0 && best != cur ? xsgUnitActor(units[best]) : -1);
+    if (best < 0) return -1;
+    xsg_mouse_hot();
+    if (xsg_mouse_click(XSG_MB_LEFT)) {
+        if (best == cur) xsg_mouse_tap(XSG_PAD_CIRCLE);   /* the target again: confirm */
+        return best;
+    }
+    if (best != cur && m->hover && m->moved) return best;   /* pointing selects */
+    return -1;
+}
+#endif
 int curSel(CursorObject *cursor, CursorSelectList *list, int nextMask, int prevMask)
 {
     CursorCommandState *state;
     void *target;
 
     list->prevIdx = list->curIdx;
+#ifdef PORT_HOST
+    if (*(int *)((char *)list + 0x54) == 0) {   /* a list of units: the mouse picks one on screen (MOUSE.md) */
+        const int pick = xsgMouseUnitPick(cursor, (void **)list, list->count, list->curIdx);
+        if (pick >= 0) list->curIdx = pick;
+    }
+#endif
     if (dataPadRead(1) & nextMask) {
         list->curIdx++;
         if (list->curIdx >= list->count) {
