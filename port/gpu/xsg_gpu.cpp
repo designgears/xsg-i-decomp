@@ -215,6 +215,50 @@ struct SdlPlatform final : Vulkan::WSIPlatform {
 };
 #endif
 
+/* The Vulkan pipeline cache, kept across runs in $XDG_CACHE_HOME/xsg (~/.cache/xsg): a pipeline's
+   first use compiled synchronously (a 30+ ms hitch at an effect's first appearance, every run).
+   xsg-gpu is usually ended by a signal, so it is saved whenever it grew (at the 600-vsync tick). */
+std::string PipelineCachePath() {
+    const char* x = std::getenv("XDG_CACHE_HOME");
+    const char* home = std::getenv("HOME");
+    std::string dir = x && *x ? std::string(x) + "/xsg" : home ? std::string(home) + "/.cache/xsg" : std::string();
+    if (dir.empty()) return dir;
+    mkdir(dir.c_str(), 0755);
+    return dir + "/pipeline_cache.bin";
+}
+bool g_pcache;   // the device's cache is initialised (Granite does it only with a filesystem attached)
+void PipelineCacheLoad(Vulkan::Device& dev) {
+    const std::string path = PipelineCachePath();
+    FILE* f = path.empty() ? nullptr : std::fopen(path.c_str(), "rb");
+    if (!f) { g_pcache = dev.init_pipeline_cache(nullptr, 0); return; }
+    std::vector<uint8_t> data;
+    std::fseek(f, 0, SEEK_END);
+    const long n = std::ftell(f);
+    std::fseek(f, 0, SEEK_SET);
+    if (n > 0) {
+        data.resize(size_t(n));
+        if (std::fread(data.data(), 1, data.size(), f) != data.size()) data.clear();
+    }
+    std::fclose(f);
+    g_pcache = dev.init_pipeline_cache(data.data(), data.size());   // a stale or corrupt file starts fresh
+    if (g_pcache) Log("pipeline cache: %zu KB from %s", data.size() >> 10, path.c_str());
+}
+void PipelineCacheSave(Vulkan::Device& dev) {
+    static size_t saved;
+    if (!g_pcache) return;
+    const size_t n = dev.get_pipeline_cache_size();
+    if (!n || n == saved) return;
+    std::vector<uint8_t> data(n);
+    if (!dev.get_pipeline_cache_data(data.data(), n)) return;
+    const std::string path = PipelineCachePath();
+    if (path.empty()) return;
+    const std::string tmp = path + ".tmp";
+    FILE* f = std::fopen(tmp.c_str(), "wb");
+    if (!f) return;
+    const bool ok = std::fwrite(data.data(), 1, n, f) == n;
+    if (std::fclose(f) == 0 && ok && std::rename(tmp.c_str(), path.c_str()) == 0) saved = n;
+}
+
 struct Renderer {
     std::unique_ptr<Vulkan::Context> ctx;
     std::unique_ptr<Vulkan::Device> headless_dev;
@@ -359,6 +403,7 @@ struct Renderer {
 #endif
         xsginput::Init(reinterpret_cast<GpuPad*>(reinterpret_cast<uint8_t*>(shm) + XSG_GPU_PAD_OFF), sdl_input);
         if (!dev && !InitHeadless()) { Log("no Vulkan device"); return false; }
+        PipelineCacheLoad(*dev);
         GSOptions o = {};
         o.dynamic_super_sampling = true;   // the menu changes the rate live (ApplyLive)
         int ss = xsgcfg::CStr("renderer.ssaa") ? std::atoi(xsgcfg::CStr("renderer.ssaa")) : 1;
@@ -914,6 +959,7 @@ struct Renderer {
             slow_frames += ms > 20.0;
         }
         if (vsyncs % 600 == 0) {
+            if (dev) PipelineCacheSave(*dev);
             double s = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
             Log("vsync %u: %.1f vsyncs/s, %.1f MB/s GIF, %llu presents (%llu native); worst %.1f ms at vsync %u, %u over 20 ms, %llu repeats not presented, %u audio underruns", frame,
                 600.0 / s, gif_bytes / s / 1e6, (unsigned long long)presents, (unsigned long long)native_presents, worst_ms,
