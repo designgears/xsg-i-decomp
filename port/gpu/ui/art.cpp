@@ -36,6 +36,7 @@ struct Tex {
     uint32_t checked = 0;      // the frame of the last check
     uint64_t hash = 0;
     uint32_t set = 0;
+    uint64_t image = 0;        // TEX0's image bits (ImageBits): a set's snapshot invalidates only its own image
     uint32_t ticket = 0;       // the latest upscale started for it (an older one finishing is dropped)
 };
 struct Upscaling { uint64_t key; uint32_t ticket, w, h; std::future<std::vector<uint32_t>> px; };
@@ -51,6 +52,9 @@ uint64_t Fnv(const uint32_t* p, size_t n) {
     for (size_t i = 0; i < n; ++i) h = (h ^ p[i]) * 1099511628211ull;
     return h;
 }
+
+// the parts of TEX0 that name the image: TBP0 TBW PSM TW TH, CBP CPSM CSM CSA
+uint64_t ImageBits(uint64_t tex0) { return (tex0 & 0x3fffffffull) | (tex0 & (0x7ffffull << 37)); }
 
 // PS2 colours: 0x80 = 1.0; alpha 0x80 = opaque
 void Expand(std::vector<uint32_t>& px) {
@@ -138,15 +142,18 @@ void ArtSnapshotTex(uint32_t key, uint64_t tex0, const uint8_t* mem) {
     for (size_t i = 0; i < len / 8; ++i) h = (h ^ reinterpret_cast<const uint64_t*>(mem + off)[i]) * 1099511628211ull;
     for (size_t i = 0; i < clen / 8; ++i) h = (h ^ reinterpret_cast<const uint64_t*>(mem + coff)[i]) * 1099511628211ull;
     h ^= tex0 * 0x9e3779b97f4a7c15ull;
-    static std::unordered_map<uint32_t, uint64_t> last;
+    // per image: a set can hold several (the battle's key guide alternates two CLUTs each frame),
+    // and a snapshot of one must not throw away the others' decodes
+    static std::unordered_map<uint64_t, uint64_t> last;   // (set, image) -> content hash
+    const uint64_t image = ImageBits(tex0), lk = image ^ (uint64_t(key) * 0xc2b2ae3d27d4eb4full);
     auto& m = g_sets[key];
-    if (m && last[key] == h) return;
+    if (m && last[lk] == h) return;
     if (!m) m = std::make_unique<ps2host::gs::Memory>();
     std::memcpy(m->data() + off, mem + off, len);
     std::memcpy(m->data() + coff, mem + coff, clen);
-    last[key] = h;
+    last[lk] = h;
     for (auto& [k, t] : g_tex)
-        if (t.set == key) t.gen = ~0u;
+        if (t.set == key && t.image == image) t.gen = ~0u;
 }
 
 namespace {
@@ -288,8 +295,7 @@ void ArtFrame() {
 }
 
 ImTextureID ArtTexture(uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h, uint32_t texset) {
-    // the parts of TEX0 that name the image: TBP0 TBW PSM TW TH, CBP CPSM CSM CSA
-    const uint64_t key = ((tex0 & 0x3fffffffull) | (tex0 & (0x7ffffull << 37))) ^ (texa * 0x9e3779b97f4a7c15ull) ^
+    const uint64_t key = ImageBits(tex0) ^ (texa * 0x9e3779b97f4a7c15ull) ^
                          (uint64_t(texset) * 0xc2b2ae3d27d4eb4full);
     Tex& t = g_tex[key];
     const uint64_t prof_t0 = xsgprof::g_on ? xsgprof::Now() : 0;
@@ -300,6 +306,7 @@ ImTextureID ArtTexture(uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h, u
         auto it = g_sets.find(texset);
         if (it == g_sets.end()) return ImTextureID(0);
         t.set = texset;
+        t.image = ImageBits(tex0);
         if (!t.id || t.gen == ~0u) {   // invalidated when its set changes (ArtTexset / ArtSnapshot*)
             uint32_t tw = 0, th = 0;
             ++g_decodes;
