@@ -190,7 +190,7 @@ typedef struct {
  * pointer differently in wide layouts; with the original layout all three agree).
  * Counters only grow: the game diffs them against the last vblank's. */
 #define XSG_GPU_MOUSE_OFF 1536u
-enum { GPU_MOUSE_UI_TITLE = 1, GPU_MOUSE_UI_BATTLE_CMD = 2, GPU_MOUSE_UI_PROMPT = 3, GPU_MOUSE_UI_SETTINGS = 4 /* xsg-gpu only */ };
+enum { GPU_MOUSE_UI_TITLE = 1, GPU_MOUSE_UI_BATTLE_CMD = 2, GPU_MOUSE_UI_PROMPT = 3, GPU_MOUSE_UI_SETTINGS = 4 /* xsg-gpu only */, GPU_MOUSE_UI_SKIP = 5 };
 typedef struct {
     volatile uint32_t seq;
     volatile uint32_t active;      /* 1: mouse play on ([mouse] enabled) and the pointer in the window */
@@ -213,7 +213,9 @@ typedef struct {
     volatile uint32_t g_hot;       /* 1: over something clickable (the hand cursor) */
     volatile int32_t g_outline[2]; /* object ids the native renderer outlines: [0] selected, [1] hovered */
     volatile uint32_t g_hoverable[8];   /* object ids (bit = id - 1, 1..256) the renderer outlines under the pointer, at once */
-    uint32_t reserved[90];
+    volatile uint32_t g_skip;      /* a skippable cutscene this frame (mouse.cpp xsg_skip_hold): bits 0-7 hold progress
+                                      (255 = done), bit 8 skippable, bit 9 recent input (show the prompt) */
+    uint32_t reserved[89];
 } GpuMouse;
 
 /* In-game menu (port/docs/MENU.md): the settings the game process applies

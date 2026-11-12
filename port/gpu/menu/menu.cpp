@@ -1373,6 +1373,7 @@ void Frame(uint32_t vsync, const Stats& s) {
     const bool dialog = rebuilt && xsgui::DialogActive(vsync);
     const bool battle = rebuilt && xsgui::BattleActive(vsync);
     const bool menus = rebuilt && xsgui::MenuActive(vsync);
+    const bool skip = xsgui::SkipActive();   // hold to skip: a cutscene the game can skip (any UI mode)
     g_game_menu_up = menus && xsgui::MenuWantsSettings();
     if (g_shared) {   // the game asked for the settings menu (the title's Settings choice)
         static uint32_t seen = ~0u;
@@ -1397,7 +1398,7 @@ void Frame(uint32_t vsync, const Stats& s) {
     }
 #endif
     xsgui::PointerBegin();
-    if (!g_open && !g_overlay && !dialog && !battle && !menus) {
+    if (!g_open && !g_overlay && !dialog && !battle && !menus && !skip) {
         {   // no UI drawn: the pointer still goes to the game (the field, the original UI)
             const float fbs = ImGui::GetIO().DisplayFramebufferScale.y > 0 ? ImGui::GetIO().DisplayFramebufferScale.y : 1.0f;
             if (xsgui::PointerEnd(nullptr, s.game_x / fbs, s.game_y / fbs, s.game_w / fbs, s.game_h / fbs, rebuilt, false))
@@ -1468,6 +1469,9 @@ void Frame(uint32_t vsync, const Stats& s) {
                 c = mix(0) | mix(8) | mix(16) | (c & 0xff000000u);
             }
     }
+    if (skip && !g_open)   // over the screen fade: the button stays readable on a fade to black
+        xsgui::SkipDraw(ImGui::GetBackgroundDrawList(), ImGui::GetFont(), s.game_x / fb, s.game_y / fb, s.game_w / fb,
+                        s.game_h / fb);
     if (xsgui::PointerEnd(ImGui::GetForegroundDrawList(), s.game_x / fb, s.game_y / fb, s.game_w / fb, s.game_h / fb, rebuilt,
                           g_open))
         SetOpen(true);

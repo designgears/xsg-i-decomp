@@ -990,6 +990,20 @@ static int PauseSkipCheck(void)
     if (gs->flags & 0x90000000) {
         return 1;
     }
+#ifdef PORT_HOST
+    {   /* hold to skip (port/runtime/mouse.cpp xsg_skip_hold: TRIANGLE, or the rebuilt UI's button):
+           the pause card's skip below, without the card */
+        extern int xsg_skip_hold(unsigned held);
+        if (xsg_skip_hold(PadData.half_28)) {
+            gs->pause_wait = 0x40;
+            if (s_nScriptFrameLockEntry == 0) {
+                s_nScriptEventSkipEntry = 1;
+            }
+            xglSoundStreamStop(0);
+            return 1;
+        }
+    }
+#endif
     if (gs->pause_wait == 0 && ((pad = &PadData)->half_2a & 0x800)) {
         gs->pause_wait = 0x20;
         xglSoundEffectNormalDirect(4);

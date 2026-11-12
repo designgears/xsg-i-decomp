@@ -44,6 +44,7 @@ bool g_last_pressed;          // ... with the left button held
 bool g_game_on;               // the pointer is in the game picture with the mouse on
 int g_gx, g_gy;               // the pointer, game px (centre anchor; negative / past 512 in the wide margins)
 int g_out_sel, g_out_hov;
+uint32_t g_skip;              // the game's hold-to-skip report (GpuMouse g_skip)
 uint32_t g_hov_mask[8];
 int g_pick = -1;
 int g_pick_age;
@@ -108,6 +109,19 @@ void PointerBegin() {
     g_have_settings = false;
 }
 void PointerBlock(ImVec2 a, ImVec2 b) { g_blocks.push_back({ImVec2(std::min(a.x, b.x), std::min(a.y, b.y)), ImVec2(std::max(a.x, b.x), std::max(a.y, b.y))}); }
+float PointerFreeAbove(ImVec2 a, ImVec2 b, float gap) {
+    // move (a, b) up until no panel drawn so far this frame overlaps it
+    for (int pass = 0; pass < 4; ++pass) {
+        bool moved = false;
+        for (auto& bl : g_blocks)
+            if (a.x < bl.second.x && b.x > bl.first.x && a.y < bl.second.y && b.y > bl.first.y) {
+                const float dy = b.y - (bl.first.y - gap);
+                a.y -= dy, b.y -= dy, moved = true;
+            }
+        if (!moved) break;
+    }
+    return a.y;
+}
 void PointerHit(ImVec2 a, ImVec2 b, int kind, int index) { g_hits.push_back({a, b, kind, index}); }
 void PointerSettings(ImVec2 a, ImVec2 b) {
     g_have_settings = true;
@@ -116,6 +130,7 @@ void PointerSettings(ImVec2 a, ImVec2 b) {
 }
 
 bool PointerHot() { return g_hot; }
+uint32_t PointerSkip() { return g_skip; }
 bool PointerGame(int* x, int* y) {
     *x = g_gx;
     *y = g_gy;
@@ -184,13 +199,13 @@ bool PointerEnd(ImDrawList* dl, float gx, float gy, float gw, float gh, bool reb
         for (int tries = 0; tries < 100 && !ok; ++tries) {
             const uint32_t s0 = __atomic_load_n(&g_shm->g_seq, __ATOMIC_ACQUIRE);
             if (s0 & 1) continue;
-            const uint32_t hot = g_shm->g_hot, o0 = g_shm->g_outline[0], o1 = g_shm->g_outline[1];
+            const uint32_t hot = g_shm->g_hot, o0 = g_shm->g_outline[0], o1 = g_shm->g_outline[1], sk = g_shm->g_skip;
             uint32_t hm[8];
             for (int i = 0; i < 8; ++i) hm[i] = g_shm->g_hoverable[i];
             __atomic_thread_fence(__ATOMIC_ACQUIRE);
             ok = __atomic_load_n(&g_shm->g_seq, __ATOMIC_RELAXED) == s0;
             if (!ok) continue;
-            snap.g_hot = hot, snap.g_outline[0] = int32_t(o0), snap.g_outline[1] = int32_t(o1);
+            snap.g_hot = hot, snap.g_outline[0] = int32_t(o0), snap.g_outline[1] = int32_t(o1), snap.g_skip = sk;
             for (int i = 0; i < 8; ++i) snap.g_hoverable[i] = hm[i];
             if (s0 != last_seq) last_seq = s0, last_t = Now();
         }
@@ -200,6 +215,7 @@ bool PointerEnd(ImDrawList* dl, float gx, float gy, float gw, float gh, bool reb
         g_out_sel = fresh ? snap.g_outline[0] : 0;
         g_out_hov = fresh ? snap.g_outline[1] : 0;
         for (int i = 0; i < 8; ++i) g_hov_mask[i] = fresh ? snap.g_hoverable[i] : 0;
+        g_skip = Now() - last_t < 0.25 ? snap.g_skip : 0;   // hold to skip: pad players too, mouse or not
     }
 
     // the pointer in the game's space, per anchor

@@ -25,6 +25,7 @@ the pointer.  Settings: F1 > Controls > Mouse (`[mouse]` in settings.ini).
 | dialogue, anything else | a left click is CIRCLE (`click_advances`) |
 | everywhere | right click: back (CROSS); wheel: up / down; middle click: TRIANGLE (camp menu); side buttons: L1 / R1 |
 | "Settings" hints | open the settings menu (also with `enabled = 0`) |
+| cutscenes and movies | hold the left button on **Hold to skip** (bottom right, above the dialogue box; there whenever the scene can be skipped, dimmed until input; gone for 1.5 s after a skip) for a second: the scene is skipped as from the pause card. Holding TRIANGLE (keyboard: its key) does the same without the mouse. `script.c PauseSkipCheck`, `game_movie.c`, `mouse.cpp xsg_skip_hold` |
 | settings menu | right click closes it, side buttons switch tabs, the wheel scrolls |
 
 A click on empty space inside an open menu does nothing; it never confirms the selection.

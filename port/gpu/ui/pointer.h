@@ -31,6 +31,8 @@ void PointerBegin();
 void PointerHit(ImVec2 a, ImVec2 b, int kind, int index);
 /* A UI panel on screen: the 3D scene under it is not pickable (style.cpp Panel). */
 void PointerBlock(ImVec2 a, ImVec2 b);
+/* The top y for the rect (a, b) moved up clear of the panels drawn so far this frame (gap between). */
+float PointerFreeAbove(ImVec2 a, ImVec2 b, float gap);
 /* A clickable area that opens the settings menu (the "Settings" hints). */
 void PointerSettings(ImVec2 a, ImVec2 b);
 /* After the draws: publishes the pointer.  (gx, gy, gw, gh): the game picture on screen;
@@ -42,6 +44,8 @@ bool PointerEnd(ImDrawList* dl, float gx, float gy, float gw, float gh, bool reb
 bool PointerVisible();
 /* The pointer is over something clickable (the hand cursor). */
 bool PointerHot();
+/* Hold to skip (gpu_ipc.h GpuMouse g_skip): bits 0-7 progress, bit 8 a skippable scene, bit 9 show. */
+uint32_t PointerSkip();
 /* The native renderer (native.cpp): the pointer in the game's 512 x 448 frame (x may lie in the
    widescreen margins, < 0 or >= 512; false when the mouse is off, outside, or over a UI panel), the object ids the game wants outlined, and the object id it found
    under the pointer (-1 unknown: no native frame). */

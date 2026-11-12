@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -47,6 +48,8 @@ int g_log = -1;
 bool g_hot;                  // this frame: over something clickable
 int g_outline[2];
 uint32_t g_hoverable[8];   // ids (bit = id - 1): actors, then hooks' objects
+uint32_t g_skip;           // GpuMouse g_skip (xsg_skip_hold), as of g_skip_frame
+uint32_t g_skip_frame = ~0u - 100;
 bool g_list_seen, g_list_seen_prev;   // a menu had the pointer this frame / the last (xsg_mouse_capture)
 
 // pad taps: masks waiting, one in flight (pressed for 2 reads, released for 2)
@@ -119,6 +122,7 @@ void Publish() {
     p->g_outline[0] = g_outline[0];
     p->g_outline[1] = g_outline[1];
     for (int i = 0; i < 8; ++i) p->g_hoverable[i] = g_hoverable[i];
+    p->g_skip = xsg_frame - g_skip_frame <= 3 ? g_skip : 0;   // a cutscene at 30 fps calls every other vblank
     __atomic_store_n(&p->g_seq, s + 2, __ATOMIC_RELEASE);
 }
 
@@ -369,6 +373,56 @@ void xsg_mouse_capture(void) {
 }
 
 void xsg_mouse_tap(unsigned mask) { Tap(mask); }
+
+int xsg_skip_hold(unsigned held) {
+    constexpr uint32_t kSkipHold = 60;      // vblanks (1 s) of holding
+    constexpr uint32_t kSkipShow = 180;     // the prompt shows for 3 s after any input
+    static uint32_t start, last_input = ~0u - 1000;
+    static bool down;                       // a hold in progress, since `start`
+    static bool rearm;                      // after a skip: released first (a held button skips one scene)
+    constexpr uint32_t kSkipGone = 90;      // vblanks the button stays away after a skip (its fade-out)
+    static uint32_t skipped_at = ~0u - 1000, last_call = ~0u - 1000;
+    static bool gone;                       // hidden after a skip
+    Update();
+    if (xsg_frame - skipped_at < kSkipGone) {   // the skip is under way: the button is gone (scenes may follow
+                                                // at once, so only for a while)
+        last_call = xsg_frame;
+        gone = true;
+        g_skip = 0;
+        g_skip_frame = xsg_frame;
+        return 0;
+    }
+    // a skippable scene starts (not called for a while), or one still plays after a skip's pause:
+    // the button shows for a few seconds by itself, as after input
+    if (xsg_frame - last_call > 10 || gone) last_input = xsg_frame;
+    last_call = xsg_frame;
+    gone = false;
+    bool on_button = false;
+    if (g_m.active && g_m.ui_kind == XSG_UI_SKIP) {
+        xsg_mouse_claim(XSG_MB_LEFT);       // a click on the button never advances the scene
+        on_button = (g_m.held & XSG_MB_LEFT) != 0;
+    }
+    bool holding = (held & XSG_PAD_TRIANGLE) || on_button;
+    if (!holding) rearm = false;
+    if (rearm) holding = false;
+    if (held || g_m.pressed || g_m.moved) last_input = xsg_frame;
+    if (!holding) down = false;
+    else if (!down) down = true, start = xsg_frame;
+    const uint32_t t = down ? xsg_frame - start : 0;
+    const uint32_t progress = down ? std::min<uint32_t>(255, t * 255 / kSkipHold) : 0;
+    g_skip = progress | 0x100u | (xsg_frame - last_input < kSkipShow ? 0x200u : 0);
+    g_skip_frame = xsg_frame;
+    if (down && t >= kSkipHold) {
+        down = false;
+        rearm = true;
+        skipped_at = xsg_frame;
+        last_input = xsg_frame - kSkipShow;   // the hold's own input does not bring it back
+        g_skip = 0;
+        if (std::getenv("XSG_MOUSE_LOG")) std::fprintf(stderr, "[mouse] skip held (frame %u)\n", xsg_frame);
+        return 1;
+    }
+    return 0;
+}
 
 int xsg_mouse_grid(int x, int y, int w, int pitch, int cols, int first_row, int visible, int count, int sel, int* activate) {
     Update();

@@ -385,6 +385,16 @@ void GameMpeg2Play(char *name, int mode)
                     if (status > 0) {
                         break;
                     }
+#ifdef PORT_HOST
+                    {   /* hold to skip (port/runtime/mouse.cpp xsg_skip_hold): the pause card's skip, without the card */
+                        extern int xsg_skip_hold(unsigned held);
+                        if (xsg_skip_hold(PadData.half_28)) {
+                            movie_skip(&mode);
+                            GameLoopState.input_delay = 64;
+                            break;
+                        }
+                    }
+#endif
                     if (GameLoopState.input_delay != 0) {
                         GameLoopState.input_delay--;
                     } else if (PadData.half_2a & PAD_BUTTON_START) {

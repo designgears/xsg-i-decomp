@@ -21,7 +21,7 @@ enum {
     XSG_PAD_DOWN = 0x4000, XSG_PAD_LEFT = 0x8000
 };
 /* XsgMouse.ui_kind: what the rebuilt UI reports under the pointer (gpu_ipc.h GPU_MOUSE_UI_*) */
-enum { XSG_UI_TITLE = 1, XSG_UI_BATTLE_CMD = 2, XSG_UI_PROMPT = 3 };
+enum { XSG_UI_TITLE = 1, XSG_UI_BATTLE_CMD = 2, XSG_UI_PROMPT = 3, XSG_UI_SKIP = 5 };
 
 typedef struct XsgMouse {
     int active;      /* mouse play on and the pointer in the window */
@@ -110,6 +110,12 @@ void xsg_mouse_object_end(void);
    selection (sel when none).  Needs the native renderer (xsg_mouse()->pick >= 0); captures the
    pointer like a list. */
 int xsg_mouse_object_pick(const int *ids, int n, int sel);
+
+/* Hold to skip (script.c PauseSkipCheck, game_movie.c): called once per frame while a skippable
+   cutscene or movie plays, with the pad's held buttons.  Holding TRIANGLE, or the left button on
+   the rebuilt UI's skip button (bottom right), for kSkipHold vblanks returns 1 once: skip now.
+   It also reports the hold's progress for the button's fill. */
+int xsg_skip_hold(unsigned held);
 
 /* sdk.c scePadRead: buttons (SCE_PAD mask, active high) the mouse presses this read. */
 unsigned xsg_mouse_pad_buttons(void);

@@ -217,6 +217,61 @@ void SettingsHint(ImDrawList* dl, ImFont* font, float t, float x0, float x1, flo
 }
 }  // namespace
 
+namespace {
+float g_skip_vis;   // the skip button's opacity (fades in after input, out when idle)
+}
+bool SkipActive() {
+    const bool on = (PointerSkip() & 0x100) != 0;
+    if (!on) g_skip_vis = 0.0f;   // skipped, or the scene ended: gone at once, and the next one fades in
+    return on;
+}
+
+void SkipDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh) {
+    using namespace xsgmenu;
+    const uint32_t st = PointerSkip();
+    // always there while the scene can be skipped: dimmed when idle, full after input or while held
+    // (eased over 0.2 s); gone at once after a skip (SkipActive)
+    float& vis = g_skip_vis;
+    const float target = ((st & 0x200) || (st & 0xff)) ? 1.0f : 0.5f;
+    vis += std::clamp(target - vis, -ImGui::GetIO().DeltaTime / 0.2f, ImGui::GetIO().DeltaTime / 0.2f);
+    if (vis <= 0.0f) return;
+    LayoutBegin(gx, gy, gw, gh);
+    const float k = LayoutK(), kx = LayoutKx();
+    // the bottom right, 12 px in, a panel row in the settings' look; above the dialogue box (or any
+    // panel already in that corner) when there is one
+    ImVec2 a = Map(380, 414, kRight), b = Map(500, 436, kRight);
+    {
+        const float top = PointerFreeAbove(a, b, 6 * k);
+        b.y += top - a.y;
+        a.y = top;
+    }
+    Panel(dl, a, b, k, vis, false, 0, 0);
+    PointerHit(a, b, GPU_MOUSE_UI_SKIP, 0);
+    bool pressed = false;
+    const bool hov = PointerHovered(GPU_MOUSE_UI_SKIP, 0, &pressed);
+    // the hold is its own feedback: a cyan wash filling left to right over a 2 px bar on the
+    // bottom edge (the row's pressed wash would hide it)
+    const float p = float(st & 0xff) / 255.0f;
+    RowState(dl, a, b, k, vis, false, hov || p > 0.0f, pressed && p <= 0.0f, col::kCyan);
+    if (p > 0.0f) {
+        const float xp = a.x + (b.x - a.x) * p;
+        dl->AddRectFilled(a, ImVec2(xp, b.y), Alpha(col::kCyan, 0.30f * vis));
+        dl->AddRectFilled(ImVec2(a.x, b.y - 2 * k), ImVec2(xp, b.y), Alpha(col::kCyan, vis));
+    }
+    ImFont* const bf = UiFont(kFontBodyBold, font);
+    const float hs = 14.0f * k, cy = (a.y + b.y) * 0.5f, bx = a.x + 10 * kx;
+    float bw = 20.0f * k;
+    if (PromptIcon(kNorth)) {
+        PromptDraw(dl, kNorth, ImVec2(bx + bw * 0.5f, cy), bw, vis);
+    } else {
+        const std::string lay = xsgcfg::Get("gamepad.layout");
+        const char* north = PromptFamily() == 3 ? "I" : lay == "playstation" ? "\xe2\x96\xb3" : lay == "nintendo" ? "X" : "Y";
+        bw = KeyTag(dl, bf, bx, cy, hs, north, vis);
+    }
+    const ImVec2 ls = bf->CalcTextSizeA(hs, 1e9f, 0, "Hold to skip");
+    HaloText(dl, bf, hs, ImVec2(bx + bw + 8 * kx, cy - ls.y * 0.5f), col::kText, "Hold to skip", vis);
+}
+
 void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh) {
     using namespace xsgmenu;
     LayoutBegin(gx, gy, gw, gh);
