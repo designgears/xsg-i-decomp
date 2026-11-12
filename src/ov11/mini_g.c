@@ -6,6 +6,9 @@
 #include "shared.h"
 #include "res.h"
 #include "mini_g.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+#endif
 extern unsigned short PadData[];
 extern unsigned short PadData[];
 extern unsigned short PadData[];
@@ -375,6 +378,20 @@ static void RES_SoundEffectStop(int soundId)
     dprintf(D_00A0BBD8, soundId, soundEffectId);
     xglSoundEffectStopDirect(soundEffectId);
 }
+#ifdef PORT_HOST
+/* the mouse (port/docs/MOUSE.md): rows of a list (xsg_mouse_list); hover (once the pointer
+   moves) and a click select, a click also taps `confirm` (the screen's own button).  Returns the
+   new selection (sel when none); the caller plays its cursor sound on a change.  Choices laid out
+   freely go through xsg_mouse_rects. */
+static int xsgMiniList(int x, int y, int w, int pitch, int first, int visible, int count, int sel, unsigned confirm)
+{
+    int act;
+    const int ns = xsg_mouse_list(x, y, w, pitch, first, visible, count, sel, &act);
+    if (act)
+        xsg_mouse_tap(confirm);
+    return ns;
+}
+#endif
 
 /* ov11:0x00a00af0. Loads the casino resource table (CASINO.res) into the
  * fixed asset staging address and records it as ResData, the same
@@ -990,6 +1007,12 @@ static void SlCoinEntry(void)
     int off2;
     int i;
 
+#ifdef PORT_HOST
+    /* the mouse (port/docs/MOUSE.md): the side buttons raise / lower the bet (RIGHT / LEFT);
+       the wheel picks the line (UP / DOWN) and a left click spins (CIRCLE) through the fallback */
+    if (xsg_mouse_click(XSG_MB_FORWARD)) xsg_mouse_tap(XSG_PAD_RIGHT);
+    if (xsg_mouse_click(XSG_MB_BACK)) xsg_mouse_tap(XSG_PAD_LEFT);
+#endif
     if (((SlCoinPad *)PadData)->trg & 0x1000) {
         Gwork[0x44 / 4] = 0;
         if (--Gwork[0x3C / 4] < 0) {
@@ -1269,6 +1292,26 @@ static void slot_key(void)
 
     stopped = 0;
     pressed = 0;
+#ifdef PORT_HOST
+    {   /* the mouse (port/docs/MOUSE.md): Spin (spinbt_rect_6) while betting; while the reels run,
+           the reel that stops next (its window, slot_window_rect_1, or its STOP lamp, stopbt_rect_8);
+           a click there is CIRCLE.  While they run a click elsewhere does nothing. */
+        const int next = Gwork[0x38 / 4];
+        int on = 0;
+        if (Gwork[0x50 / 4] == 0) {
+            on = xsg_mouse_in(439, 155, 40, 88);
+        } else if (Gwork[0x50 / 4] == 1) {
+            xsg_mouse_capture();
+            on = next >= 0 && next < 3 && Gwork[0x20 / 4 + next] == 1 &&
+                 (xsg_mouse_in(80 + 120 * next, 50, 112, 200) || xsg_mouse_in(199 + 49 * next, 258, 16, 24));
+        }
+        if (on) {
+            xsg_mouse_hot();
+            if (xsg_mouse_click(XSG_MB_LEFT))
+                xsg_mouse_tap(XSG_PAD_CIRCLE);
+        }
+    }
+#endif
     switch (Gwork[0x50 / 4]) {
     case 0:
         if (PadData[0x2A / 2] & 0x40) {
@@ -2093,9 +2136,35 @@ static void NgGame_GetsDown(void)
     NgAllStop();
 }
 
+#ifdef PORT_HOST
+/* the mouse: the nine panels (NgReal_49, 96 x 64 around each), spin (rect_40), gets down (rect_38) */
+static const short xsgNgRect[11][4] = {{85, 50, 96, 64}, {208, 50, 96, 64}, {331, 50, 96, 64}, {97, 154, 96, 64},
+                                       {220, 154, 96, 64}, {343, 154, 96, 64}, {109, 258, 96, 64}, {232, 258, 96, 64},
+                                       {355, 258, 96, 64}, {439, 28, 40, 88}, {192, 356, 128, 48}};
+static void xsgNgPick(int key)   /* select: spin / gets down; key: the panels / gets down */
+{
+    short r[11][4];
+    int n;
+
+    memcpy(r, xsgNgRect, sizeof r);
+    if (key)
+        r[9][2] = 0;
+    else
+        for (n = 0; n < 9; n++)
+            r[n][2] = 0;
+    n = xsg_mouse_rects(r, 11, ((NgFwdWork *)Gwork)->cur);
+    if (n != ((NgFwdWork *)Gwork)->cur) {
+        ((NgFwdWork *)Gwork)->cur = n;
+        RES_SoundEffect(0x2E);
+    }
+}
+#endif
 static void NgGame_Select(void)
 {
     int i;
+#ifdef PORT_HOST
+    xsgNgPick(0);
+#endif
 
     if (PadData[0x2A / 2] & 0x5000) {
         Gwork[0xB4 / 4] = 0;
@@ -2141,6 +2210,9 @@ extern unsigned char waku_53[2][0x1C];
 static void NgGame_Key(void)
 {
     struct NgFwdEnt *e;
+#ifdef PORT_HOST
+    xsgNgPick(1);
+#endif
 
     if (PadData[0x2C / 2] & 0x8000) {
         ((NgFwdWork *)Gwork)->cur = ptmove_50[((NgFwdWork *)Gwork)->cur][0];
@@ -2417,6 +2489,15 @@ static int PoDialog(int type)
     if (type != 0) {
         max = 3;
     }
+#ifdef PORT_HOST
+    {   /* the choices: rows of 32 from y 270 (the cursor at x 379, type0_pos / type1_pos) */
+        const int n = xsgMiniList(379, 266, 124, 32, 0, max, max, dialog_cur_67 - 1, XSG_PAD_CIRCLE) + 1;
+        if (n != dialog_cur_67) {
+            dialog_cur_67 = n;
+            RES_SoundEffect(0x3C);
+        }
+    }
+#endif
     if (((PoDialogPad *)PadData)->trg & 0x1000) {
         dialog_cur_67--;
         RES_SoundEffect(0x3C);
@@ -2760,6 +2841,20 @@ extern short chgpos_95[2];
 static int PoKey(void)
 {
     short *flag;
+#ifdef PORT_HOST
+    {   /* the five cards with their HOLD marks (CardPos, PoSelecterPos) and the change button */
+        static const short r[6][4] = {{32, 37, 80, 155}, {124, 37, 80, 155}, {216, 37, 80, 155}, {308, 37, 80, 155},
+                                      {400, 37, 80, 155}, {220, 210, 80, 28}};
+        const int sel = mode_93 == 1 ? 5 : cur_92;
+        const int n = xsg_mouse_rects(r, 6, sel);
+        if (n != sel) {
+            RES_SoundEffect(0x3E);
+            mode_93 = n == 5;
+            if (n < 5)
+                cur_92 = n;
+        }
+    }
+#endif
 
     if (PadData[0x2A / 2] & 0x1000) {
         RES_SoundEffect(0x3E);
@@ -3885,6 +3980,17 @@ static int submenu_select(int windowId, int y, int x, int iconCount,
     cursor.width = 0x10;
     MakeSprite(Cursor_Tex[anm_100 % 8], &cursor);
     anm_100++;
+#ifdef PORT_HOST
+    {   /* the icons: x y + 0x34 (with the cursor left of them), y x + 0xC, 24 apart (the rect's
+           fields are x, y despite their names) */
+        const int n = xsgMiniList(y + 0x34 - 0x10, x + 0xC - 4, 0x48 + 0x10, 0x18, 0, iconCount, iconCount, *selected,
+                                  XSG_PAD_CIRCLE);
+        if (n != *selected) {
+            *selected = n;
+            RES_SoundEffect(5);
+        }
+    }
+#endif
     if (PadData[0x2C / 2] & 0x1000) {
         (*selected)--;
         RES_SoundEffect(5);
@@ -3961,6 +4067,16 @@ static int menu_mode(void)
 
     switch (menu_mode_103) {
     case 0:
+#ifdef PORT_HOST
+        {   /* the four pictures (the cursor sits at Cursor_Rect: exchange, slots, poker, exit) */
+            static const short r[4][4] = {{160, 88, 176, 160}, {36, 206, 180, 196}, {330, 206, 172, 196}, {226, 336, 70, 84}};
+            const int n = xsg_mouse_rects(r, 4, curpos_101);
+            if (n != curpos_101) {
+                curpos_101 = n;
+                RES_SoundEffect(n);
+            }
+        }
+#endif
         if (PadData[0x2A / 2] & 0x1000) {
             curpos_101 = 0;
             RES_SoundEffect(0);
@@ -4171,6 +4287,17 @@ static void coin_main(void)
   xglFontPrint(0, 0, 0, D_00A0C378);
   xglFontPrint(0x19A, 0xD0, 0xFF00, D_00A0C380);
   xglFontPrint(0, 0, 0xFF00, D_00A0C388);
+#ifdef PORT_HOST
+  {   /* the four rates (cursor at curpt_109, the text right of it) and "exit" */
+    static const short r[5][4] = {{240, 62, 240, 24}, {240, 86, 240, 24}, {240, 110, 240, 24}, {240, 134, 240, 24},
+                                  {384, 204, 100, 28}};
+    const int n = xsg_mouse_rects(r, 5, cur_108);
+    if (n != cur_108) {
+      cur_108 = n;
+      RES_SoundEffect(0xE);
+    }
+  }
+#endif
   if (PadData[0x2C / 2] & 0x1000)
   {
     RES_SoundEffect(0xE);
@@ -4426,6 +4553,15 @@ static void shop_main(void)
     }
     SetDrawStatus(3, 0);
     UtlCurPrint(216, cur_111 * 24 + 34);
+#ifdef PORT_HOST
+    {   /* the prizes: rows of 24 from y 32 (the cursor at x 216, the names at 240) */
+        const int n = xsgMiniList(216, 32, 280, 24, top_112, shown, MenuNum, top_112 + cur_111, XSG_PAD_CIRCLE);
+        if (n != top_112 + cur_111) {
+            cur_111 = n - top_112;
+            RES_SoundEffect(19);
+        }
+    }
+#endif
     if (SHOP_PAD.wide.repeat & 0x1000) {
         RES_SoundEffect(19);
         if (cur_111 == 0) {
@@ -4819,6 +4955,16 @@ static int VW_SamMode(int enable)
         if (D_00A0DD14 > 0) {
             xglFontPrint(0x140, (cur * 0x18) + 0x2E, 0xFF00, D_00A0C638);
         }
+#ifdef PORT_HOST
+        {   /* the titles: rows of 24 from y 40 (the mark at x 320); a click views (TRIANGLE) */
+            const int n = xsgMiniList(320, 40, 180, 24, ofs, D_00A0DD14 - ofs < 8 ? D_00A0DD14 - ofs : 8, D_00A0DD14,
+                                      ofs + cur, XSG_PAD_TRIANGLE);
+            if (n != ofs + cur) {
+                cur = n - ofs;
+                RES_SoundEffect(0x18);
+            }
+        }
+#endif
     }
     if (PadData[0x2C / 2] & 0x1000) {
         RES_SoundEffect(0x18);
