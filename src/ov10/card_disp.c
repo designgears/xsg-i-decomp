@@ -4,6 +4,9 @@
 #include "common.h"
 #include "shared.h"
 #include "ov10/cgp.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+#endif
 
 typedef struct CardHelpPackedVector {
     u64 words[2];
@@ -949,6 +952,60 @@ extern void CardDispTxtSub(u16 x, u16 y, unsigned char *text, u16 color);
 extern void CardDispTxtSub2(u16 x, u16 y, unsigned char *text);
 #define HELP_CUR(w) ((w)->helpTopic)
 
+#ifdef PORT_HOST
+/* The mouse (port/docs/MOUSE.md) in the help: the index's two lists (CardStrListDisp: rows of 25
+   from y; categories at x 6, titles at x 266): pointing selects, a click opens (CIRCLE), a click
+   on the other list goes there (CIRCLE / LEFT); on a page a left click turns to the next page
+   (R1), the wheel turns pages (R1 / L1). */
+static void xsgHelpList(CHPTitleList *l, int x, int w, int focused, unsigned other)
+{
+    int rows = l->count < l->limit ? l->count : l->limit, act, n;
+
+    if (rows <= 0 || !xsg_mouse_in(x, l->y, w, rows * 25))
+        return;
+    if (!focused) {
+        xsg_mouse_hot();
+        if (xsg_mouse_click(XSG_MB_LEFT))
+            xsg_mouse_tap(other);
+        return;
+    }
+    n = xsg_mouse_list(x, l->y, w, 25, 0, rows, rows, l->flagC, &act);
+    if (n != l->flagC) {
+        xglSoundEffectNormalID(3, 0);
+        l->flagC = (s8)n;
+        if (l == &D_00A578C8)
+            CHPTitleInitSub(&D_00A57B38, n);
+    }
+    if (act)
+        xsg_mouse_tap(XSG_PAD_CIRCLE);
+}
+static void xsgHelpMouse(CardGameWork *work)
+{
+    const XsgMouse *m = xsg_mouse();
+
+    if (!m->active || work->menuPlayer != 0)
+        return;
+    xsg_mouse_capture();
+    switch (work->helpState & 0xF0) {
+    case 0x10:
+        xsgHelpList(&D_00A578C8, 0, 260, 1, XSG_PAD_CIRCLE);
+        xsgHelpList(&D_00A57B38, 262, 250, 0, XSG_PAD_CIRCLE);
+        break;
+    case 0x20:
+        xsgHelpList(&D_00A578C8, 0, 260, 0, XSG_PAD_LEFT);
+        xsgHelpList(&D_00A57B38, 262, 250, 1, 0);
+        break;
+    case 0x30:
+        break;
+    default:
+        if (xsg_mouse_click(XSG_MB_LEFT))
+            xsg_mouse_tap(XSG_PAD_R1);
+        if (m->wheel != 0)
+            xsg_mouse_tap(m->wheel < 0 ? XSG_PAD_R1 : XSG_PAD_L1);
+        break;
+    }
+}
+#endif
 void CardHelpProc(CardGameWork *work)
 {
     Matrix4 m;
@@ -976,6 +1033,9 @@ void CardHelpProc(CardGameWork *work)
         dirs = work->command.input[1].directions;
     }
 
+#ifdef PORT_HOST
+    xsgHelpMouse(work);
+#endif
     switch (work->helpState & 0xF0) {
     case 0x30:
         CHPMenuInitSub(&D_00A578C8, &D_00A57B38);

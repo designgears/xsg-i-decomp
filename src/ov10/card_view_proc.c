@@ -254,6 +254,17 @@ extern void nmlModelEntryCard(void *model);
 extern float CCColor[4][4];
 extern float asDir[4][4];
 
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+/* The mouse (port/docs/MOUSE.md): the card-pack screen's 3D models carry object ids (the native
+   renderer's picking): the opened cards 65 + i (up to 180 of them), the pack 254, the arrows 252
+   (next) / 253 (prev). */
+#define XSG_OPEN_CARD_ID XSG_OBJ_FIRST
+#define XSG_OPEN_CARD_MAX 180
+#define XSG_OPEN_PACK_ID 254
+#define XSG_OPEN_NEXT_ID 252
+#define XSG_OPEN_PREV_ID 253
+#endif
 void COPCardDispSub(int flag, int unused, float (*src)[4], short *cards, unsigned char count, int sel)
 {
     float mat[4][4];
@@ -264,8 +275,25 @@ void COPCardDispSub(int flag, int unused, float (*src)[4], short *cards, unsigne
     float step = 3.9757f / (float)(n - 1);
 
     trans[1] = trans[2] = 0.0f;
+#ifdef PORT_HOST
+    if (flag != 0 && n > 0 && n <= XSG_OPEN_CARD_MAX) {   /* browsing: the card under the pointer becomes the one shown,
+                                              a click on it is CIRCLE (done) */
+        extern int D_00A578C4;
+        static int ids[XSG_OPEN_CARD_MAX];
+        for (i = 0; i < n; i++)
+            ids[i] = XSG_OPEN_CARD_ID + i;
+        i = xsg_mouse_object_pick(ids, n, sel);
+        if (i != sel) {
+            D_00A578C4 = i;
+            xglSoundEffectNormalID(3, 0);
+        }
+    }
+#endif
     if (n != 0) {
         for (i = 0; i < n; i++) {
+#ifdef PORT_HOST
+            if (i < XSG_OPEN_CARD_MAX) xsg_mouse_object_begin(XSG_OPEN_CARD_ID + i);
+#endif
             trans[0] = step * (float)i + -1.98785f;
             trans[2] = (float)(i + 1) * 0.015f;
             if (i == sel) {
@@ -288,6 +316,9 @@ void COPCardDispSub(int flag, int unused, float (*src)[4], short *cards, unsigne
                 CardDispCard(mat, cards[i], 1);
             }
         }
+#ifdef PORT_HOST
+        xsg_mouse_object_end();
+#endif
         if (flag != 0) {
             trans[1] = 1.4f;
             trans[2] = 0.01f;
@@ -648,6 +679,25 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
         xglFontPrint(146, 336, CARD_TEXT_COLOR, packDigits);
         xglFontPrint(130, 336, CARD_TEXT_COLOR, ""); /* the original prints an empty string here too (0x00a1d154, string at 0x00a4dca8) */
         xglFontPrint(120, 288, CARD_TEXT_COLOR, "\v");
+#ifdef PORT_HOST
+        {   /* the pack (a click opens it: CIRCLE) and the arrows (a click is RIGHT / LEFT) */
+            const XsgMouse *m = xsg_mouse();
+            if (m->active) {
+                const int hit = m->pick == XSG_OPEN_PACK_ID || (D_00A578B8 != 1 && (m->pick == XSG_OPEN_NEXT_ID ||
+                                                                                     m->pick == XSG_OPEN_PREV_ID)) ? m->pick : 0;
+                xsg_mouse_capture();
+                xsg_mouse_hoverable(XSG_OPEN_PACK_ID - 1);
+                xsg_mouse_hoverable(XSG_OPEN_NEXT_ID - 1);
+                xsg_mouse_hoverable(XSG_OPEN_PREV_ID - 1);
+                xsg_mouse_outline(-1, hit ? hit - 1 : -1);
+                if (hit) {
+                    xsg_mouse_hot();
+                    if (xsg_mouse_click(XSG_MB_LEFT))
+                        xsg_mouse_tap(hit == XSG_OPEN_PACK_ID ? XSG_PAD_CIRCLE : hit == XSG_OPEN_NEXT_ID ? XSG_PAD_RIGHT : XSG_PAD_LEFT);
+                }
+            }
+        }
+#endif
         if (D_00A578B8 != 1) {
             if (work->command.input[0].pressed & CARD_OPEN_PAD_NEXT) {
                 xglSoundEffectNormalID(CARD_SE_CURSOR, 0);
@@ -666,6 +716,9 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
             xglMatrixTrans(placement, cardMatrix, cardOffset);
             nmlModelSetPlace(placement);
             nmlModelSetTexture(CARD_CURSOR_TEXTURE);
+#ifdef PORT_HOST
+            xsg_mouse_object_begin(XSG_OPEN_NEXT_ID);
+#endif
             nmlModelEntryCard(CARD_CURSOR_R_MODEL);
             cardOffset[1] = 0.6271f;
             cardOffset[2] = 0.6271f;
@@ -673,6 +726,9 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
             xglMatrixTrans(placement, cardMatrix, cardOffset);
             nmlModelSetPlace(placement);
             nmlModelSetTexture(CARD_CURSOR_TEXTURE);
+#ifdef PORT_HOST
+            xsg_mouse_object_begin(XSG_OPEN_PREV_ID);
+#endif
             nmlModelEntryCard(CARD_CURSOR_L_MODEL);
         }
         if (work->command.input[0].pressed & CARD_PAD_OK) {
@@ -694,7 +750,13 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
         xglMatrixRotY(placement, placement, rotval_7);
         nmlModelSetPlace(placement);
         nmlModelSetTexture(CARD_PACK_TEXTURE);
+#ifdef PORT_HOST
+        xsg_mouse_object_begin(XSG_OPEN_PACK_ID);
+#endif
         nmlModelEntry(packModel);
+#ifdef PORT_HOST
+        xsg_mouse_object_end();
+#endif
         break;
     case CARD_OPEN_STEP_OPENING:
         CardFadeOut(work);

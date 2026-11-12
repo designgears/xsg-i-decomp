@@ -6,6 +6,9 @@
 #include "common.h"
 #include "shared.h"
 #include "card_play_sound1.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+#endif
 
 struct CardSoundPath {
     char name[34];
@@ -1495,6 +1498,16 @@ s32 CardMainProc(CardGameWork *work) {
                 xglFontDebugPrintf(0x54, 0, "Menu");
                 previousFase = work->fase;
                 CardFadeIn(work);
+#ifdef PORT_HOST
+                /* the mouse (port/docs/MOUSE.md): the buttons as drawn below, rows 37 apart (their
+                   text at x 222 from y 140); an open submenu's at x 360 (Game from y 122, Card 194, Help 232) */
+                if (SubNo_2 < 0) {
+                    MenuNo_1 = xsg_mouse_grid_pick(171, 136, 171, 37, 1, 0, 4, 4, MenuNo_1);
+                } else if (MenuNo_1 >= 0 && MenuNo_1 < 3) {
+                    static const short first[3] = {118, 190, 228}, count[3] = {4, 3, 2};
+                    SubNo_2 = xsg_mouse_grid_pick(344, first[MenuNo_1], 168, 37, 1, 0, count[MenuNo_1], count[MenuNo_1], SubNo_2);
+                }
+#endif
                 if (SubNo_2 < 0) {
                     if (PadData[0].prefix.half_2a & 0x1000) {
                         MenuNo_1--;

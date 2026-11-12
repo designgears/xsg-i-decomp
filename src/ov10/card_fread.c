@@ -352,6 +352,105 @@ typedef struct {
     s16 num;
     struct { s16 id; s16 pad; } ent[1];
 } CardListWin;
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+extern void xglSoundEffectNormalID(int id, int arg);
+/* The mouse (port/docs/MOUSE.md): a list window as its Disp function draws it (rows `pitch`
+   apart from y; the active window's cursor is sel, an inactive one's has 0x80 set).  Pointing
+   at a row moves the cursor there (hover, once the pointer moves), a click also taps CIRCLE; a
+   click on the inactive window switches to it (LEFT / RIGHT, as the pad does). */
+static void xsgCardListMouse(CardListWin *w, int pitch, int width)
+{
+    int vis = w->num - w->top, act, n;
+
+    if (vis > w->count)
+        vis = w->count;
+    if (!xsg_mouse()->active || vis <= 0)
+        return;
+    if (w->sel & 0x80) {
+        if (xsg_mouse_in(w->x - 4, w->y, width, vis * pitch)) {
+            xsg_mouse_hot();
+            if (xsg_mouse_click(XSG_MB_LEFT))
+                xsg_mouse_tap(w->x < 256 ? XSG_PAD_LEFT : XSG_PAD_RIGHT);
+        }
+        return;
+    }
+    if (!xsg_mouse_in(w->x - 4, w->y, width, vis * pitch))
+        return;   /* elsewhere a click stays the screen's CIRCLE (its prompts) */
+    n = xsg_mouse_list(w->x - 4, w->y, width, pitch, 0, vis, vis, w->sel, &act);
+    if (n != w->sel) {
+        w->sel = (s8)n;
+        xglSoundEffectNormalID(3, 0);
+    }
+    if (act)
+        xsg_mouse_tap(XSG_PAD_CIRCLE);
+}
+/* The board's cards carry their cursor target (cgp.c CGPCursor2Pos: zone 0..9, index) as object
+   ids for the native renderer's picking (port/docs/MOUSE.md); the callers end the tagging. */
+#define XSG_CARD_TAG(zone, index) xsg_mouse_object_begin(XSG_OBJ_FIRST + (zone) * 16 + (index))
+extern volatile unsigned xsg_frame;
+/* The hand strip of the play / discard prompts (CGCPHandDispSub2 below the board, CGCPHandDispSub3
+   above it when the 2P table is turned): its cards carry object ids XSG_STRIP_ID + i; without
+   them (no native renderer) Sub2's cards are hit as drawn, card i from x 5 + i * 290 / (n - 1),
+   47 wide, y 377..447.  Only the strip pad 1 drives (Sub2 unturned, Sub3 turned: rotStageId).
+   Pointing (hover) or a click on another card walks the selection there with RIGHT / LEFT taps,
+   one at a time (each caller moves its own selection with the pad; which way RIGHT goes depends
+   on the caller and the turn, so it is learnt from the last tap); a click on the selected card
+   is CIRCLE.  The cards are outlined like battle units. */
+#define XSG_STRIP_ID 225
+extern CardGameWork D_00A4FA10;
+static void xsgCardStripMouse(int n, int sel, int turned)
+{
+    static int target = -1, tapSel = -1, tapRight, rightDown;
+    static unsigned last;
+    const XsgMouse *m = xsg_mouse();
+    int step, i = -1;
+
+    if (!m->active || n <= 0 || n > 30 || sel < 0 || sel >= n || (D_00A4FA10.rotStageId != 0) != turned)
+        return;
+    xsg_mouse_capture();
+    for (step = 0; step < n; step++)
+        xsg_mouse_hoverable(XSG_STRIP_ID + step - 1);
+    if (m->pick > 0) {
+        if (m->pick >= XSG_STRIP_ID && m->pick < XSG_STRIP_ID + n)
+            i = m->pick - XSG_STRIP_ID;
+    } else if (m->pick < 0 && !turned) {
+        step = n < 2 ? 145 : 290 / (n - 1);
+        if (xsg_mouse_in(0, 377, 5 + step * (n - 1) + 52, 70)) {
+            i = (m->x - 5) / step;
+            if (i < 0) i = 0;
+            if (i > n - 1) i = n - 1;
+        }
+    }
+    xsg_mouse_outline(XSG_STRIP_ID + sel - 1, i >= 0 && i != sel ? XSG_STRIP_ID + i - 1 : -1);
+    if (i < 0) {
+        target = -1;
+        return;
+    }
+    xsg_mouse_hot();
+    if (xsg_mouse_click(XSG_MB_LEFT)) {
+        if (i == sel) xsg_mouse_tap(XSG_PAD_CIRCLE);
+        else target = i;
+    } else if (m->moved && m->hover && i != sel) {
+        target = i;
+    }
+    if (target == sel) target = -1;
+    if (tapSel >= 0 && sel != tapSel) {   /* what the last tap did (a jump of more than half wrapped) */
+        step = sel - tapSel;
+        if (step > n / 2 || step < -(n / 2)) step = -step;
+        rightDown = tapRight ? step < 0 : step > 0;
+        tapSel = -1;
+    }
+    if (target >= 0 && xsg_frame - last >= 10) {   /* a tap lasts four reads; the logic may run every other vblank */
+        if (tapSel >= 0)   /* the last tap did nothing (an end that does not wrap): the other way */
+            rightDown ^= 1;
+        tapRight = (target > sel) != rightDown;
+        tapSel = sel;
+        last = xsg_frame;
+        xsg_mouse_tap(tapRight ? XSG_PAD_RIGHT : XSG_PAD_LEFT);
+    }
+}
+#endif
 
 extern void xglFontPrint(int x, int y, int color, const char *text);
 
@@ -383,6 +482,9 @@ void CardDeckDisp(CardListWin *w, CardListInfo *info)
     int off;
     char *name;
 
+#ifdef PORT_HOST
+    xsgCardListMouse(w, 25, w->len * 10 + 34);
+#endif
     i = 0;
     xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D140);
     for (; i < w->count; i++) {
@@ -2579,6 +2681,9 @@ void CardListDisp(CardListWin *w, CardListSrc *src)
     int off;
     char *name;
 
+#ifdef PORT_HOST
+    xsgCardListMouse(w, 25, w->len * 10 + 34);
+#endif
     i = 0;
     info = src->info;
     xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D500);
@@ -2636,6 +2741,9 @@ void CardDeckListDisp(CardListWin *w)
     int i;
     char *src;
 
+#ifdef PORT_HOST
+    xsgCardListMouse(w, 0x18, 220);
+#endif
     i = 0;
     xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D518);
     buf[0] = 0x19;
@@ -2846,6 +2954,10 @@ void CardPlayDispBattle(s32 side, CardGameWork *work, CardPlaySide *ownSide, Mat
     stackScale[2] = 1.0f;
 
     for (i = 0; i < CARD_BOARD_SLOTS; i++) {
+#ifdef PORT_HOST
+        if (side == 0) XSG_CARD_TAG(5 + i / 2 * 2, 1 + i % 2);
+        else XSG_CARD_TAG(3 - i / 2 * 2, 2 - i % 2);
+#endif
         if (ownSide->battle[i].battle.layers[0].cardId >= 0) {
             if (ownSide->battle[i].battle.moveFrames != 0) {
                 ownSide->battle[i].battle.moveFrames--;
@@ -3156,6 +3268,10 @@ void CardPlayDispHand(int mode, int rot, CardHand *hand, float (*place)[4])
     scale[0] = 0.175f;
     scale2[0] = 1.0f;
     for (i = 0; i < n; i++) {
+#ifdef PORT_HOST
+        if (mode == 0) XSG_CARD_TAG(9, i);
+        else XSG_CARD_TAG(0, ((CardHandMoveView *)hand)->mv[i].state != 0 ? i : n - i - 1);
+#endif
         if (((CardHandMoveView *)hand)->mv[i].timer != 0) {
             ((CardHandMoveView *)hand)->mv[i].timer--;
             ((CardHandMoveView *)hand)->mv[i].pos[0] += ((CardHandMoveView *)hand)->mv[i].vel[0];
@@ -3392,6 +3508,10 @@ void CardPlayDispDispose(int unused, CardPlaySide *side, float (*place)[4])
   scale2[2] = 1.0f;
   for (i = 0; i < 4; i++)
   {
+#ifdef PORT_HOST
+    if (unused == 0) XSG_CARD_TAG(5 + i, 0);
+    else XSG_CARD_TAG(4 - i, 3);
+#endif
     sl = &((DispSideView *) side)->d[i];
     if ((&((DispSideView *) side)->d[i])->cardId >= 0)
     {
@@ -3518,6 +3638,10 @@ void CardPlayDispOperation(int unused, CardPlaySide *side, float (*place)[4])
     scale[3] = 1.0f;
     scale[2] = 1.0f;
     for (i = 0; i < 4; i++) {
+#ifdef PORT_HOST
+        if (unused == 0) XSG_CARD_TAG(5 + i, 3);
+        else XSG_CARD_TAG(4 - i, 0);
+#endif
         if (side->operations[i] < 0) {
             continue;
         }
@@ -4177,6 +4301,9 @@ void CGCPHandDispSubCore(CardHand *hand, int sel, float (*place)[4], int side)
     scale2[1] = 0.5f;
     scale2[3] = 1.0f;
     for (; i < n; i++) {
+#ifdef PORT_HOST
+        XSG_CARD_TAG(side ? 0 : 9, i);
+#endif
         f = (float)i;
         trans[0] = win0pos[0] + step * f;
         trans[2] = win0pos[2] + f * 0.015f;
@@ -4192,6 +4319,9 @@ void CGCPHandDispSubCore(CardHand *hand, int sel, float (*place)[4], int side)
             CardDispCard(mat, hand->cards[i], 1);
         }
     }
+#ifdef PORT_HOST
+    xsg_mouse_object_end();
+#endif
     nmlModelSetTexture((char *)0x01DB5800);
     nmlModelSetPlace(place);
     nmlModelEntryCard((void *)0x01DA0000);
@@ -4359,6 +4489,9 @@ void CGCPHandDispSub3(CardDefinition *definitions, CardHand *hand, int selected,
     xglMatrixTrans(base, base, trans);
     xglMatrixScale(base, base, scale1);
     n = CardPlayHandCnt(hand);
+#ifdef PORT_HOST
+    xsgCardStripMouse(n, selected, 1);
+#endif
     if (n < 2) {
         step = (NewWin0pos[9] - NewWin0pos[6]) * 0.5f;
     } else {
@@ -4405,6 +4538,9 @@ void CGCPHandDispSub3(CardDefinition *definitions, CardHand *hand, int selected,
         mat[3][0] = tmp[3][0];
         mat[3][1] = tmp[3][1];
         mat[3][2] = tmp[3][2];
+#ifdef PORT_HOST
+        if (i < 30) xsg_mouse_object_begin(XSG_STRIP_ID + i);
+#endif
         if (((CardHandMoveView *)hand)->mv[i].state == 0 && ((CardHandMoveView *)hand)->mv[i].timer == 0) {
             if (i == selected) {
                 xglMatrixScale(mat, mat, scale2);
@@ -4427,6 +4563,9 @@ void CGCPHandDispSub3(CardDefinition *definitions, CardHand *hand, int selected,
             }
         }
     }
+#ifdef PORT_HOST
+    xsg_mouse_object_end();
+#endif
     nmlModelSetPlace(base);
     nmlModelSetLight(CNColor, asDir);
     nmlModelSetTexture((char *)0x019B0000);
@@ -4466,6 +4605,9 @@ void CGCPHandDispSub2(CardDefinition *definitions, CardHand *hand, int selected,
     xglMatrixTrans(base, base, trans);
     xglMatrixScale(base, base, scale1);
     n = CardPlayHandCnt(hand);
+#ifdef PORT_HOST
+    xsgCardStripMouse(n, selected, 0);
+#endif
     if (n < 2) {
         step = (NewWin0pos[3] - NewWin0pos[0]) * 0.5f;
     } else {
@@ -4512,6 +4654,9 @@ void CGCPHandDispSub2(CardDefinition *definitions, CardHand *hand, int selected,
         mat[3][0] = tmp[3][0];
         mat[3][1] = tmp[3][1];
         mat[3][2] = tmp[3][2];
+#ifdef PORT_HOST
+        if (i < 30) xsg_mouse_object_begin(XSG_STRIP_ID + i);
+#endif
         if (((CardHandMoveView *)hand)->mv[i].state == 0 && ((CardHandMoveView *)hand)->mv[i].timer == 0) {
             if (i == selected) {
                 xglMatrixScale(mat, mat, scale2);
@@ -4534,6 +4679,9 @@ void CGCPHandDispSub2(CardDefinition *definitions, CardHand *hand, int selected,
             }
         }
     }
+#ifdef PORT_HOST
+    xsg_mouse_object_end();
+#endif
     v = n / 10;
     trans[1] = -0.005f;
     trans[2] = 0.0f;

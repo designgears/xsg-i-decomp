@@ -5,6 +5,9 @@
  */
 #include "common.h"
 #include "cgp.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+#endif
 
 typedef struct CGPCursorPosition {
     s16 zone;
@@ -2964,6 +2967,22 @@ s32 CGPCursorMove2(s32 flag, CardGameWork *work)
             break;
         }
     } else {
+#ifdef PORT_HOST
+        if (flag == 0) {   /* the mouse (port/docs/MOUSE.md): the card under the pointer by its object id
+                              (card_fread.c XSG_CARD_TAG: zone * 16 + index), picked like a battle unit */
+            static int ids[160];
+            int k, sel = work->cursorZone * 16 + work->cursorIndex;
+            for (k = 0; k < 160; k++)   /* the board's index runs 0..3 (CGPCMSub), the hands' on */
+                ids[k] = (k % 16 < 4 || k / 16 == 0 || k / 16 == 9) ? XSG_OBJ_FIRST + k : 0;
+            if (sel < 0 || sel >= 160) sel = -1;
+            k = xsg_mouse_object_pick(ids, 160, sel);
+            if (k != sel && k >= 0) {
+                work->cursorZone = (s16)(k / 16);
+                work->cursorIndex = (s16)(k % 16);
+                xglSoundEffectNormalID(3, 0);
+            }
+        }
+#endif
         if (pressed & 0xF000) {
             xglSoundEffectNormalID(3, 0);
         }
@@ -8447,6 +8466,9 @@ s32 CardGameProc(s32 mode, CardListWindow *window, CardGameWork *work, s32 round
     CardPlayDispBattle(0, work, &work->player, matrix.m);
     CardPlayDispDispose(0, &work->player, matrix.m);
     CardPlayDispOperation(0, &work->player, matrix.m);
+#ifdef PORT_HOST
+    xsg_mouse_object_end();   /* the cards above carry their cursor targets (card_fread.c XSG_CARD_TAG) */
+#endif
     CardPlayDispYama(0, &work->player, matrix.m);
     CardPlayDispSute(0, &work->player, matrix.m);
     CardPlayDispJunk(0, &work->player, matrix.m);
@@ -8539,6 +8561,9 @@ s32 CardGameProc(s32 mode, CardListWindow *window, CardGameWork *work, s32 round
     CardPlayDispBattle(1, work, &work->enemy, matrix.m);
     CardPlayDispDispose(1, &work->enemy, matrix.m);
     CardPlayDispOperation(1, &work->enemy, matrix.m);
+#ifdef PORT_HOST
+    xsg_mouse_object_end();   /* the cards above carry their cursor targets (card_fread.c XSG_CARD_TAG) */
+#endif
     CardPlayDispYama(1, &work->enemy, matrix.m);
     CardPlayDispSute(1, &work->enemy, matrix.m);
     CardPlayDispJunk(1, &work->enemy, matrix.m);
