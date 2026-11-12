@@ -27,7 +27,7 @@ and is checked in §7; a reverb work-area bug that put a stuck tone over it was 
 | `XSG_AUDIO=0` | no ALSA output (the driver still runs; useful with `XSG_WAV`) |
 | `XSG_SOUND_LOG=1` | log every EE → IOP command (with audio time), the driver's own printf, and a status line every 5 s |
 | `XSG_SOUND_LOG=2` | also dump every active voice (phase, envelope, pitch, ADSR, volume, addresses, NOISE/PMOD/wet) every 5 s |
-| `XSG_SOUND_CLOCK=real` | run the IOP on wall-clock time instead of the game clock (see §4) |
+| `XSG_SOUND_CLOCK=auto\|game\|real` | the IOP clock (see §4): `auto` (default) real time, held back only to keep a VAG stream fed; `game` paced by the EE's vblanks; `real` wall clock, never held |
 | `XSG_SPU_TRACE=dir` | at each key-on (first 256), dump the sample being played to `dir/kNNN_cC_vVV_pPITCH_aADDR.adpcm` and log the time |
 
 ## 1. The sound driver
@@ -166,27 +166,65 @@ samples = 0.3411 s) with nothing before it, and a 1 kHz tone through the FIR and
 line comes out at 1.000 of the dry level. Cost: 10 s of audio with all 48
 voices and reverb on both cores takes 0.33 s of CPU (3.3 % of a core).
 
-**Clock and output.** The EE starts sounds and feeds streams once per game frame, so the IOP
-clock must not run ahead of the game. By default it renders at most `(vblanks + 2) × 800`
-samples, and never more than real time. With the game at full speed (60 vblanks/s) this is
-real time. When the game runs slower, as headless cutscenes do here (~30 % of real time,
-the same with sound off), the sound slows down with it at the correct pitch, instead of the
-streams underflowing. Before this gate, the cutscene stream got 9.2 data blocks/s against
-13.3 needed. After it, the feed is 1 block per 2 IRQs, which is exactly the driver's cadence.
-ALSA (`audio.c`'s dlopen loader, now shared: `xsg_alsa_open/write/avail`) is opened
-non-blocking with a 250 ms buffer. A full device drops samples, an xrun is recovered, and the
-render amount is nudged ±8 frames per tick to keep the queue near a target against the device's
-clock drift. The game never waits on audio.
+**Clock and output (2026-11-13: `[debug] sound_clock = auto`, the default).** The IOP runs
+at real time: each 2 ms tick renders what tops the output queue up to its target (xsg-gpu's
+ring, 40 ms, 100 ms while a VAG stream plays; ALSA, 60 ms), so the device's clock paces the IOP and no drift nudge is needed.
+It is held back only where a slow EE would really be heard: a **VAG stream** (scene voice/BGM,
+movie audio, the game-over theme) that the EE feeds once per game frame
+(`xglSoundStreamMain`, `xglMpeg2Play`: one 4 KiB block when `value >> 8`, RSSD's free ring
+slots, is non-zero). The SPU plays each channel from 2 × 1 KiB in sound RAM; the SPU2 IRQ at
+IRQA DMAs the next 1 KiB from SSD's double buffer, and every `half_blocks` IRQs
+(`completed_blocks` 0 or `half_blocks`) `SsdVagStreamSpuTransfer` calls RSSD's
+`SsdEEVagStreamCallback*`, which refills the other half from RSSD's ring (`OutRingBuffer`).
+An empty ring there is the only point a stream starves: that half is played as silence, and two
+in a row send the EE "stream end" (0x0a). So `on_irq` checks exactly that: a refill IRQ while
+the stream is transferring (`SsdVagStrWork.flags & 0x20`, status 1, not suspended) and an
+active RSSD channel (`RssdStrWork.vag[i].active`) has `ring->count == 0`. Such an IRQ is
+**held**: the render stops at that sample (all voices, so everything stays in step) until
+the EE has put a block in the ring, then the IRQ is delivered; the held tick costs at most 2 ms
+of the ~37 ms the SPU still has queued after an IRQ. The ring cushion absorbs short holds, so
+the listener hears real time unless the EE is slower than the stream for long. If the EE goes
+4 vblanks or 500 ms without feeding (stream end, a load), the IRQ goes through and the stream
+drains as on a PS2 (until it gets data again). With no stream, nothing holds the IOP: music
+and sound effects keep playing through a stall, like the real IOP. Status line counters:
+`starved refills` (refills that found the ring empty: silence in the stream), `holds`,
+`s held`, `let drain`. The checks read `SsdVagStrWork` / `RssdStrWork` through mirrored
+layouts in iop_sound.c (checked by `_Static_assert` and against the build's debug info).
 
-**Live output when the game is slow.** Because the clock is gated, a slow game would run the
-device dry (xruns: hard gaps with clicks). Now, when the gate held the IOP back and less than
-20 ms is queued, the gap is filled with the last output sample decaying to zero (×0.98 per
-sample, ~1 ms), and the next real audio ramps in over 2 ms. Each fill raises the target queue
-by 20 ms (60 → at most 200 ms) and it relaxes by 1 ms per second, so a game that stutters
-gets a bigger cushion and one at full speed returns to low latency. Only the device sees the
-filler; `XSG_WAV` stays in game time. Measured on the headless KOS-MOS cutscene (~40 % speed,
-`XSG_AUDIO=1`, 60 s): **0 underruns** (before: an xrun at nearly every frame), 408 filled
-gaps, 1 drop of 800 frames at start-up. The status line reports the filler.
+`sound_clock = game` keeps the old gate: the IOP renders at most `(vblanks + 8) × 800`
+samples, so everything slows down with the game at the correct pitch and the device runs
+dry (the decaying filler below). `real` never holds; streams underflow when the EE feeds
+them slower than they play. Before the game clock existed, the headless cutscene's stream got
+9.2 data blocks/s against 13.3 needed; that is the case `auto` holds for.
+
+Measured (2026-11-13, windowed on ws9, xsg-gpu output, 100 s each; another process was
+profiling the renderer at the same time):
+
+| run | clock | game speed | xsg-gpu underruns | starved stream refills | WAV dropouts (≥20 ms silence inside sound) |
+|---|---|---|---|---|---|
+| battle_fx, max settings | game | ~50 v/s | 1045 | 0 | 0 (the whole mix slowed instead) |
+| battle_fx, max settings | real | ~50 v/s | 0 | 0 | 0 |
+| battle_fx, max settings | auto | ~50 v/s | 0 after start-up (1 in the first 600 vsyncs, as with game) | 0 | 0 |
+| New Game → SCE01001 (voiced), `frame_us = 41667` | game | 24 v/s (40 %) | 885 | 34 | 12 (0.9 s) |
+| same | real | 24 v/s | 0 | 122 | 105 (7.7 s) |
+| same | auto | 24 v/s | 0 (7 with a 40 ms cushion) | 0 (538 holds, 9.4 s held, 0 let drain) | 0 |
+
+The stream holds show up as held time, not as gaps: the IOP waits for the EE's next block,
+and the ring (100 ms while a stream plays, `RING_STREAM_MS`, else 40 ms) covers the wait.
+Note for `game`: an unthrottled start (`fast_until`) banks the vblanks it ran ahead of real time
+as slack (≈1000 vblanks for `fast_until = 1400`), so the gate only engages minutes later; the
+battle row above ran without `fast_until`.
+
+ALSA (`gs = soft`, `audio.c`'s dlopen loader, `xsg_alsa_open/write/avail`) is opened
+non-blocking with a 250 ms buffer. A full device drops samples, an xrun is recovered, and the
+game never waits on audio.
+
+**Gaps.** When the IOP is held back (game clock, or a stream hold longer than the
+cushion) the device would run dry. xsg-gpu fills its own starved pulls (below). On ALSA,
+when the IOP was held and less than 20 ms is queued, the gap is filled with the last output
+sample decaying to zero (×0.98 per sample, ~1 ms) and the next real audio ramps in over 2 ms;
+each fill raises the ALSA target by 20 ms (60 → at most 200 ms), relaxing by 1 ms per second.
+Only the device sees the filler; `XSG_WAV` records IOP time.
 
 ## 5. Verification without ears
 
@@ -304,9 +342,9 @@ game process.  It renders the same 48 kHz stereo mix into a shared ring (`gpu_ip
 SDL3 audio stream: PipeWire, PulseAudio or ALSA, whichever SDL picks, on the default device.
 
 * **Pull model.** SDL's audio thread takes frames from the ring at the device's pace, so a
-  stalled render loop does not stall the sound.  The game steers how much it renders by the
-  ring's fill (about 40 ms queued, `RING_TARGET_MS`), which locks the two clocks without resampling.
-* **Gaps.** If the game itself stalls past the buffer, the device holds the last sample, decaying
+  stalled render loop does not stall the sound.  The game renders what tops the ring up to
+  40 ms (`RING_TARGET_MS`) every 2 ms, which locks the two clocks without resampling.
+* **Gaps.** If the IOP is held back past the buffer (§4), the device holds the last sample, decaying
   to silence (about 1 ms), and ramps the sound back in over 2 ms.  xsg-gpu's 600-vsync log line
   counts these as "audio underruns".
 * `gs = soft` keeps the ALSA path described above.  `[debug] wav` still records game time.

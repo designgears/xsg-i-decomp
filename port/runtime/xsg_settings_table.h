@@ -150,7 +150,8 @@ XSG_SETTING("debug.prof_hz", "XSG_PROF_HZ", "", 0, 0, "Profiler rate (empty: 100
 /* ---- debug: sound */
 XSG_SETTING("debug.sound_log", "XSG_SOUND_LOG", "", 0, 0, "Sound driver log level.")
 XSG_SETTING("debug.spu_trace", "XSG_SPU_TRACE", "", 0, 0, "SPU2 trace folder.")
-XSG_SETTING("debug.sound_clock", "XSG_SOUND_CLOCK", "game", "game|real", 0, "IOP sound clock source.")
+XSG_SETTING("debug.sound_clock", "XSG_SOUND_CLOCK", "auto", "auto|game|real", 0,
+            "IOP sound clock: auto = real time, held back only to keep a stream fed; game = vblanks; real = wall clock.")
 XSG_SETTING("debug.wav", "XSG_WAV", "", 0, 0, "Record the mix to this WAV file.")
 /* ---- debug: native renderer (xsg-gpu) */
 XSG_SETTING("debug.native_vu1", "XSG_GPU_NATIVE_VU1", "0", "0|1", 0, "Native renderer: interpret VU1 programs.")

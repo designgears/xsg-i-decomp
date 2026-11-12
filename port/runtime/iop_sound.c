@@ -22,8 +22,10 @@
  * The audio thread is the IOP's clock: every 2 ms of real time it fires the
  * SPU2 DMA-completion interrupts, then renders the SPU2 in steps up to each
  * hard-timer expiry (the driver's 2 ms SsdMainInterruptProcess tick:
- * sequencer, envelopes, fades), and writes the samples to ALSA (never
- * blocking: a full device drops, an underrun recovers) and to XSG_WAV.
+ * sequencer, envelopes, fades), as much as tops the output queue up (xsg-gpu's
+ * ring, or ALSA, never blocking), and records XSG_WAV.  It is held back only to
+ * keep a VAG stream fed (sound_clock = auto, see "stream hold") or, with
+ * sound_clock = game, to stay within 8 vblanks of the EE.
  *
  * XSG_SOUND=0 falls back to the Stage 4 model (no driver, iop.c acks).
  */
@@ -67,8 +69,11 @@ static int use_ring, ring_live;
 static volatile unsigned long long rendered;
 static unsigned long long alsa_dropped, alsa_underruns;
 static unsigned stream_blocks, stream_irqs; /* 0xb5 data commands, SPU2 IRQs */
-static int game_clock = 1;
-static unsigned long long clock_waits; /* ticks the game clock held the IOP back */
+/* [debug] sound_clock (§4 of STAGE10_SOUND.md): auto = real time, held only at a VAG
+ * stream IRQ that would find no data; game = at most 8 vblanks ahead of the EE; real */
+enum { CLOCK_AUTO, CLOCK_GAME, CLOCK_REAL };
+static int sound_clock = CLOCK_AUTO;
+static unsigned long long clock_waits; /* ticks the game clock or a stream hold kept the IOP back */
 static int log_on;
 static int started;
 
@@ -295,11 +300,122 @@ static int trans_pending[2];
 static int (*spu2_handler)(int, void *);
 static void *spu2_handler_arg;
 
+/* ---- stream hold (sound_clock = auto) --------------------------------
+ * A VAG stream (cutscene voices, movie audio, the game-over theme) is fed by the EE once
+ * per game frame (xglSoundStreamMain / xglMpeg2Play: one 4 KiB block when RSSD's ring
+ * has room).  The SPU plays it from a 2 x 1 KiB buffer per channel; the SPU2 IRQ at each
+ * 1 KiB (IRQA) DMAs the next block from SSD's double buffer, and every `half_blocks` IRQs
+ * SsdVagStreamSpuTransfer calls RSSD's callback, which refills that half from the ring.
+ * An empty ring there means silence, and two in a row tell the EE the stream has ended
+ * (0x0a).  So the one moment the IOP must not pass while the EE is behind is that IRQ:
+ * on_irq holds it (and stops the render) when the next refill would find an active
+ * channel's ring empty, and the audio thread delivers it as soon as the EE has fed the
+ * ring.  A held IRQ is up to one 2 ms render step late, far less than the ~37 ms the
+ * SPU still has in the other half.  If the EE runs HOLD_VBLANKS vblanks (or HOLD_MAX_MS
+ * of wall time) without feeding, it is not going to (stream end, or a stall): the IRQ
+ * goes through and the stream drains as it would on a PS2, until the ring gets data.
+ * Read-only views of the driver's state (layouts of src/audio/ssd/ssd_vag.c SsdVagWork
+ * and src/audio/rssd/rssdstrm.c RssdIopStreamWork, checked against the build's debug
+ * info). */
+#define HOLD_VBLANKS 4
+#define HOLD_MAX_MS 500
+typedef struct {
+    unsigned char flags, status, buffer_selector, dma_channel, mode;
+    signed char channel_count, dma_channel_index;
+    unsigned char process_state[4];
+    int master_volume[4];
+    unsigned char transfer_state[4];
+    void *buffers[2];
+    int buffer_bytes, half_buffer_bytes, transfer_stride;
+    void *callback, *callback_arg, *transfer_source;
+    unsigned char total_blocks, half_blocks, completed_blocks, buffer_index;
+} SsdVagWorkView;
+typedef struct { signed char capacity; unsigned char count; } RssdRingView;
+typedef struct {
+    short format;
+    unsigned char active, drain_count;
+    int chunk_size;
+    RssdRingView *ring;
+} RssdChannelView;
+typedef struct {
+    short initialized;
+    unsigned char mode, channel_count;
+    int chunk_size;
+    RssdChannelView pcm, vag[4];
+} RssdStreamView;
+_Static_assert(sizeof(void *) != 4 || __builtin_offsetof(SsdVagWorkView, completed_blocks) == 66,
+               "SsdVagWork layout");
+_Static_assert(sizeof(void *) != 4 || __builtin_offsetof(RssdStreamView, vag) == 20, "RssdIopStreamWork layout");
+extern SsdVagWorkView ssdiop_SsdVagStrWork;
+extern RssdStreamView ssdiop_RssdStrWork;
+
+static int in_render, held_core = -1, hold_released, stream_on;
+static unsigned hold_frame;
+static struct timespec hold_t0;
+static unsigned long long holds, hold_frames_total, hold_gave_up;
+static unsigned long long stream_starved; /* refills that found an active stream's ring empty */
+
+static int refill_irq(void)
+{
+    const SsdVagWorkView *v = &ssdiop_SsdVagStrWork;
+    return v->completed_blocks == 0 || v->completed_blocks == v->half_blocks;
+}
+
+/* an active VAG stream channel with nothing queued in RSSD's ring (IOP lock held) */
+static int stream_hungry(void)
+{
+    const SsdVagWorkView *v = &ssdiop_SsdVagStrWork;
+    const RssdStreamView *r = &ssdiop_RssdStrWork;
+    if (!(v->flags & 0x20) || (v->flags & 2) || v->status != 1 || !r->initialized)
+        return 0;
+    int n = r->mode == 3 ? 1 : r->mode == 2 ? r->channel_count : 0;
+    for (int i = 0; i < n && i < 4; i++)
+        if (r->vag[i].active && r->vag[i].ring && r->vag[i].ring->count == 0)
+            return 1;
+    return 0;
+}
+
 static void on_irq(int core)
 {
     stream_irqs++;
+    /* this IRQ makes SsdVagStreamSpuTransfer refill a half (see above) */
+    int hungry = refill_irq() && stream_hungry();
+    if (hungry && sound_clock == CLOCK_AUTO && in_render && !hold_released) {
+        held_core = core;
+        hold_frame = xsg_frame;
+        clock_gettime(CLOCK_MONOTONIC, &hold_t0);
+        holds++;
+        return;
+    }
+    stream_starved += hungry;
     if (spu2_handler)
         spu2_handler(1 << core, spu2_handler_arg);
+}
+
+/* Each tick, IOP lock held: deliver a held IRQ once the ring has data (or the stream
+ * stopped), or once the EE has had its chance.  Returns 1 while still holding. */
+static int stream_hold_poll(void)
+{
+    stream_on = sound_clock == CLOCK_AUTO && (ssdiop_SsdVagStrWork.flags & 0x20);
+    if (!stream_hungry())
+        hold_released = 0; /* fed (or stopped): hold again next time it runs dry */
+    if (held_core < 0)
+        return 0;
+    if (stream_hungry()) {
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        long long ms = (now.tv_sec - hold_t0.tv_sec) * 1000LL + (now.tv_nsec - hold_t0.tv_nsec) / 1000000;
+        if (xsg_frame - hold_frame < HOLD_VBLANKS && ms < HOLD_MAX_MS)
+            return 1;
+        hold_released = 1; /* the EE is not feeding: let it drain */
+        hold_gave_up++;
+        stream_starved++;
+    }
+    int core = held_core;
+    held_core = -1;
+    if (spu2_handler)
+        spu2_handler(1 << core, spu2_handler_arg);
+    return 0;
 }
 
 /* XSG_SPU_TRACE=dir: each key on (the first 256) dumps the sample it plays,
@@ -504,18 +620,18 @@ static void wav_header(void)
     fseek(wav, pos, SEEK_SET);
 }
 
-/* Live output when the game runs slower than real time (§4 of
- * STAGE10_SOUND.md): the IOP clock is gated to game frames, so the device
- * would run dry.  Instead of an xrun (a hard gap and a click), the queue is
+/* ALSA output while the IOP is held back (§4 of STAGE10_SOUND.md: game clock,
+ * a stream hold): the device would run dry.  Instead of an xrun (a hard gap and a click), the queue is
  * kept at a floor with "filler": the last output sample decaying to zero
  * (~1 ms time constant), and the next real audio ramps in over 2 ms.  Every
  * time filler is needed the target queue grows by 20 ms (up to 200 ms), so
  * a game that stutters regularly is absorbed by the buffer; it shrinks back
- * by 1 ms a second.  Only the device sees this: XSG_WAV keeps game time. */
+ * by 1 ms a second.  Only the device sees this: XSG_WAV keeps IOP time. */
 #define FADE_FRAMES 96
 #define ALSA_BUF_MS 250
 #define FILL_FLOOR_MS 20
 #define RING_TARGET_MS 40 /* queued in xsg-gpu's ring (its device buffer comes on top) */
+#define RING_STREAM_MS 100 /* while a VAG stream plays (auto): a cushion for stream holds */
 static double target_ms = 60;
 static int fade_in, in_gap;
 static int16_t last_out[2];
@@ -598,10 +714,14 @@ static void wav_close(void)
 }
 
 /* ---- the IOP clock -------------------------------------------------- */
-static void render(int frames, int16_t *out)
+/* Renders up to `frames`; returns fewer when a stream IRQ was held (on_irq), which
+ * stops the IOP at that sample until stream_hold_poll delivers it. */
+static int render(int frames, int16_t *out)
 {
-    while (frames > 0) {
-        int n = frames;
+    int done = 0;
+    in_render = 1;
+    while (done < frames && held_core < 0) {
+        int n = frames - done;
         if (T.running && T.handler) {
             long long until = (T.remaining + CLK_PER_SAMPLE - 1) / CLK_PER_SAMPLE;
             if (until < 1)
@@ -609,9 +729,8 @@ static void render(int frames, int16_t *out)
             if (until < n)
                 n = (int)until;
         }
-        spu2_render(out, n);
-        out += 2 * n;
-        frames -= n;
+        spu2_render(out + 2 * done, n);
+        done += n;
         if (T.running && T.handler) {
             T.remaining -= (long long)n * CLK_PER_SAMPLE;
             if (T.remaining <= 0) {
@@ -627,6 +746,8 @@ static void render(int frames, int16_t *out)
             }
         }
     }
+    in_render = 0;
+    return done;
 }
 
 static void *audio_thread(void *p)
@@ -635,7 +756,7 @@ static void *audio_thread(void *p)
     static int16_t buf[2 * 2048];
     struct timespec next;
     clock_gettime(CLOCK_MONOTONIC, &next);
-    double budget = 0; /* frames real time allows and that are not rendered yet */
+    double budget = 0; /* no device: frames real time allows and that are not rendered yet */
     unsigned frame0 = xsg_frame;
     unsigned long long ticks = 0;
     for (;;) {
@@ -650,55 +771,46 @@ static void *audio_thread(void *p)
         long long late = (now.tv_sec - next.tv_sec) * 1000000000LL + (now.tv_nsec - next.tv_nsec);
         if (late > 100000000LL) /* > 100 ms behind (stopped in a debugger...): resync */
             next = now;
-        budget += RATE * 0.002;
-        /* keep the ALSA queue near the target (60 ms, more after gaps, see
-         * output_fill): the device clock drifts against CLOCK_MONOTONIC, so
-         * render a little more or less */
+        /* Real time is the device's clock: render what tops its queue up to the target
+         * (xsg-gpu's ring: SDL pulls it at the device's pace; ALSA: 60 ms, more after
+         * gaps, see output_fill), so the two clocks stay locked without a drift nudge.
+         * With no device, count wall time. */
+        int frames;
         long queued = -1;
         if (use_ring && !ring_live)
             ring_live = xsg_audio_ring_open(RATE);
         if (ring_live) {
-            /* xsg-gpu's device pulls from the ring at its own clock: keep ~target queued
-             * (the ring's fill steers how much is rendered, so the two clocks stay locked) */
             queued = xsg_audio_ring_queued();
-            const long tgt = (long)(RATE * RING_TARGET_MS / 1000);
-            if (queued < tgt - RATE * 10 / 1000)
-                budget += 8;
-            else if (queued > tgt + RATE * 10 / 1000)
-                budget -= 8;
+            frames = (int)(RATE * (stream_on ? RING_STREAM_MS : RING_TARGET_MS) / 1000 - queued);
         } else if (pcm) {
             long avail = xsg_alsa_avail(pcm);
             if (avail < 0)
                 alsa_underruns++; /* xrun: the next write recovers */
             queued = avail >= 0 ? (long)(RATE * ALSA_BUF_MS / 1000) - avail : 0;
-            long tgt = (long)(RATE * target_ms / 1000);
-            if (avail >= 0 && queued < tgt - RATE * 20 / 1000)
-                budget += 8;
-            else if (avail >= 0 && queued > tgt + RATE * 20 / 1000)
-                budget -= 8;
+            frames = (int)(RATE * target_ms / 1000 - queued);
             if (target_ms > 60)
                 target_ms -= 0.002; /* 1 ms a second */
+        } else {
+            budget += RATE * 0.002;
+            if (budget > RATE / 10)
+                budget = RATE / 10;
+            frames = (int)budget;
         }
-        if (budget > RATE / 10) /* never burst more than 100 ms */
-            budget = RATE / 10;
-        int frames = budget > 0 ? (int)budget : 0, gated = 0;
-        /* The game clock: the EE feeds streams and starts sounds per game
-         * frame, so the IOP must not run ahead of the EE's vblanks (800
-         * samples each, 8 vblanks of slack: a
-         * renderer hitch shorter than ~130 ms no longer gaps the music).  When the game runs at full
-         * speed this is the same as real time; when it runs slow, so does
-         * the sound, at the right pitch (XSG_SOUND_CLOCK=real: wall clock). */
-        if (game_clock) {
+        if (frames < 0)
+            frames = 0;
+        int gated = 0;
+        /* sound_clock = game: the IOP must not run ahead of the EE's vblanks (800 samples
+         * each, 8 vblanks of slack: a renderer hitch shorter than ~130 ms does not gap the
+         * music).  When the game runs slow, so does all the sound, at the right pitch. */
+        if (sound_clock == CLOCK_GAME) {
             long long allow = (long long)(xsg_frame - frame0 + 8) * (RATE / 60) - (long long)rendered;
             if (allow < frames) {
                 frames = allow > 0 ? (int)allow : 0;
-                clock_waits++;
                 gated = 1;
             }
         }
         if (frames > 2048)
             frames = 2048;
-        budget -= frames;
         pthread_mutex_lock(&L);
         for (int ch = 0; ch < 2; ch++)
             if (trans_pending[ch]) {
@@ -706,24 +818,38 @@ static void *audio_thread(void *p)
                 if (trans_handler[ch])
                     trans_handler[ch](ch, trans_arg[ch]);
             }
-        if (frames)
-            render(frames, buf);
+        /* sound_clock = auto: a stream IRQ held until the EE feeds the stream */
+        if (stream_hold_poll()) {
+            hold_frames_total += RATE / 500; /* one 2 ms tick */
+            frames = 0;
+            gated = 1;
+        }
+        if (frames) {
+            int done = render(frames, buf);
+            if (done < frames)
+                gated = 1;
+            frames = done;
+        }
         pthread_mutex_unlock(&L);
+        if (gated)
+            clock_waits++;
+        if (!ring_live && !pcm)
+            budget -= frames;
         rendered += frames;
         if (frames)
             output(buf, frames);
-        /* the game is behind real time and the device is about to run dry */
+        /* the IOP is behind real time and the device is about to run dry */
         if (pcm && !ring_live && gated && queued >= 0 && queued + frames < RATE * FILL_FLOOR_MS / 1000) {
             output_fill(RATE * FILL_FLOOR_MS / 1000 - (int)(queued + frames));
             target_ms = target_ms + 20 > 200 ? 200 : target_ms + 20;
         }
         if (++ticks % 2500 == 0) /* every ~5 s */
             SLOG("[sound] %.1f s rendered, %d voices active, %u keyons, timer ticks %llu, "
-                 "stream: %u data blocks, %u IRQs; game-clock waits %llu; ALSA dropped %llu frames, "
-                 "%llu underruns, gap fill %llu frames in %llu gaps (target %.0f ms)\n",
+                 "stream: %u data blocks, %u IRQs, %llu starved refills, %llu holds (%.2f s held, %llu let drain); clock waits %llu; "
+                 "dropped %llu frames, ALSA %llu underruns, gap fill %llu frames in %llu gaps (target %.0f ms)\n",
                  rendered / (double)RATE, spu2_active_voices(), spu2_keyons(), T.count,
-                 stream_blocks, stream_irqs, clock_waits, alsa_dropped, alsa_underruns, filled_frames,
-                 fill_events, target_ms);
+                 stream_blocks, stream_irqs, stream_starved, holds, hold_frames_total / (double)RATE, hold_gave_up,
+                 clock_waits, alsa_dropped, alsa_underruns, filled_frames, fill_events, target_ms);
         if (log_on >= 2 && ticks % 2500 == 0) { /* XSG_SOUND_LOG=2: every voice that is on */
             pthread_mutex_lock(&L);
             for (int c = 0; c < 2; c++)
@@ -776,7 +902,7 @@ void xsg_sound_start(void)
     log_on = e ? atoi(e) : 0;
     trace_dir = xsg_cfg("debug.spu_trace");
     const char *ck = xsg_cfg("debug.sound_clock");
-    game_clock = !(ck && !strcmp(ck, "real"));
+    sound_clock = ck && !strcmp(ck, "game") ? CLOCK_GAME : ck && !strcmp(ck, "real") ? CLOCK_REAL : CLOCK_AUTO;
     const char *w = xsg_cfg("debug.wav");
     if (w && *w) {
         wav = fopen(w, "wb");

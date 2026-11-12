@@ -257,7 +257,7 @@ environment variable the setting took over; it is no longer read.
 | `[debug] prof_hz` | (empty) | text | restart | `XSG_PROF_HZ` | Profiler rate (empty: 1000). |
 | `[debug] sound_log` | (empty) | text | restart | `XSG_SOUND_LOG` | Sound driver log level. |
 | `[debug] spu_trace` | (empty) | text | restart | `XSG_SPU_TRACE` | SPU2 trace folder. |
-| `[debug] sound_clock` | `game` | game, real | restart | `XSG_SOUND_CLOCK` | IOP sound clock source. |
+| `[debug] sound_clock` | `auto` | auto, game, real | restart | `XSG_SOUND_CLOCK` | IOP sound clock: auto runs at real time and holds only while a stream would starve (STAGE10_SOUND.md §4). |
 | `[debug] wav` | (empty) | text | restart | `XSG_WAV` | Record the mix to this WAV file. |
 | `[debug] native_vu1` | `0` | 0, 1 | restart | `XSG_GPU_NATIVE_VU1` | Native renderer: interpret VU1 programs. |
 | `[debug] native_skin` | `1` | 0, 1 | restart | `XSG_GPU_NATIVE_SKIN` | Native renderer: GPU skinning. |
