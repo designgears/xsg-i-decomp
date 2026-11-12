@@ -1,5 +1,36 @@
 #include "port/ps2_asm.h"
 #include "common.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+/* the mouse (port/docs/MOUSE.md): the party / target window under the pointer, found where the
+   status screens place their windows each frame (the vblank of that), -1 none */
+extern void xglSoundEffectNormalID(int id, int arg);
+extern volatile unsigned xsg_frame;
+static int xsgEtherPartyHit = -1, xsgEtherTargetHit = -1;
+static unsigned xsgEtherPartyFrame, xsgEtherTargetFrame;
+/* a hit from a window drawn in the last couple of frames, else -1 (that screen is gone) */
+static int xsgEtherHit(int hit, unsigned frame)
+{
+    return xsg_frame - frame <= 2 ? hit : -1;
+}
+/* hover moves the cursor to `hit`, a click also confirms; returns the new cursor */
+static int xsgEtherPick(int hit, int cur)
+{
+    const XsgMouse *m = xsg_mouse();
+    if (!m->active) return cur;
+    xsg_mouse_capture();   /* a click off the windows does nothing */
+    if (hit < 0) return cur;
+    if (xsg_mouse_click(XSG_MB_LEFT)) {
+        xsg_mouse_tap(XSG_PAD_CIRCLE);
+        return hit;
+    }
+    if (hit != cur && m->moved && m->hover) {
+        xglSoundEffectNormalID(3, 0);
+        return hit;
+    }
+    return cur;
+}
+#endif
 
 extern unsigned char *MenuEtherDataBuf;
 
@@ -1482,6 +1513,14 @@ void MenuEtherStatusMain(void)
             }
             WindowDXMain(&status->window[i].window);
         }
+#ifdef PORT_HOST
+        xsgEtherPartyHit = -1;
+        xsgEtherPartyFrame = xsg_frame;
+        for (i = 0; i < MenuEtherMw.partyCount; i++)
+            if (xsg_mouse_in(status->window[i].window.x, status->window[i].window.y, status->window[i].window.width,
+                             status->window[i].window.height))
+                xsgEtherPartyHit = i;
+#endif
         status->cursor[0].cursor.x = status->window[MenuEtherMw.partyCursor].window.x + 3;
         status->cursor[0].cursor.y = status->window[MenuEtherMw.partyCursor].window.y
                                      + status->window[MenuEtherMw.partyCursor].window.height / 2 - 4;
@@ -1849,6 +1888,14 @@ void MenuEtherStatusMain2(void)
                 }
             }
         }
+#ifdef PORT_HOST
+        xsgEtherTargetHit = -1;
+        xsgEtherTargetFrame = xsg_frame;
+        for (i = 0; i < MenuWork.partyCount; i++)
+            if (screen->window[i].y + 39 < 415 &&
+                xsg_mouse_in(screen->window[i].x, screen->window[i].y, screen->window[i].width, screen->window[i].height))
+                xsgEtherTargetHit = i;
+#endif
         if (MenuWork.useType == 1 || MenuWork.useType == 3 || MenuWork.state == 130) {
             screen->cursor[0].x = screen->window[MenuWork.targetCursor].x + 3;
             screen->cursor[0].y = screen->window[MenuWork.targetCursor].y +
@@ -2872,6 +2919,47 @@ extern void func_A194E0(int chrNo, int etherId);
 extern int func_A19578(int chrNo, int etherId);
 extern void ChangeTopLevel(int level);
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
+#ifdef PORT_HOST
+/* the Ether tree (ether_tree.c): the node under the pointer is entry `row` (-1: not one of this
+   screen's); hover (once the pointer moves again: the tree pans to its target) or a click picks
+   it, the click also confirms.  Returns the new cursor. */
+extern int xsgEtherTreeHit(void);
+static int xsgEtherTreePick(int row, int cur)
+{
+    static int lx = -1, ly = -1;
+    const XsgMouse *m = xsg_mouse();
+
+    if (!m->active || row < 0)
+        return cur;
+    xsg_mouse_hot();
+    if (xsg_mouse_click(XSG_MB_LEFT)) {
+        xsg_mouse_tap(XSG_PAD_CIRCLE);
+        return row;
+    }
+    if (row != cur && m->moved && m->hover && (m->x != lx || m->y != ly)) {
+        lx = m->x;
+        ly = m->y;
+        xglSoundEffectNormalID(3, 0);
+        return row;
+    }
+    return cur;
+}
+/* the list's row whose ether is the node under the pointer: picks it in the list window */
+static void xsgEtherTreeList(void *window, int cur)
+{
+    const int hit = xsgEtherTreeHit();
+    int row = -1, i;
+
+    if (hit < 0)
+        return;
+    for (i = 0; i < MenuSortCheck(0); i++)
+        if ((short)MenuSortGet(0, i) == hit)   /* the id is the low half (as the states read it) */
+            row = i;
+    i = xsgEtherTreePick(row, cur);
+    if (i != cur)
+        WindowSPSelectJump(window, i);
+}
+#endif
 
 void MenuEther(void)
 {
@@ -2982,6 +3070,17 @@ void MenuEther(void)
         if (MenuWorkME.wait != 0) {
             break;
         }
+#ifdef PORT_HOST
+        {
+            const int hit = xsgEtherHit(xsgEtherPartyHit, xsgEtherPartyFrame);
+            const int pc = xsgEtherPick(hit < MenuWorkME.partyCount ? hit : -1,
+                                        MenuWorkME.partyCursor);
+            if (pc != MenuWorkME.partyCursor) {
+                MenuWorkME.partyCursor = pc;
+                MenuWorkME.chrNo = MenuEtherParty[pc];
+            }
+        }
+#endif
         if (PadDataME.repeat & (0x1000 | 0x2000 | 0x4000 | 0x8000)) {
             if (MenuWorkME.partyCount == 1) {
                 break;
@@ -3144,6 +3243,15 @@ void MenuEther(void)
             break;
         }
         if (MenuWorkME.useType == 1 || MenuWorkME.useType == 3) {
+#ifdef PORT_HOST
+            {
+                const int hit = xsgEtherHit(xsgEtherTargetHit, xsgEtherTargetFrame);
+                if (hit < MenuWorkME.partyCount) {
+                    MenuWorkME.targetCursor = xsgEtherPick(hit, MenuWorkME.targetCursor);
+                    MenuWorkME.targetChrNo = MenuEtherParty[MenuWorkME.targetCursor];
+                }
+            }
+#endif
             if (PadDataME.repeat & 0x1000) {
                 if (MenuWorkME.targetCursor != 0) {
                     xglSoundEffectNormalID(3, 0);
@@ -3211,6 +3319,9 @@ void MenuEther(void)
             MenuEtherListMake01();
         }
         if (MenuWorkME.wait == 0) {
+#ifdef PORT_HOST
+            xsgEtherTreeList(&MenuEtherList->window, MenuWorkME.listSelect);
+#endif
             MenuWorkME.listSelect = WindowSPSelect(&MenuEtherList->window, PadDataME.repeat);
             WindowSPKeepSelect(&MenuEtherList->window, &MenuKeepSelect[5]);
             if ((PadDataME.pressed & 0x0080) && MenuWorkME.listSelect >= 0) {
@@ -3261,6 +3372,9 @@ void MenuEther(void)
             MenuWorkME.etherId = 0;
         }
         if (MenuWorkME.wait == 0) {
+#ifdef PORT_HOST
+            xsgEtherTreeList(&MenuEtherList->window, MenuWorkME.listSelect);
+#endif
             MenuWorkME.listSelect = WindowSPSelect(&MenuEtherList->window, PadDataME.repeat);
             WindowSPKeepSelect(&MenuEtherList->window, &MenuKeepSelect[10]);
             if (MenuWorkME.listSelect >= 0) {
@@ -3373,6 +3487,16 @@ void MenuEther(void)
         {
             unsigned char *slots = MenuEtherDataGet(MenuWorkME.etherId);
 
+#ifdef PORT_HOST
+            {   /* the slots are the ether's children in the tree */
+                const int hit = xsgEtherTreeHit();
+                int i, row = -1;
+                for (i = 0; i < MenuWorkME.slotCount; i++)
+                    if (hit > 0 && slots[i] == hit)
+                        row = i;
+                MenuWorkME.slotCursor = xsgEtherTreePick(row, MenuWorkME.slotCursor);
+            }
+#endif
             MenuWorkME.slotCursor = MenuSelectMove(MenuWorkME.slotCursor, MenuWorkME.slotCount, 0);
             MenuWorkME.slotEther = slots[MenuWorkME.slotCursor];
         }
@@ -3453,6 +3577,11 @@ void MenuEther(void)
         if (MenuWorkME.wait != 0) {
             break;
         }
+#ifdef PORT_HOST
+        /* the status screen's windows here are the target list's entries (its cursor uses window[targetCursor]) */
+        if (xsgEtherHit(xsgEtherTargetHit, xsgEtherTargetFrame) < MenuWorkME.targetCount)
+            MenuWorkME.targetCursor = xsgEtherPick(xsgEtherHit(xsgEtherTargetHit, xsgEtherTargetFrame), MenuWorkME.targetCursor);
+#endif
         if ((PadDataME.repeat & 0x1000) && MenuWorkME.targetCursor != 0) {
             xglSoundEffectNormalID(3, 0);
             MenuWorkME.targetCursor--;

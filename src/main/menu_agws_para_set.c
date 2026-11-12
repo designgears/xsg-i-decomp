@@ -1,6 +1,9 @@
 #include "common.h"
 #include "shared.h"
 #include "menu_agws_para_set.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+#endif
 
 /* Sums the WAGL rating of every nonzero mounted weapon of para's three
  * equipped weapon slots. */
@@ -2213,6 +2216,17 @@ void MenuAgws(void) {
     MenuAgwsCameraMove();
     switch (MenuWorkUp.state) {                       /* switch 1; irregular */
     case 0x10:                                      /* switch 1 */
+#ifdef PORT_HOST
+        if (MenuWorkUp.transitionTicks == 0) {   /* the mouse: the A.G.W.S. name windows, 0xE0 x 0x36 at
+                                                    (0x18 + 0xF0 c, 0x40 + 0x60 r) */
+            const int n = (unsigned char)MenuWorkUp.agwsCount;
+            const int ns = xsg_mouse_grid_pick(0x18, 0x40, 0x1E0, 0x60, 2, 0, (n + 1) / 2, n, MenuWorkUp.selectedAgws);
+            if (ns != MenuWorkUp.selectedAgws) {
+                MenuWorkUp.selectedAgws = ns;
+                MenuWorkUp.chrNo = AgwsNo[MenuWorkUp.selectedAgws];
+            }
+        }
+#endif
         if (MenuWorkUp.transitionTicks == 0) {
             if (AgwsMenuPad.mappedRepeat & 0xF000) {
                 switch (AgwsMenuPad.mappedRepeat) {     /* switch 2; irregular */
@@ -2335,6 +2349,31 @@ void MenuAgws(void) {
             MenuWorkUp.ammoId = (u16) 0;
             MenuWorkUp.accessoryId = (u16) 0;
         }
+#ifdef PORT_HOST
+        if (MenuWorkUp.transitionTicks == 0) {   /* the mouse: the segment windows (AgwsWeapon2Main), 0xE5
+                                                    wide at (0x10, 0x30 + 0x36 h); lines 24 apart from y + 3,
+                                                    a weapon without ammo one line (the whole window) */
+            const AgwsUnitOrgUp *org = (AgwsUnitOrgUp *)func_A191C0((s32) MenuWorkUp.chrNo);
+            short r[9][4];
+            signed char hs[9][2];
+            int h, k, n = 0, sel = 0;
+            for (h = 0; h < 4; h++) {
+                const int lines = h == 3 ? 3 : (org->weaponId[h] != 0 && MenuBulletCheck(org->weaponId[h], -1) != 0 ? 2 : 1);
+                for (k = 0; k < lines; k++, n++) {
+                    r[n][0] = 0x10, r[n][1] = lines == 1 ? 0x30 + 0x36 * h : 0x30 + 0x36 * h + 3 + 24 * k;
+                    r[n][2] = 0xE5, r[n][3] = lines == 1 ? 0x36 : 24;
+                    hs[n][0] = (signed char)h, hs[n][1] = (signed char)k;
+                    if (h == MenuWorkUp.weaponHand && k == MenuWorkUp.equipSlot) sel = n;
+                }
+            }
+            k = xsg_mouse_rects((const short (*)[4])r, n, sel);
+            if (k != sel) {
+                MenuWorkUp.weaponHand = hs[k][0];
+                MenuWorkUp.equipSlot = hs[k][1];
+                xglSoundEffectNormalID(3, 0);
+            }
+        }
+#endif
         if (MenuWorkUp.transitionTicks == 0) {
             temp_16_3 = AgwsMenuPad.mappedRepeat;
             if (temp_16_3 == 0x1000) {

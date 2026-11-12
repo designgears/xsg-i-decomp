@@ -129,6 +129,9 @@ int MenuTecNextWaitPointGet(int chrNo, int point);
  * recovers it. */
 
 #include "shared.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+#endif
 
 typedef struct MenuTecPasWork MenuTecPasWork;
 
@@ -2441,6 +2444,16 @@ void MenuTec(void)
         }
         if (MenuWork.inputDelay != 0)
             break;
+#ifdef PORT_HOST
+        {   /* the mouse (port/docs/MOUSE.md): the roster cards, 240 x 82 at (16 + 240 c, 64 + 104 r) */
+            const int ns = xsg_mouse_grid_pick(16, 64, 480, 104, 2, 0, (MenuWork.rosterCount + 1) / 2, MenuWork.rosterCount,
+                                               MenuWork.rosterCursor);
+            if (ns != MenuWork.rosterCursor) {
+                MenuWork.rosterCursor = ns;
+                MenuWork.characterNo = MenuTecParty[MenuWork.rosterCursor];
+            }
+        }
+#endif
         if (PadData.mappedRepeat & 0xf000) {
             if (MenuWork.rosterCount == 1)
                 break;

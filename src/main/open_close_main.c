@@ -414,6 +414,12 @@ void eCursolMain(ECurView *c)
         c->spr.work = c->work;
         endSpriteSet(&c->spr, 1);
         endPrintExtFunc(c->spr.work, 2, &c->spr);
+#ifdef PORT_HOST
+        {   /* the mouse: lists without geometry of their own go by the hand (MenuSelectMove) */
+            extern void xsg_mouse_hand(int x, int y, int alpha, int depth);
+            xsg_mouse_hand(c->x, c->y, c->color[3], c->work);
+        }
+#endif
     }
 }
 

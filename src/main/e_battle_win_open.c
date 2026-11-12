@@ -1,6 +1,9 @@
 #include "common.h"
 #include "shared.h"
 #include "e_battle_win_open.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+#endif
 
 extern char text_0[1];
 extern char D_004C3960[];
@@ -1554,6 +1557,24 @@ short WindowSPSelect(SPSel *w, int arg1) {
     k = w->kind;
     if (w->kind != 3) return -1;
     w->arg = arg1;
+#ifdef PORT_HOST
+    {   /* the mouse (port/docs/MOUSE.md): rows of 24 from y + 2 (subMWPosSet), w / 2 per column */
+        WindowSPCursor *l = (WindowSPCursor *)w;
+        const int cols = l->mode == 2 ? (l->columns > 0 ? l->columns : 1) : 1;
+        const int rows = l->visible_rows > 0 ? l->visible_rows : l->rows;
+        const int ns = xsg_mouse_grid_pick(l->x, l->y + 2, cols > 1 ? (l->width / 2) * cols : l->width, 24, cols,
+                                           l->current_row, rows, l->item_count, l->selected_index);
+        if (ns != l->selected_index) {
+            l->selected_index = (short)ns;
+            if (cols > 1) {
+                l->visible_top = (signed char)(ns % cols);
+                l->visible_bottom = (signed char)(ns / cols - l->current_row);
+            } else {
+                l->visible_bottom = (signed char)(ns - l->current_row);
+            }
+        }
+    }
+#endif
     switch (w->mode) {
     case 1: subMWControlType00(w, k); break;
     case 2: subMWControlType01(w, k); break;

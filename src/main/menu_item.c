@@ -1,6 +1,9 @@
 #include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+#endif
 
 #define MENU_ITEM_SPECIAL_ID 36
 #define MENU_ITEM_USE_ALLOWED 0x8000
@@ -2292,6 +2295,11 @@ void MenuItemSegmentMain(void)
     case 4: {
         int movement = 0;
 
+#ifdef PORT_HOST
+        {   /* the mouse: the 18 segments, 72 x 58 cells from (segment->x, segment->y), 3 columns */
+            segment->selected = xsg_mouse_grid_pick(segment->x, segment->y, 3 * 72, 58, 3, 0, 6, 18, segment->selected);
+        }
+#endif
         switch (padDataView.activity) {
         case 0x1000:
             movement = -3;

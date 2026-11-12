@@ -1,6 +1,25 @@
 #include "common.h"
 
 #include "ether_tree.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+extern volatile unsigned xsg_frame;
+/* the mouse (port/docs/MOUSE.md): the nodes as last drawn; the id of the one under the pointer, -1 none
+   (only in the tree's open area: right of the lists, between the status panel and the help window) */
+static struct { short id, x, y, w, h; } xsgTreeNode[80];
+static int xsgTreeCount;
+static unsigned xsgTreeFrame;
+int xsgEtherTreeHit(void)
+{
+    int i;
+    if (xsg_frame - xsgTreeFrame > 2 || !xsg_mouse_in(272, 116, 240, 268))
+        return -1;
+    for (i = 0; i < xsgTreeCount; i++)
+        if (xsg_mouse_in(xsgTreeNode[i].x, xsgTreeNode[i].y, xsgTreeNode[i].w, xsgTreeNode[i].h))
+            return xsgTreeNode[i].id;
+    return -1;
+}
+#endif
 
 /*
  * EtherTreeObject points at a table of 80 tree-object records of 0x70 bytes
@@ -1333,6 +1352,10 @@ void EtherTreeObjectDraw(void)
     int i;
     const float fade = D_004D7E88;
 
+#ifdef PORT_HOST
+    xsgTreeCount = 0;
+    xsgTreeFrame = xsg_frame;
+#endif
     i = 0;
     do {
         object = &objects[i];
@@ -1357,6 +1380,13 @@ void EtherTreeObjectDraw(void)
             object->sprite.width = (int)(object->sprite.width * node->scale);
             object->sprite.height = (int)(object->sprite.height * node->scale);
             object->sprite.depth = (unsigned int)position.z;
+#ifdef PORT_HOST
+            xsgTreeNode[xsgTreeCount].id = object->id;
+            xsgTreeNode[xsgTreeCount].x = object->sprite.x;
+            xsgTreeNode[xsgTreeCount].y = object->sprite.y;
+            xsgTreeNode[xsgTreeCount].w = object->sprite.width;
+            xsgTreeNode[xsgTreeCount++].h = object->sprite.height;
+#endif
             {
                 EtherTreeObjectData *dimmedObject = &objects[i];
 

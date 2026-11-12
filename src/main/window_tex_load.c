@@ -4,6 +4,9 @@
 #include "shared.h"
 
 #include "window_tex_load.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+#endif
 
 /* MenuWorkEndGet clears and returns this entire 64 KiB work region. */
 
@@ -215,6 +218,14 @@ void MenuKeepSelectReset(void)
 int MenuSelectMove(int selection, int count, int wrap)
 {
     int movement = 0;
+#ifdef PORT_HOST
+    {   /* the mouse (port/docs/MOUSE.md): the rows are 24 apart around last frame's hand cursor
+           (MenuSelectWindow: the hand at the row's top + 7, the text from its x - 3) */
+        int hx, hy;
+        if (count >= 1 && xsg_mouse_last_hand(&hx, &hy))
+            selection = xsg_mouse_grid_pick(hx - 3, hy - 7 - selection * 24, 200, 24, 1, 0, count, count, selection);
+    }
+#endif
 
     if (count < 2)
         return selection;
@@ -244,6 +255,15 @@ int MenuSelectMove(int selection, int count, int wrap)
 int MenuSelectMove2(int selection, int count)
 {
     int movement = 0;
+#ifdef PORT_HOST
+    {   /* the mouse: two columns, rows 24 apart around the hand (its column's x - 3); the
+           other column is taken as 120 px away */
+        int hx, hy;
+        if (count >= 1 && xsg_mouse_last_hand(&hx, &hy))
+            selection = xsg_mouse_grid_pick(hx - 3 - (selection & 1) * 120, hy - 7 - (selection / 2) * 24, 240, 24, 2, 0,
+                                            (count + 1) / 2, count, selection);
+    }
+#endif
 
     if (count < 2)
         return selection;

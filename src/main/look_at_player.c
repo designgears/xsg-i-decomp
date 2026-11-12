@@ -356,6 +356,25 @@ void GameCfPlayerMove(void)
         signed char stick_y = PadData.stick_y;
         float length;
         float angle;
+#ifdef PORT_HOST
+        {   /* the mouse walks the player (port/docs/MOUSE.md): toward the pointer while the left
+               button is held, or to a clicked spot */
+            extern int xsg_mouse_field_stick(const float *player_pos, signed char *sx, signed char *sy);
+            extern void xsg_mouse_field_cancel(void);
+            extern int XTK_getWindowOwner(void);
+            signed char mx, my;
+            /* the pad walks (d-pad / keys or the stick off centre), or the steering controls
+               (move_mode 2: the stick turns and drives) take no direction: a click-walk ends */
+            if ((PadData.held & 0xf000) || stick_x > 32 || stick_x < -32 || stick_y > 32 || stick_y < -32 ||
+                GC_LOOP.move_mode == 2) {
+                xsg_mouse_field_cancel();
+            /* not while a window (a choice, a message) has the input: the click is its */
+            } else if (XTK_getWindowOwner() == 0 && xsg_mouse_field_stick(&player->position.x, &mx, &my)) {
+                stick_x = mx;
+                stick_y = my;
+            }
+        }
+#endif
 
         if (PadData.held & 0xa000) {
             stick_x = (PadData.held & 0x8000) ? -127 : 127;

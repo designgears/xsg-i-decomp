@@ -1,5 +1,8 @@
 #include "port/ps2_asm.h"
 #include "common.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+#endif
 
 /*
  * One slot of the fixed-size `tcomponent` table TWSYS_createComponent hands
@@ -2143,6 +2146,29 @@ void TMENU_updateDefault(TComponent *component)
         }
         break;
     case 14:
+#ifdef PORT_HOST
+        {   /* the mouse (port/docs/MOUSE.md): rows of 24 under the query lines, as TMENU_drawDefault */
+            const int qh = menu->queryLineCount ? menu->queryLineCount * 24 + 12 : 0;
+            const int wx = (int)menu->x + 16, wy = (int)menu->y + 16;
+            int act = 0;
+            const int ns = xsg_mouse_list(wx + 4, wy + qh, menu->width - 8, 24, menu->firstVisibleItem,
+                                          menu->visibleLineCount, menu->itemCount, menu->selectedItem, &act);
+            if (ns != menu->selectedItem) {
+                xglSoundEffectNormalID(3, 0);
+                menu->selectedItem = ns;
+                menu->waitFrames = 0;
+                if (ns < menu->firstVisibleItem) menu->firstVisibleItem = ns;
+                if (ns >= menu->firstVisibleItem + menu->visibleLineCount)
+                    menu->firstVisibleItem = ns - menu->visibleLineCount + 1;
+            }
+            if (act) {
+                xglSoundEffectNormalID(1, 0);
+                menu->flags &= ~2;
+                menu->state = 15;
+                break;
+            }
+        }
+#endif
         if (PadData[0].mappedPressed & 0x40) {
             xglSoundEffectNormalID(2, 0);
             menu->flags &= ~2;

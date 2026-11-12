@@ -2,6 +2,9 @@
 #include "shared.h"
 #include "file.h"
 #include "main/xgl_jpeg.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+#endif
 
 typedef struct FileThumbnailRequest {
     u32 source;
@@ -2760,6 +2763,27 @@ void MenuFile(void) {
         if ((FileWork->input_flags & FILE_INPUT_SKIP) == 0) {
             if (FileWork->scroll_direction == 0) {
                 unsigned short action = 0;
+#ifdef PORT_HOST
+                {   /* the mouse (port/docs/MOUSE.md): the three slot panels, FILE_PANEL_PITCH apart */
+                    const XsgMouse *m = xsg_mouse();
+                    int p = -1, click;
+                    if (m->active) {
+                        const int px = xsg_mouse_x(FILE_PANEL_X, 496);
+                        xsg_mouse_capture();   /* a click between panels does nothing */
+                        if (px >= FILE_PANEL_X && px < 496 && m->y >= FILE_PANEL_TOP &&
+                            m->y < FILE_PANEL_TOP + FILE_PANEL_PITCH * FILE_PANELS_VISIBLE)
+                            p = (m->y - FILE_PANEL_TOP) / FILE_PANEL_PITCH;
+                        if (p >= FileWork->panel_count) p = -1;
+                    }
+                    click = p >= 0 && xsg_mouse_click(XSG_MB_LEFT);
+                    if (p >= 0 && ((m->moved && m->hover) || click) && p != FileWork->selected_panel) {
+                        FileWork->selected_slot = FileObjectDataNoGet(FileWork->selected_slot, p - FileWork->selected_panel);
+                        FileWork->selected_panel = p;
+                        xglSoundEffectNormalID(FILE_SE_CURSOR, 0);
+                    }
+                    if (click) xsg_mouse_tap(PAD_CIRCLE);
+                }
+#endif
 
                 if (FileWork->fast_scroll != 0) {
                     if (FileWork->scroll_repeat_count == FILE_FAST_SCROLL_STEPS) {
