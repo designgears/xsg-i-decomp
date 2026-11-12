@@ -475,6 +475,23 @@ static int _BallVsTray(unsigned int *pArg)
         } else {
             BvpCopy(hit.normal, res.normals[0]);
         }
+#ifdef PORT_HOST
+        {   /* The callbacks read {contact, normal, other} as one record (rg_handler.h RgBgCollision):
+               on the PS2 the frame put contact and hit side by side; here they are built as one. */
+            RgBallVsBallHit h;
+            BvpCopy(h.contact, contact);
+            BvpCopy(h.normal, hit.normal);
+            if (pArg[1] != 0) {
+                h.otherObject = tray;
+                ((RgGeomColiCallback) pArg[1])(point, h.contact);
+            }
+            if (pArg[3] != 0) {
+                XrgNegateVector(h.normal, h.normal);
+                h.otherObject = point;
+                ((RgGeomColiCallback) pArg[3])(tray, h.contact);
+            }
+        }
+#else
         if (pArg[1] != 0) {
             hit.otherObject = tray;
             ((RgGeomColiCallback) pArg[1])(point, contact);
@@ -484,6 +501,7 @@ static int _BallVsTray(unsigned int *pArg)
             hit.otherObject = point;
             ((RgGeomColiCallback) pArg[3])(tray, contact);
         }
+#endif
         return 1;
     }
     return 0;
@@ -557,6 +575,24 @@ static int _BallVsPillar(RgGeomColiArg *pArg)
             xsg_vu0_blocks++;
         }
 #endif
+#ifdef PORT_HOST
+        {   /* as _BallVsTray: {contact, normal (0, 1, 0), other} as one record */
+            RgBallVsBallHit h;
+            BvpCopy(h.contact, hitContactPtr);
+            XrgClearVector(h.normal);
+            h.normal[1] = 1.0f;
+            callback = (RgGeomColiCallback) pArg->data[1];
+            if (callback != 0) {
+                h.otherObject = pillar;
+                callback(point, h.contact);
+            }
+            callback = (RgGeomColiCallback) pArg->data[3];
+            if (callback != 0) {
+                h.otherObject = point;
+                callback(pillar, h.contact);
+            }
+        }
+#else
         XrgClearVector(hit.normal);
         callback = (RgGeomColiCallback) pArg->data[1];
         hit.normal[1] = 1.0f;
@@ -569,6 +605,7 @@ static int _BallVsPillar(RgGeomColiArg *pArg)
             hit.otherObject = point;
             callback(pillar, hitContactPtr);
         }
+#endif
         result = 1;
     }
     return result;
