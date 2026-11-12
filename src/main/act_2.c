@@ -1028,6 +1028,15 @@ static void ACT_modelDrawSub(Actor *actor)
     if ((actor->drawEnv.flags & 0x40) != 0) {
         nmlModelSetShadowHeight(0.0f);
     }
+#ifdef PORT_HOST
+    {   /* the mouse's object ids (port/docs/MOUSE.md): the models entered below are the actor's
+           (or its top parent's) */
+        extern void xsg_mouse_model_actor(const void *actor);
+        const Actor *top = actor;
+        while (top->parent != 0) top = top->parent;
+        xsg_mouse_model_actor(top);
+    }
+#endif
     if ((actor->flags & 0x4000) != 0) {
         MDL_draw(&actor->model[0].model, matrixBuffer);
         nmlModelGetGblPosition(&actor->globalPosition);
@@ -1038,6 +1047,9 @@ static void ACT_modelDrawSub(Actor *actor)
         nmlModelEntry(model);
         nmlModelGetGblPosition(&actor->globalPosition);
     }
+#ifdef PORT_HOST
+    { extern void xsg_mouse_model_actor(const void *actor); xsg_mouse_model_actor(0); }
+#endif
     (void)move;
     (void)scaleVector;
 }

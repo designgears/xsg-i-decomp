@@ -17,6 +17,7 @@ layout(std140, set = 0, binding = 0) uniform Batch {
     ivec4 region;       // CLAMP MINU/MSKU, MAXU/FIXU, MINV/MSKV, MAXV/FIXV
     vec4 mprev[4];      // previous frame's qw 962-965 (motion vectors)
     vec4 mv;            // xy: qw 966.xy * target scale (clip -> high-res pixels), z: 1 = has previous
+    vec4 obj;           // x: the object id (actor + 1) / 65535, for the mouse's picking and outlines
 } b;
 layout(set = 0, binding = 1) uniform sampler2D tex;   // RGBA8, alpha = the GS byte (0x80 = 1.0)
 
@@ -79,6 +80,7 @@ vec4 LitPerPixel(vec4 vertex_col) {
 #endif
 layout(location = 0) out vec4 o_col;
 layout(location = 1) out vec2 o_mv;    // motion vector, high-res pixels (current - previous)
+layout(location = 2) out float o_id;   // the object id (port/docs/MOUSE.md), R16 UNORM
 
 // One texel with the GS wrap modes (CLAMP): 0 repeat, 1 clamp, 2 region clamp
 // (MIN..MAX), 3 region repeat ((i & MSK) | FIX).
@@ -140,4 +142,5 @@ void main() {
     float a = b.mode.w == 2 ? b.fix.x : c.a;
     o_col = vec4(c.rgb / 255.0, min(a / 128.0, 1.0));
     o_mv = v_prev.w > 0.0 && v_cur.w > 0.0 ? (v_cur.xy / v_cur.w - v_prev.xy / v_prev.w) * b.mv.xy : vec2(0.0);
+    o_id = b.obj.x;
 }

@@ -1,0 +1,61 @@
+#version 450
+// The mouse's object outlines (port/docs/MOUSE.md): a glowing edge just outside the pixels of
+// the hovered and the selected object (native.cpp's object-id target, R16 UNORM = actor + 1),
+// over the final composite.  The selected object's edge is gold (the menu's kWarn), the hovered
+// one's cyan (kCyan), neither animated; the hovered object is also lifted a little.
+layout(local_size_x = 8, local_size_y = 8) in;
+layout(set = 0, binding = 0) uniform sampler2D ids;
+layout(set = 0, binding = 1, rgba8) uniform image2D img;
+layout(push_constant) uniform P {
+    ivec4 a;        // x: selected id, y: hovered id, z: radius (pixels), w: unused
+    vec4 c_sel;     // rgb, a: strength
+    vec4 c_hov;
+    ivec4 ptr;      // xy: the pointer's pixel (-1 none)
+    uvec4 hm[2];    // the hoverable ids (bit = id - 1, ids 1..256: actors, then hooks' objects)
+} p;
+
+int Id(ivec2 q) {
+    q = clamp(q, ivec2(0), textureSize(ids, 0) - 1);
+    return int(texelFetch(ids, q, 0).r * 65535.0 + 0.5);
+}
+
+// how close (0..1) an object's pixels come to q, sampled on three rings of 24 directions: a
+// smooth 2-3 px feather instead of a stepped band
+float Near(ivec2 q, int id, float r) {
+    float best = 0.0;
+    for (int k = 0; k < 24; ++k) {
+        const float an = float(k) * 0.26179939;
+        const vec2 d = vec2(cos(an), sin(an));
+        if (Id(q + ivec2(round(d * r / 3.0))) == id) best = max(best, 1.0);
+        else if (Id(q + ivec2(round(d * r * 2.0 / 3.0))) == id) best = max(best, 0.7);
+        else if (Id(q + ivec2(round(d * r))) == id) best = max(best, 0.35);
+    }
+    return best;
+}
+
+void main() {
+    const ivec2 q = ivec2(gl_GlobalInvocationID.xy);
+    if (any(greaterThanEqual(q, imageSize(img)))) return;
+    const int me = Id(q);
+    const float r = float(p.a.z);
+    // the hovered object: the one under the pointer's pixel when the game allows it, else the game's
+    int hov = p.a.y;
+    if (p.ptr.x >= 0) {
+        const int u = Id(p.ptr.xy) - 1;
+        if (u >= 0 && u < 256 && ((p.hm[u >> 7][(u >> 5) & 3] >> uint(u & 31)) & 1u) != 0u) hov = u + 1;
+    }
+    if (hov == p.a.x) hov = 0;
+    vec4 c = imageLoad(img, q);
+    if (hov != 0 && me == hov) c.rgb = min(c.rgb * 1.12 + 0.03, vec3(1.0));
+    for (int k = 0; k < 2; ++k) {
+        const int id = k == 0 ? p.a.x : hov;
+        if (id == 0 || me == id) continue;
+        const float n = Near(q, id, r);
+        if (n > 0.0) {
+            const vec4 oc = k == 0 ? p.c_sel : p.c_hov;
+            c.rgb = mix(c.rgb, oc.rgb, n * oc.a);
+            break;
+        }
+    }
+    imageStore(img, q, c);
+}

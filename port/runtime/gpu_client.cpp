@@ -422,7 +422,11 @@ int SettingsRead(GpuSettings* out) {
 
 }  // namespace xsggpu
 
+/* The shared block (mouse.cpp reads GpuMouse from it); null without xsg-gpu. */
+extern "C" void* xsg_gpu_shm_base(void) { return xsggpu::shm; }
+
 /* Returns 0 when xsg-gpu is not running or publishes no input (headless). */
+
 extern "C" int xsg_gpu_pad_read(unsigned* buttons, unsigned char stick[4], unsigned char press[12]) {
     return xsggpu::PadRead(buttons, stick, press);
 }

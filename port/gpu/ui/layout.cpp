@@ -54,6 +54,15 @@ ImVec2 Map(float x, float y, int anchor) {
     }
 }
 
+ImVec2 Unmap(ImVec2 p, int anchor) {
+    const float y = (p.y - g_gy) / g_k;
+    switch (anchor) {
+    case kRight: return ImVec2(512.0f - (g_ux1 - p.x) / g_kx, y);
+    case kCentre: return ImVec2(256.0f + (p.x - (g_ux0 + g_ux1) * 0.5f) / g_kx, y);
+    default: return ImVec2((p.x - g_ux0) / g_kx, y);
+    }
+}
+
 int AnchorFor(float x0, float x1) {
     if (x1 - x0 >= 440.0f || (x0 <= 8.0f && x1 >= 504.0f)) return kStretch;
     const float c = (x0 + x1) * 0.5f;

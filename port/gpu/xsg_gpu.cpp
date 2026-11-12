@@ -28,6 +28,7 @@
 #include "glyphs.h"
 #include "ui/art.h"
 #include "ui/menus.h"
+#include "ui/pointer.h"
 #include "ui/dialog.h"
 #include "native_prof.h"
 #include "audio.h"
@@ -379,6 +380,7 @@ struct Renderer {
         xsgui::ArtInit(&gs);
         xsgui::Init(shm);
         xsgui::MenuInit(shm);
+        xsgui::PointerInit(shm);
         const auto& p = dev->get_gpu_properties();
         Log("paraLLEl-GS on \"%s\" (Vulkan %u.%u), %s, SSAA %dx%s%s", p.deviceName, VK_API_VERSION_MAJOR(p.apiVersion),
             VK_API_VERSION_MINOR(p.apiVersion), windowed ? "windowed" : "headless", ss,

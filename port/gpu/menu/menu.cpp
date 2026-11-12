@@ -24,6 +24,7 @@
 #include "../ui/style.h"
 #include "../ui/art.h"
 #include "../ui/menus.h"
+#include "../ui/pointer.h"
 #include "../ui/prompts.h"
 #ifdef XSG_GPU_SDL
 #include "imgui_impl_sdl3.h"
@@ -736,6 +737,30 @@ void TabControls(float scale) {
                "Stick travel (of 32767) ignored around the centre. Default 8000.");
     opt_slider("gamepad.trigger_threshold", "Trigger threshold", 0, 32000, 500, "%d",
                "Trigger travel that counts as an L2 / R2 press. Default 8000.");
+    opt_group("MOUSE");
+    opt_toggle("mouse.enabled", "Mouse control",
+               "Play with the mouse. Left click: select and confirm. Right click: back. Middle click: the camp menu. "
+               "Wheel: up / down. Side buttons: L1 / R1.");
+    const bool mouse_on = xsgcfg::GetBool("mouse.enabled");
+    const char* const off_note = mouse_on ? nullptr : "MOUSE CONTROL IS OFF";
+    auto gate = [&](const char* also = nullptr) { if (off_note) opt_disable_next(off_note); else if (also) opt_disable_next(also); };
+    gate();
+    opt_toggle("mouse.hover", "Point to select", "Pointing at a menu entry selects it. Off: a click selects it, a second click confirms.");
+    static const char* kClick[] = {"Does nothing", "Confirms"};   // mouse.click_advances: 0 | 1
+    gate();
+    opt_choice("mouse.click_advances", "Click on nothing", kClick,
+               "A left click with nothing clickable under the pointer. Confirms: it advances text, talks, examines.");
+    static const char* kField[] = {"Off", "Hold the button", "Click a spot"};
+    gate();
+    opt_choice("mouse.field", "Walk with the mouse",  kField,
+               "Hold the button: the player walks toward the pointer while the left button is held (runs when it is far); "
+               "a click talks or examines. Click a spot: click where to walk, or a person to walk up and talk; holding also walks.");
+    gate(xsgcfg::Get("mouse.field") == "off" ? "WALKING IS OFF" : nullptr);
+    opt_slider("mouse.run_radius", "Run beyond", 16, 400, 8, "%d px",
+               "Pointer distance from the player (game pixels) past which walking becomes running.");
+    gate();
+    opt_slider("mouse.hide_after", "Hide idle pointer", 0, 30, 1, "%d s", "Hidden after this many seconds without movement. "
+               "It also hides when a key or gamepad button is pressed, and returns when moved.", "Never");
     opt_group("BINDINGS");
 #ifdef XSG_GPU_SDL
     BindRows(scale);
@@ -1090,13 +1115,14 @@ void LayoutMenu(float scale) {
 
     // tab switching and closing (not while a binding waits for its press or a text field is open)
     if (!g_cap && !opt_editing()) {
-        bool nin = xsgcfg::Get("gamepad.layout") == "nintendo";
-        (void)nin;
-        if (ImGui::IsKeyPressed(ImGuiKey_GamepadL1, false) || ImGui::IsKeyPressed(ImGuiKey_Q, false))
+        // the mouse as in the game: side buttons L1 / R1, right click back (not while a popup is open)
+        const bool popup = ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId);
+        if (ImGui::IsKeyPressed(ImGuiKey_GamepadL1, false) || ImGui::IsKeyPressed(ImGuiKey_Q, false) || ImGui::IsMouseClicked(3))
             g_tab_req = (g_tab + TAB_COUNT - 1) % TAB_COUNT;
-        if (ImGui::IsKeyPressed(ImGuiKey_GamepadR1, false) || ImGui::IsKeyPressed(ImGuiKey_E, false))
+        if (ImGui::IsKeyPressed(ImGuiKey_GamepadR1, false) || ImGui::IsKeyPressed(ImGuiKey_E, false) || ImGui::IsMouseClicked(4))
             g_tab_req = (g_tab + 1) % TAB_COUNT;
-        if (ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight, false) || ImGui::IsKeyPressed(ImGuiKey_Escape, false))
+        if (ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight, false) || ImGui::IsKeyPressed(ImGuiKey_Escape, false) ||
+            (!popup && ImGui::IsMouseClicked(ImGuiMouseButton_Right)))
             SetOpen(false);
     }
 }
@@ -1157,6 +1183,7 @@ bool Event(const SDL_Event& ev) {
     switch (e.type) {
     case SDL_EVENT_KEY_DOWN: {
         const SDL_Scancode sc = e.key.scancode;
+        if (!e.key.repeat && !g_open) xsgui::PointerHide();   // playing on the keyboard: the pointer goes until it moves
         if (g_cap == CAP_KEY && !e.key.repeat) {
             if (sc == SDL_SCANCODE_ESCAPE) g_cap = CAP_NONE;
             else if (sc != SDL_SCANCODE_F1 && sc != SDL_SCANCODE_F10 && sc != SDL_SCANCODE_F11) FinishCapture(sc);
@@ -1181,18 +1208,40 @@ bool Event(const SDL_Event& ev) {
         if (g_win) ImGui_ImplSDL3_ProcessEvent(&e);
         return true;
     }
-    case SDL_EVENT_KEY_UP:
-    case SDL_EVENT_TEXT_INPUT:
     case SDL_EVENT_MOUSE_MOTION:
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
     case SDL_EVENT_MOUSE_BUTTON_UP:
     case SDL_EVENT_MOUSE_WHEEL:
+        if (!g_open) {   // the game's own UI: the mouse drives the pad (ui/pointer.h)
+            if (e.type == SDL_EVENT_MOUSE_MOTION) xsgui::PointerMove(e.motion.x, e.motion.y);
+            else if (e.type == SDL_EVENT_MOUSE_WHEEL) xsgui::PointerWheel(e.wheel.y);
+            else {
+                xsgui::PointerMove(e.button.x, e.button.y);
+                xsgui::PointerButton(e.button.button, e.type == SDL_EVENT_MOUSE_BUTTON_DOWN);
+            }
+            // only the position goes to ImGui (current when the menu opens): buttons and the wheel
+            // would wait in its event queue while no ImGui frame runs and replay into the menu
+            if (g_win && e.type == SDL_EVENT_MOUSE_MOTION) ImGui_ImplSDL3_ProcessEvent(&e);
+            return true;
+        }
+        // a release of a press the game saw (the click that opened the menu) still ends it there
+        if (e.type == SDL_EVENT_MOUSE_BUTTON_UP) xsgui::PointerButton(e.button.button, false);
+        if (g_win) ImGui_ImplSDL3_ProcessEvent(&e);
+        return true;
+    case SDL_EVENT_KEY_UP:
+    case SDL_EVENT_TEXT_INPUT:
         if (!g_open) return false;
         if (g_win) ImGui_ImplSDL3_ProcessEvent(&e);
         return true;
-    case SDL_EVENT_WINDOW_FOCUS_GAINED:
-    case SDL_EVENT_WINDOW_FOCUS_LOST:
     case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+        xsgui::PointerLeave();
+        if (g_win) ImGui_ImplSDL3_ProcessEvent(&e);
+        return false;
+    case SDL_EVENT_WINDOW_FOCUS_LOST:
+        xsgui::PointerFocusLost();   // no button stays held while the window is away
+        if (g_win) ImGui_ImplSDL3_ProcessEvent(&e);
+        return false;
+    case SDL_EVENT_WINDOW_FOCUS_GAINED:
         if (g_win) ImGui_ImplSDL3_ProcessEvent(&e);
         return false;
     default: return false;
@@ -1210,6 +1259,11 @@ static void PadFrame() {
     ImGuiIO& io = ImGui::GetIO();
     if (have) io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
     else io.BackendFlags &= ~ImGuiBackendFlags_HasGamepad;
+    {   // playing on the gamepad: the pointer goes until it moves
+        static uint32_t prev;
+        if ((b & ~prev) && !g_open) xsgui::PointerHide();
+        prev = b;
+    }
     // the open combo: Back + Start (or Guide), on the press
     bool combo = ((b >> SDL_GAMEPAD_BUTTON_BACK) & 1) && ((b >> SDL_GAMEPAD_BUTTON_START) & 1);
     combo = combo || ((b >> SDL_GAMEPAD_BUTTON_GUIDE) & 1);
@@ -1278,6 +1332,19 @@ void Frame(uint32_t vsync, const Stats& s) {
             else if (k == "TAB") g_tab_req = std::atoi(v.c_str());
             else if (k == "SHOT" && g_host.screenshot) g_host.screenshot(v);
             else if (k == "RESTART") { xsgcfg::SaveNow(); Publish(true); }
+            else if (k == "MOVE" || k == "CLICK" || k == "WHEEL" || k == "PRESS" || k == "RELEASE") {   // the mouse at game x/y (512 x 448)[/button]
+                float gx = 0, gy = 0;
+                int btn = 1;
+                std::sscanf(v.c_str(), "%f/%f/%d", &gx, &gy, &btn);
+                const float fb = ImGui::GetIO().DisplayFramebufferScale.y > 0 ? ImGui::GetIO().DisplayFramebufferScale.y : 1.0f;
+                const float sx = (s.game_x + gx * s.game_w / 512.0f) / fb, sy = (s.game_y + gy * s.game_h / 448.0f) / fb;
+                if (k == "WHEEL") { xsgui::PointerWheel(gx); continue; }
+                xsgui::PointerMove(sx, sy);
+                if (k == "CLICK") xsgui::PointerButton(btn, true), xsgui::PointerButton(btn, false);
+                if (k == "PRESS") xsgui::PointerButton(btn, true);
+                if (k == "RELEASE") xsgui::PointerButton(btn, false);
+                Log("test: mouse %s %s at vsync %u", k.c_str(), v.c_str(), vsync);
+            }
             else { xsgcfg::Set(k.c_str(), v); Log("test: %s = %s at vsync %u", k.c_str(), v.c_str(), vsync); }
         }
         g_test.next_set++;
@@ -1313,7 +1380,32 @@ void Frame(uint32_t vsync, const Stats& s) {
         if (seen == ~0u) seen = r;
         else if (r != seen) { seen = r; if (!g_open) SetOpen(true); }
     }
-    if (!g_open && !g_overlay && !dialog && !battle && !menus) { PadFrame(); return; }
+#ifdef XSG_GPU_SDL
+    {   // the OS pointer: shown while the mouse is in use or the settings menu is open
+        static int shown = -1;
+        const int want = g_open || xsgui::PointerVisible();
+        if (g_win && want != shown) { want ? SDL_ShowCursor() : SDL_HideCursor(); shown = want; }
+        // the hand over anything clickable (last frame's report), the arrow elsewhere
+        static SDL_Cursor *arrow, *hand;
+        static int cur = -1;
+        if (g_win && !arrow) {
+            arrow = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT);
+            hand = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_POINTER);
+        }
+        const int hot = !g_open && xsgui::PointerHot();
+        if (g_win && arrow && hand && hot != cur) { SDL_SetCursor(hot ? hand : arrow); cur = hot; }
+    }
+#endif
+    xsgui::PointerBegin();
+    if (!g_open && !g_overlay && !dialog && !battle && !menus) {
+        {   // no UI drawn: the pointer still goes to the game (the field, the original UI)
+            const float fbs = ImGui::GetIO().DisplayFramebufferScale.y > 0 ? ImGui::GetIO().DisplayFramebufferScale.y : 1.0f;
+            if (xsgui::PointerEnd(nullptr, s.game_x / fbs, s.game_y / fbs, s.game_w / fbs, s.game_h / fbs, rebuilt, false))
+                SetOpen(true);
+        }
+        PadFrame();
+        return;
+    }
 
     ImGuiIO& io = ImGui::GetIO();
     float fb = 1.0f;
@@ -1376,6 +1468,9 @@ void Frame(uint32_t vsync, const Stats& s) {
                 c = mix(0) | mix(8) | mix(16) | (c & 0xff000000u);
             }
     }
+    if (xsgui::PointerEnd(ImGui::GetForegroundDrawList(), s.game_x / fb, s.game_y / fb, s.game_w / fb, s.game_h / fb, rebuilt,
+                          g_open))
+        SetOpen(true);
     if (g_open) LayoutMenu(scale);
     OverlayDraw(scale);
     ImGui::Render();

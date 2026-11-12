@@ -694,7 +694,9 @@ void VifCode(u32 w) {
     case 0x05: vif.mode = imm & 3; break;
     case 0x06: break;                                       // MSKPATH3
     case 0x07:                                              // MARK
-        if (imm == 0xCA4E && g_cam_tail != g_cam_head) {   // the scene camera (xsg_native_camera_mark)
+        if (imm >= 0xCB00 && imm <= 0xCBFF) {   // the object of the following batches (xsg_native_objects_on): actor + 1, or a hook's 65..255
+            if (g_mode == Mode::Gpu && NativeOn()) xsggpu::Native(GPU_NATIVE_OBJECT, imm - 0xCB00, nullptr, 0);
+        } else if (imm == 0xCA4E && g_cam_tail != g_cam_head) {   // the scene camera (xsg_native_camera_mark)
             const GpuNativeCamera c = g_cam_q[g_cam_tail++ & 63];
             if (g_mode == Mode::Gpu && NativeOn()) xsggpu::Native(GPU_NATIVE_CAMERA, 0, &c, sizeof c);
         }
@@ -1367,6 +1369,12 @@ extern "C" int xsg_native_camera_mark(const float* vp, const float* scale, const
     have = true;
     g_cam_q[g_cam_head++ & 63] = c;
     return 1;
+}
+
+/* nmlPacketAddParts (PORT_HOST): 1 when the native renderer takes object ids (actor + 1 of
+   the following batches, for its picking and outlines): put the MARK 0xCB00 + id in the packet. */
+extern "C" int xsg_native_objects_on(void) {
+    return g_mode == Mode::Gpu && NativeOn();
 }
 
 /* ACT_DrawShadow (PORT_HOST): the blob shadow is skipped while the native renderer

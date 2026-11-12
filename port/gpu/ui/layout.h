@@ -25,6 +25,8 @@ enum Anchor { kLeft = -1, kCentre = 0, kRight = 1, kStretch = 2 };
 void LayoutBegin(float gx, float gy, float gw, float gh);
 /* PS2 point -> screen, under an anchor. */
 ImVec2 Map(float x, float y, int anchor);
+/* Screen -> PS2 point under an anchor (the inverse of Map; kStretch: as kLeft). */
+ImVec2 Unmap(ImVec2 screen, int anchor);
 /* The anchor for an element spanning PS2 x0..x1. */
 int AnchorFor(float x0, float x1);
 /* Horizontal / vertical size of one PS2 pixel on screen. */

@@ -83,6 +83,14 @@ XSG_SETTING("audio.voice", 0, "100", "0..100", 1, "Voice and movie volume.")
 XSG_SETTING("gamepad.deadzone", 0, "8000", "0..32000", 1, "Stick dead zone.")
 XSG_SETTING("gamepad.trigger_threshold", 0, "8000", "0..32000", 1, "Trigger press threshold.")
 XSG_SETTING("gamepad.layout", 0, "xbox", "xbox|playstation|nintendo", 1, "Button labels in the menu.")
+/* ---- mouse (port/docs/MOUSE.md; xsg-gpu publishes them live to the game) */
+XSG_SETTING("mouse.enabled", 0, "1", "0|1", 1, "Play with the mouse: menus follow the pointer, clicks select.")
+XSG_SETTING("mouse.hover", 0, "1", "0|1", 1, "Hovering a menu entry selects it (off: only a click does).")
+XSG_SETTING("mouse.field", 0, "hold", "off|hold|click", 1,
+            "Walking: hold the left button to walk toward the pointer, or click a spot to walk there.")
+XSG_SETTING("mouse.run_radius", 0, "96", "16..400", 1, "Pointer distance from the player (game px) at which walking becomes running.")
+XSG_SETTING("mouse.click_advances", 0, "1", "0|1", 1, "A left click where nothing is clickable confirms (advances text, talks).")
+XSG_SETTING("mouse.hide_after", 0, "3", "0..30", 1, "Hide the pointer after this many idle seconds (0: never).")
 
 /* ---- overlay */
 XSG_SETTING("overlay.mode", "XSG_GPU_OVERLAY", "off", "off|fps|full", 1, "Performance overlay (F10 cycles).")
@@ -168,4 +176,4 @@ XSG_SETTING("debug.gpu_prof", "XSG_GPU_PROF", "", 0, 0, "xsg-gpu profiler.")
 XSG_SETTING("debug.input_test", "XSG_GPU_INPUT_TEST", "", 0, 0, "Synthetic SDL input events (STAGE10_INPUT.md).")
 XSG_SETTING("debug.menu_test", "XSG_GPU_MENU_TEST", "", 0, 0, "Menu screenshot tour: at:per:WxH.")
 XSG_SETTING("debug.menu_test_dir", "XSG_GPU_MENU_TEST_DIR", "", 0, 0, "Menu tour output folder.")
-XSG_SETTING("debug.menu_test_set", "XSG_GPU_MENU_TEST_SET", "", 0, 0, "Timed settings changes: vsync:key=v,...;...")
+XSG_SETTING("debug.menu_test_set", "XSG_GPU_MENU_TEST_SET", "", 0, 0, "Timed settings changes: vsync:key=v,...;... (also MOVE=x/y, CLICK / PRESS / RELEASE=x/y[/button], WHEEL=n: the mouse at game x/y, 512 x 448)")

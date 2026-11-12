@@ -302,11 +302,12 @@ bool opt_list(const char* id, const char* label, const char* const* names, int n
     return true;
 }
 
-bool opt_slider(const char* key, const char* label, int lo, int hi, int step, const char* fmt, const char* desc) {
+bool opt_slider(const char* key, const char* label, int lo, int hi, int step, const char* fmt, const char* desc, const char* zero) {
     const xsgcfg::Meta* m = xsgcfg::Find(key);
     int v = xsgcfg::GetInt(key), def = m ? std::atoi(m->def) : lo;
     char shown[48];
-    std::snprintf(shown, sizeof shown, fmt, v);
+    if (zero && v == 0) std::snprintf(shown, sizeof shown, "%s", zero);
+    else std::snprintf(shown, sizeof shown, fmt, v);
     RowView rv = {shown, v == def, true, nullptr};
     // a thin bar under the value: the level
     ImVec2 p = ImGui::GetCursorScreenPos();

@@ -77,6 +77,7 @@ enum {
     GPU_NATIVE_SET2_PALETTE = 3,   /* b = palette seq; payload: qw 732..961 of VU1 data (the bone palette) */
     GPU_NATIVE_SET2_ENV = 4,       /* the env pass of the last set-2 batch starts (its A+D state is now set) */
     GPU_NATIVE_CAMERA = 5,         /* GpuNativeCamera: the world -> clip camera the following batches were built with */
+    GPU_NATIVE_OBJECT = 7,         /* b = object id (actor + 1, 0 none) of the batches that follow (MARK 0xCB00 + id) */
     GPU_NATIVE_SET0_LIT = 6,       /* set 0 lit loops 0x1458 / 0x1fa0 (object-space P/N, no bones): as GPU_NATIVE_SET2,
                                       no palette; per-vertex fog from GpuNativeSkin.fog */
 };
@@ -181,6 +182,39 @@ typedef struct {
     volatile uint32_t updates;     /* bumped on every publish (diagnostics) */
     uint32_t reserved[11];
 } GpuPad;
+
+/* Native mouse (port/docs/MOUSE.md): the pointer, written by xsg-gpu every frame and read
+ * by the game once per vblank (mouse.cpp Update).  Same seqlock as GpuPad.
+ * Positions are in the game's 512 x 448 space, x16 (fixed point), under each layout anchor
+ * of the rebuilt UI (layout.h: an element left / centre / right of the screen maps the
+ * pointer differently in wide layouts; with the original layout all three agree).
+ * Counters only grow: the game diffs them against the last vblank's. */
+#define XSG_GPU_MOUSE_OFF 1536u
+enum { GPU_MOUSE_UI_TITLE = 1, GPU_MOUSE_UI_BATTLE_CMD = 2, GPU_MOUSE_UI_PROMPT = 3, GPU_MOUSE_UI_SETTINGS = 4 /* xsg-gpu only */ };
+typedef struct {
+    volatile uint32_t seq;
+    volatile uint32_t active;      /* 1: mouse play on ([mouse] enabled) and the pointer in the window */
+    volatile int32_t x[3];         /* the pointer's game x (x16) for anchors left, centre, right */
+    volatile int32_t y;            /* game y (x16) */
+    volatile uint32_t held;        /* bit 0 left, 1 right, 2 middle, 3 back, 4 forward */
+    volatile uint32_t down[5];     /* presses per button (counters) */
+    volatile uint32_t up[5];       /* releases per button (counters) */
+    volatile int32_t wheel;        /* notches, up positive (sum) */
+    volatile uint32_t moves;       /* motion events (counter) */
+    volatile uint32_t field;       /* [mouse] field: 0 off, 1 hold to walk, 2 click to walk */
+    volatile uint32_t ui_over;     /* the pointer is over a rebuilt UI panel (the scene under it is not pickable) */
+    volatile uint32_t flags;       /* bit 0 hover selects, 1 a left click on nothing is CIRCLE */
+    volatile int32_t pick;         /* the native renderer: the object id under the pointer (actor + 1, or a hook's object 65..255), 0 none, -1 unknown */
+    volatile uint32_t walk_radius; /* [mouse] run_radius: game px from the player at which walking becomes a run */
+    volatile int32_t ui_kind;      /* what the pointer is over in the rebuilt UI's own layout (GPU_MOUSE_UI_*), 0 none */
+    volatile int32_t ui_index;     /* its index (row, or the DS2 mask of a prompt) */
+    /* written by the game (mouse.cpp), its own seqlock: what the pointer is over */
+    volatile uint32_t g_seq;
+    volatile uint32_t g_hot;       /* 1: over something clickable (the hand cursor) */
+    volatile int32_t g_outline[2]; /* object ids the native renderer outlines: [0] selected, [1] hovered */
+    volatile uint32_t g_hoverable[8];   /* object ids (bit = id - 1, 1..256) the renderer outlines under the pointer, at once */
+    uint32_t reserved[90];
+} GpuMouse;
 
 /* In-game menu (port/docs/MENU.md): the settings the game process applies
  * live, written by xsg-gpu's menu (port/gpu/menu/) and polled by the game
@@ -348,6 +382,8 @@ static_assert(XSG_GPU_UI_MENU_OFF + sizeof(GpuUiMenuList) <= XSG_GPU_HDR, "the m
 static_assert(XSG_GPU_UI_CMD_OFF + sizeof(GpuUiBattleCmd) <= XSG_GPU_UI_DMG_OFF, "battle command block overlaps");
 static_assert(XSG_GPU_UI_DMG_OFF + sizeof(GpuUiDmgList) <= XSG_GPU_UI_KG_OFF && sizeof(GpuUiDmg) == 28, "damage list layout");
 static_assert(XSG_GPU_UI_BATTLE_OFF + sizeof(GpuUiBattle) <= XSG_GPU_UI_CMD_OFF, "battle block overlaps");
+static_assert(sizeof(GpuMouse) == 512 && XSG_GPU_MOUSE_OFF + sizeof(GpuMouse) <= XSG_GPU_SETTINGS_OFF &&
+              XSG_GPU_PAD_OFF + sizeof(GpuPad) <= XSG_GPU_MOUSE_OFF, "mouse block layout");
 #endif
 
 #endif

@@ -4,6 +4,7 @@
  * paraLLEl-GS frame.  See native.h and port/docs/NATIVE_RENDERER.md.
  */
 #include "native.h"
+#include "ui/pointer.h"
 #include "menu/cfg.h"
 #include "native_skin.h"
 #include "native_fx.h"
@@ -326,6 +327,7 @@ struct Stored {
     int pass = 0;                                // set 2: 0 tag 1011, 1 specular strip (1012), 2 env strip (1010)
     float mprev[16];                             // set 0: last frame's M962 (v[i].pad = last frame's position)
     bool hasprev = false;
+    int obj = 0;                                 // the object id (actor + 1) of the batch (GPU_NATIVE_OBJECT), 0 none
     bool vram_tex = false;                       // its texture is GS-rendered: decoded from the GS memory at Live
     uint64_t prim, tex0, clamp, tex1, xyoff, texa, fogcol, scissor, alpha, test, frame, zbuf;
 };
@@ -369,6 +371,7 @@ struct Ubo {
     int32_t region[4];
     float mprev[4][4];
     float mv[4];
+    float obj[4];
 };
 
 uint32_t ReadU32(const uint8_t* vram, uint32_t a) {
@@ -451,7 +454,9 @@ struct Target {
 struct GpuTarget {
     uint32_t w, h;
     Vulkan::ImageHandle color, depth, mv;   // SHADER_READ_ONLY_OPTIMAL after RenderGpu (mv: RG16F motion vectors)
+    Vulkan::ImageHandle id;                 // R16 UNORM object ids (the mouse), SHADER_READ_ONLY_OPTIMAL
 };
+int g_obj;   // the object id of the batches arriving now (GPU_NATIVE_OBJECT)
 
 struct Region {
     uint32_t fbp, fbw, fpsm, zbp, zpsm, w, h;
@@ -502,6 +507,14 @@ const uint32_t kShadow[] = {
 #include "shadow.comp.inc"
 };
 const float kShadowZo = 8388608.0f, kShadowZs = 8388608.0f * 0.98f;
+Vulkan::Program* g_outline;
+const uint32_t kOutline[] = {
+#include "outline.comp.inc"
+};
+/* The mouse's picking: the object id under the pointer, read back a few frames later. */
+struct PickRead { Vulkan::BufferHandle buf; Vulkan::Fence fence; };
+std::vector<PickRead> g_picks;
+std::vector<Vulkan::BufferHandle> g_pick_pool;   // 4-byte read-back buffers, reused
 
 GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*>& list, const Region& rg, int scale,
                     unsigned* odd_blend_out) {
@@ -522,6 +535,13 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
     mi.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     mi.initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
     t.mv = dev.create_image(mi);
+    auto ii = Vulkan::ImageCreateInfo::render_target(t.w, t.h, VK_FORMAT_R16_UNORM);
+    ii.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    ii.initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+    t.id = dev.create_image(ii);
+    cmd->image_barrier(*t.id, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                       VK_PIPELINE_STAGE_2_NONE, 0, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                       VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
     cmd->image_barrier(*t.mv, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                        VK_PIPELINE_STAGE_2_NONE, 0, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                        VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
@@ -535,12 +555,13 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
                        VK_PIPELINE_STAGE_2_NONE, 0, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
                        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
     Vulkan::RenderPassInfo rp;
-    rp.num_color_attachments = 2;
+    rp.num_color_attachments = 3;
     rp.color_attachments[0] = &color->get_view();
     rp.color_attachments[1] = &t.mv->get_view();
+    rp.color_attachments[2] = &t.id->get_view();
     rp.depth_stencil = &depth->get_view();
-    rp.clear_attachments = 3;
-    rp.store_attachments = 3;
+    rp.clear_attachments = 7;
+    rp.store_attachments = 7;
     rp.op_flags = Vulkan::RENDER_PASS_OP_CLEAR_DEPTH_STENCIL_BIT | Vulkan::RENDER_PASS_OP_STORE_DEPTH_STENCIL_BIT;
     rp.clear_depth_stencil.depth = 0.0f;
     cmd->begin_render_pass(rp);
@@ -600,6 +621,7 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
         u->mv[1] = s->b.scale[1] * float(scale);
         u->mv[2] = s->hasprev ? 1.0f : 0.0f;
         u->mv[3] = float(s->pass);
+        u->obj[0] = float(s->obj) / 65535.0f;
         const uint64_t prim = s->prim;
         const bool tme = Bits(prim, 4, 1), fge = Bits(prim, 5, 1), abe = Bits(prim, 6, 1);
         u->mode[0] = int(Bits(s->tex0, 35, 2) | Bits(s->tex0, 34, 1) << 2 | uint32_t(tme) << 3 | uint32_t(fge) << 4);
@@ -642,7 +664,8 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
         if (shadow) cmd->set_blend_enable(false);
         // Motion vectors: written by opaque draws that write colour (translucent layers keep what is under them).
         const bool cw = Bits(s->frame, 32, 32) != 0xffffffffu;
-        cmd->set_color_write_mask((cw ? 0xf : 0) | (cw && !blended ? 0x30 : 0));
+        // object ids (the mouse's picking and outlines): with the motion vectors, opaque draws only
+        cmd->set_color_write_mask((cw ? 0xf : 0) | (cw && !blended ? 0x30 | 0x100 : 0));
         // Texture.
         auto it = g_teximg.find(s->tex.get());
         if (it == g_teximg.end()) {
@@ -678,6 +701,10 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
         else cmd->draw(n);
     }
     cmd->end_render_pass();
+    cmd->image_barrier(*t.id, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                       VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_2_COPY_BIT,
+                       VK_ACCESS_2_SHADER_SAMPLED_READ_BIT | VK_ACCESS_2_TRANSFER_READ_BIT);
     cmd->image_barrier(*t.mv, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                        VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_2_COPY_BIT,
@@ -1082,6 +1109,63 @@ void Live(ParallelGS::GSInterface& gs) {
     // Motion vectors last, so they see the final composite (+ XSG_GPU_MV_VIEW).
     xsgskin::ResolveMv(*cmd, *out, *ns.color, *ns.depth, ns.mv, *gsb, g_scale, 1.0f / rg.zscale, own, int(rg.w),
                        int(rg.mx));
+    // The mouse (port/docs/MOUSE.md): outlines around the hovered / selected objects, and the
+    // object id under the pointer (read back below, a few frames later).
+    {
+        int sel = 0, hov = 0, mx = 0, my = 0;
+        xsgui::PointerOutlineIds(&sel, &hov);
+        uint32_t hmask[8], hany = 0;
+        xsgui::PointerHoverable(hmask);
+        for (uint32_t w : hmask) hany |= w;
+        // the pointer may lie in the widescreen margins (rg.mx columns either side of the GS frame)
+        const bool ptr = xsgui::PointerGame(&mx, &my) && mx >= -int(rg.mx) && my >= 0 && mx < int(rg.w + rg.mx) && my < int(rg.h);
+        static const bool mlog = std::getenv("XSG_MOUSE_LOG") != nullptr;
+        if (mlog) {
+            static int ls = -1, lh = -1, lo = -1;
+            if (sel != ls || hov != lh || g_obj != lo)
+                ls = sel, lh = hov, lo = g_obj, Log("mouse: outline %d / %d, object now %d, pointer %d,%d", sel, hov, g_obj, mx, my);
+        }
+        if ((sel || hov || (hany && ptr)) && g_outline) {
+            cmd->barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                         VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT);
+            cmd->set_program(g_outline);
+            cmd->set_texture(0, 0, ns.id->get_view(), Vulkan::StockSampler::NearestClamp);
+            cmd->set_storage_texture(0, 1, out->get_view());
+            // the hovered object is found by the shader itself at the pointer's pixel (no read-back
+            // delay), among the actors the game allows; the game's own choice (hov) otherwise.
+            // Colours: the menu's kWarn (244,196,98) selected, kCyan (118,214,255) hovered; no pulse
+            struct { int32_t a[4]; float cs[4], ch[4]; int32_t ptr[4]; uint32_t hm[8]; } op = {
+                {sel, hov, std::max(2, g_scale), 0},
+                {0.957f, 0.769f, 0.384f, 0.90f},
+                {0.463f, 0.839f, 1.0f, 0.85f},
+                {ptr ? (mx + int(rg.mx)) * g_scale + g_scale / 2 : -1, ptr ? my * g_scale + g_scale / 2 : -1, 0, 0},
+                {hmask[0], hmask[1], hmask[2], hmask[3], hmask[4], hmask[5], hmask[6], hmask[7]}};
+            cmd->push_constants(&op, 0, sizeof op);
+            cmd->dispatch((ns.w + 7) / 8, (ns.h + 7) / 8, 1);
+        }
+        if (ptr && g_picks.size() < 8) {
+            PickRead pr;
+            if (!g_pick_pool.empty()) {
+                pr.buf = std::move(g_pick_pool.back());
+                g_pick_pool.pop_back();
+            } else {
+                Vulkan::BufferCreateInfo pb = {};
+                pb.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+                pb.domain = Vulkan::BufferDomain::CachedHost;
+                pb.size = 4;
+                pr.buf = dev.create_buffer(pb);
+            }
+            // the id target is sampled above (SHADER_READ_ONLY); a copy reads it as TRANSFER_SRC
+            cmd->image_barrier(*ns.id, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                               VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_2_COPY_BIT, 0,
+                               VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
+            const int32_t px = (mx + int(rg.mx)) * g_scale + g_scale / 2, py = my * g_scale + g_scale / 2;
+            cmd->copy_image_to_buffer(*pr.buf, *ns.id, 0, {px, py, 0}, {1, 1, 1}, 0, 0, {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1});
+            cmd->barrier(VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_HOST_BIT,
+                         VK_ACCESS_2_HOST_READ_BIT);
+            g_picks.push_back(std::move(pr));
+        }
+    }
     cmd->image_barrier(*out, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
                        VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                        VK_PIPELINE_STAGE_2_BLIT_BIT | VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
@@ -1092,8 +1176,18 @@ void Live(ParallelGS::GSInterface& gs) {
     }
     {
         xsgprof::Scope ps(xsgprof::LiveSubmit);
-        dev.submit(cmd);
+        if (!g_picks.empty() && !g_picks.back().fence) dev.submit(cmd, &g_picks.back().fence);
+        else dev.submit(cmd);
     }
+    // the oldest finished pick read: the object under the pointer
+    while (!g_picks.empty() && g_picks.front().fence && g_picks.front().fence->wait_timeout(0)) {
+        const uint16_t* v = static_cast<const uint16_t*>(dev.map_host_buffer(*g_picks.front().buf, Vulkan::MEMORY_ACCESS_READ_BIT));
+        if (v) xsgui::PointerSetPick(int(*v));
+        dev.unmap_host_buffer(*g_picks.front().buf, Vulkan::MEMORY_ACCESS_READ_BIT);
+        g_pick_pool.push_back(std::move(g_picks.front().buf));
+        g_picks.erase(g_picks.begin());
+    }
+    if (g_picks.size() >= 8) g_picks.erase(g_picks.begin());   // never finished: drop
     ProfGpu();
     g_live_img = out;
     g_live_w = rg.w;
@@ -1353,7 +1447,7 @@ bool InitResources() {
     vl.input_mask = 15;
     vl.sets[0].uniform_buffer_mask = 1;
     vl.sets[0].meta[0].array_size = 1;
-    fl.output_mask = 3;
+    fl.output_mask = 7;
     fl.sets[0].uniform_buffer_mask = 1;
     fl.sets[0].sampled_image_mask = 2;
     fl.sets[0].meta[0].array_size = 1;
@@ -1375,6 +1469,14 @@ bool InitResources() {
         sl.sets[0].uniform_buffer_mask = 8;
         for (int i = 0; i < 5; ++i) sl.sets[0].meta[i].array_size = 1;
         g_shadow = dev->request_program(dev->request_shader(kShadow, sizeof kShadow, &sl));
+    }
+    {   // the mouse's object outlines (outline.comp)
+        Vulkan::ResourceLayout ol;
+        ol.sets[0].sampled_image_mask = 1;
+        ol.sets[0].storage_image_mask = 2;
+        for (int i = 0; i < 2; ++i) ol.sets[0].meta[i].array_size = 1;
+        ol.push_constant_size = 64;
+        g_outline = dev->request_program(dev->request_shader(kOutline, sizeof kOutline, &ol));
     }
     if (!xsgskin::Init(dev)) return false;
     xsgfx::Init(dev);
@@ -1399,6 +1501,7 @@ namespace {
 uint64_t PageHash(uint32_t page);
 void Snap(Stored& s, const uint32_t* tagw) {
     xsgprof::Scope ps(xsgprof::BatchSnap);
+    s.obj = g_obj;
     uint64_t tag = uint64_t(tagw[0]) | uint64_t(tagw[1]) << 32;
     uint64_t prim = Bits(tag, 46, 1) ? Bits(tag, 47, 11) : g_reg[R_PRIM];
     if (!(g_reg[R_PRMODECONT] & 1)) prim = (prim & 7) | (g_reg[R_PRMODE] & 0x7f8);
@@ -1496,7 +1599,12 @@ void FxNative(const uint32_t* tagw, uint32_t ntags) {
 
 void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) {
     xsgprof::Scope ps(xsgprof::Batch);
+    if (kind == GPU_NATIVE_OBJECT) {   // the object (actor + 1) of the batches that follow
+        g_obj = int(nvert);
+        return;
+    }
     if (kind == GPU_NATIVE_CAMERA) {
+        g_obj = 0;   // a new scene pass: no object until its models mark theirs
         if (len < sizeof(GpuNativeCamera)) return;
         const GpuNativeCamera* c = reinterpret_cast<const GpuNativeCamera*>(payload);
         auto cam = std::make_shared<Camera>();
@@ -1565,6 +1673,7 @@ void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) 
 
 void Vsync(uint32_t frame, ParallelGS::GSInterface& gs, bool show) {
     g_last_vsync = frame;
+    g_obj = 0;   // batches of the next frame carry no object id until a model marks one
     {
         xsgprof::Scope ps(xsgprof::FxVsync);
         xsgfx::Vsync(frame, gs);   // first: it closes the post phase of the frame just drawn

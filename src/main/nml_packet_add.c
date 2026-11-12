@@ -1646,6 +1646,15 @@ int nmlPacketAddParts(u8 *parts, NmlModelRenderState *model, StudioCamera *camer
         sceVif1PkAddUpkData128N(s_pPacket, &light, 4);
         sceVif1PkCloseUpkCode(s_pPacket);
     }
+#ifdef PORT_HOST
+    {   /* the object (an actor) the following batches draw, for the native renderer's picking and
+           outlines (port/docs/MOUSE.md): MARK 0xCB00 + actor index + 1, 0xCB00 none */
+        extern int xsg_mouse_model_tag(int slot);
+        extern int xsg_native_objects_on(void);
+        if (xsg_native_objects_on())
+            sceVif1PkAddCode(s_pPacket, 0x07000000u | (0xCB00u + (unsigned)xsg_mouse_model_tag(*(int *)((char *)model + 0x25c))));
+    }
+#endif
     if (changed) {
         if (model->render_status & 0x8000) {
             _CurMatrixSet((const float (*)[4])((u8 *)model + 0x180));

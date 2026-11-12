@@ -178,3 +178,8 @@ ring, and live input lags by that much. At normal speed the lag is 0–2 vblanks
 
 Not testable here: a physical gamepad (hotplug code is SDL's `GAMEPAD_ADDED/REMOVED`
 path; the virtual test pad uses the same button/axis handling) and F11 (`SDL_SetWindowFullscreen`).
+
+
+## Mouse
+
+The mouse is native: the game's menus and field read the pointer directly. See MOUSE.md.

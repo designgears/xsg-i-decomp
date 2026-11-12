@@ -4702,6 +4702,9 @@ void nmlModelEntry(U_NmlModel *model)
 
             (&U_s_inLayout.fields.model)[0] = model;
             (U_s_inLayout.slots[(0x25c) / 4].i) = U_s_nModel;
+#ifdef PORT_HOST
+            { extern void xsg_mouse_model_slot(int slot); xsg_mouse_model_slot(U_s_nModel); }
+#endif
             U_s_inLayout.fields.mapShadowPartCount = U_s_nMapShadowParts;
             if ((U_s_inLayout.qwords[0x250 / 8] & (U_NML_RENDER_GLOBAL_FOG | U_NML_RENDER_FOG)) == U_NML_RENDER_GLOBAL_FOG) {
 #ifndef PORT_HOST
@@ -5255,6 +5258,9 @@ void nmlModelEntryEffect(NmlModelEc *model)
         index = 0;
         blockTable = model->blockOffsets;
         LAYOUT_S32(0x25c) = s_nModel;
+#ifdef PORT_HOST
+        { extern void xsg_mouse_model_slot(int slot); xsg_mouse_model_slot(s_nModel); }
+#endif
         s_fSortOffset = s_fSortOffsetEntry;
         (*(NmlLayoutEc *)&s_inLayout).fields.parent = (int)model;
 #ifndef PORT_HOST
@@ -5415,6 +5421,9 @@ void nmlModelEntryCard(NmlModelEc *model)
         __builtin_memset(&index, 0, sizeof(index));
         blockTable = model->blockOffsets;
         LAYOUT_S32(0x25c) = s_nModel;
+#ifdef PORT_HOST
+        { extern void xsg_mouse_model_slot(int slot); xsg_mouse_model_slot(s_nModel); }
+#endif
         s_fSortOffset = s_fSortOffsetEntry;
         (*(NmlLayoutEc *)&s_inLayout).fields.parent = (int)model;
 #ifndef PORT_HOST

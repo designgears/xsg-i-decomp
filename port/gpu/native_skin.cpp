@@ -165,7 +165,7 @@ bool Init(Vulkan::Device* dev) {
     vl.sets[0].uniform_buffer_mask = 1 | 4;
     vl.sets[0].storage_buffer_mask = 8;
     for (int i = 0; i < 4; ++i) vl.sets[0].meta[i].array_size = 1;
-    fl.output_mask = 3;
+    fl.output_mask = 7;
     fl.sets[0].uniform_buffer_mask = 1 | 4;   // + SkinConst (per-pixel lighting)
     fl.sets[0].sampled_image_mask = 2;
     fl.sets[0].meta[0].array_size = 1;

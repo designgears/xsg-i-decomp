@@ -62,7 +62,7 @@ set(XSG_GS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/ps2-port-engine-gs)
 # Native renderer shaders (native.vert/.frag, composite.comp) -> SPIR-V word lists included by native.cpp.
 find_program(XSG_GLSLC glslc REQUIRED)
 set(XSG_NATIVE_INC)
-foreach(src native.vert native.frag composite.comp native_skin.vert native_mv.comp native_fx.comp crt.vert crt.frag shadow.comp)
+foreach(src native.vert native.frag composite.comp native_skin.vert native_mv.comp native_fx.comp crt.vert crt.frag shadow.comp outline.comp)
   set(out ${CMAKE_CURRENT_BINARY_DIR}/${src}.inc)
   add_custom_command(OUTPUT ${out}
     COMMAND ${XSG_GLSLC} -O --target-env=vulkan1.1 -mfmt=num -o ${out} ${CMAKE_CURRENT_SOURCE_DIR}/${src}
@@ -95,7 +95,7 @@ foreach(font Rajdhani-Medium.ttf Rajdhani-SemiBold.ttf Exo2-Medium.ttf Exo2-Semi
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/menu/fonts/${font} ${CMAKE_CURRENT_SOURCE_DIR}/menu/embed.cmake VERBATIM)
   list(APPEND XSG_NATIVE_INC ${out})
 endforeach()
-set(XSG_MENU_SRCS ui/dialog.cpp ui/style.cpp ui/art.cpp ui/menus.cpp ui/layout.cpp ui/prompts.cpp menu/menu.cpp menu/menu_render.cpp menu/option_rows.cpp menu/cfg.cpp
+set(XSG_MENU_SRCS ui/dialog.cpp ui/style.cpp ui/art.cpp ui/menus.cpp ui/layout.cpp ui/prompts.cpp ui/pointer.cpp menu/menu.cpp menu/menu_render.cpp menu/option_rows.cpp menu/cfg.cpp
   ${XSG_IMGUI_DIR}/imgui.cpp ${XSG_IMGUI_DIR}/imgui_draw.cpp ${XSG_IMGUI_DIR}/imgui_tables.cpp
   ${XSG_IMGUI_DIR}/imgui_widgets.cpp)
 find_package(Git QUIET)

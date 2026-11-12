@@ -503,6 +503,24 @@ int scePadRead(int port, int slot, unsigned char *data)
             }
             live |= rb;
         }
+        {   /* the mouse's taps (mouse.cpp, port/docs/MOUSE.md) */
+            extern unsigned xsg_mouse_pad_buttons(void);
+            extern void xsg_mouse_pad_used(void);
+            static unsigned prev_live;
+            static int prev_stick;
+            /* a new d-pad / L1 / R1 press (or the left stick tipped) from the keyboard or a pad
+               moves a cursor: mouse hover must not pull it back */
+            const int stick = stick_off_centre(data + 6);
+            if (((live | m) & ~prev_live & 0xF00C) || (stick && !prev_stick))
+                xsg_mouse_pad_used();
+            prev_live = live | m;
+            prev_stick = stick;
+            const unsigned mb = xsg_mouse_pad_buttons();
+            for (int i = 0; i < 12; i++)
+                if (mb & press_bit[i])
+                    data[8 + i] = 0xff;
+            live |= mb;
+        }
         pad_script_sticks(data + 4); /* XSG_PAD_STICK overrides the sticks */
         data[2] &= ~((m | live) >> 8);  /* buttons are active low; SCE_PAD masks are */
         data[3] &= ~((m | live) & 0xff); /* 0xffff ^ (data[2] << 8 | data[3]) */
