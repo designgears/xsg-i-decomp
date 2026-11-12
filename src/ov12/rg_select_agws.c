@@ -7,6 +7,9 @@
 #include "ov12/rg_piclist.h"
 #include "ov12/rg_draw.h"
 #include "rg_select_agws.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+#endif
 
 /* Player highlight colour record (upstream recovery of s_aPlayerCol). */
 typedef struct XrgPlayerColor { int r; int g; int b; int a; } XrgPlayerColor;
@@ -1986,6 +1989,77 @@ static inline void _CancelOffSelect(RgSelectAGWS *pSel, SelDat *pSelDat)
     XrgSoundSystemCancel();
 }
 
+#ifdef PORT_HOST
+/* The mouse (port/docs/MOUSE.md): both screens are 2D pictures (agwssel.r2d, wepsel.r2d; only the
+   preview is a model), hit as drawn.  Select A.G.W.S.: the six rows and EXIT (unselectable rows
+   skipped).  Select Weapons: the L / R / L+R tabs and EXIT (a click on a tab selects it), the
+   weapon list as _DrawWepListDisp places it (a click selects and confirms), then the equip
+   window's Confirm / Cancel. */
+static void xsgSelectMouse(RgSelectAGWS *pSel, SelDat *pSelDat)
+{
+    int i, n;
+
+    if (pSel->state == 0 && pSelDat->mode == 0) {
+        static const short rows[7][4] = {{33, 95, 202, 46}, {33, 150, 202, 46}, {33, 196, 202, 46}, {33, 251, 202, 46},
+                                         {33, 297, 202, 46}, {33, 352, 202, 46}, {0, 404, 128, 32}};
+        SelChar *c = &pSelDat->selChar;
+        short r[7][4];
+        for (i = 0; i < 7; i++) {
+            r[i][0] = rows[i][0], r[i][1] = rows[i][1], r[i][3] = rows[i][3];
+            r[i][2] = (c->selectableMask & (1u << i)) ? rows[i][2] : 0;
+        }
+        n = xsg_mouse_rects((const short (*)[4])r, 7, c->cursor);
+        if (n != c->cursor) {
+            c->cursor = n;
+            XrgSoundSystemCursor();
+        }
+    } else if (pSel->state == 1 && pSelDat->mode == 1 && xsg_mouse()->active) {
+        static const short tabs[5][4] = {{293, 94, 33, 38}, {341, 94, 35, 38}, {390, 94, 60, 38}, {0, 0, 0, 0}, {385, 404, 127, 32}};
+        SelType *t = &pSelDat->selType;
+        const XsgMouse *m = xsg_mouse();
+        SelWep *w;
+        WepListDisp *d = pSel->pWepListDisp;
+        xsg_mouse_capture();
+        if (t->cursor == 3) {   /* the equip window: Confirm (CIRCLE) / Cancel (CROSS) */
+            for (i = 0; i < 2; i++)
+                if (xsg_mouse_in(365, 272 + 24 * i, 105, 24)) {
+                    xsg_mouse_hot();
+                    if (xsg_mouse_click(XSG_MB_LEFT))
+                        xsg_mouse_tap(i == 0 ? XSG_PAD_CIRCLE : XSG_PAD_CROSS);
+                }
+            return;
+        }
+        for (i = 0; i < 5; i++)
+            if (tabs[i][2] > 0 && xsg_mouse_in(tabs[i][0], tabs[i][1], tabs[i][2], tabs[i][3])) {
+                xsg_mouse_hot();
+                if (xsg_mouse_click(XSG_MB_LEFT)) {
+                    if (i == 4 && t->cursor == 4)
+                        xsg_mouse_tap(XSG_PAD_CIRCLE);   /* EXIT again: leave */
+                } else if (!(m->moved && m->hover)) {
+                    break;
+                }
+                if (i != t->cursor) {
+                    _SetSelTypeCursor(t, i);
+                    XrgSoundSystemCursor();
+                }
+                return;
+            }
+        w = _GetCurSelType(t);
+        if (w != 0 && d != 0 && d->pSelWep == w) {
+            const int size = (int)_GetEssListSizeSelWep(w), cur = _GetCursorSelWep(w);
+            int act;
+            n = xsg_mouse_list(WLD_X(d) + pSel->ofsX - 9, WLD_Y(d) + pSel->ofsY - 8, 200, WEP_LIST_ROW_HEIGHT, d->topIndex,
+                               size - d->topIndex < WEP_LIST_ROWS ? size - d->topIndex : WEP_LIST_ROWS, size, cur, &act);
+            if (n != cur) {
+                _SetCursorSelWep(w, n);
+                XrgSoundSystemCursor();
+            }
+            if (act)
+                xsg_mouse_tap(XSG_PAD_CIRCLE);
+        }
+    }
+}
+#endif
 static void _PassTime(RgSelectAGWS *pSel, float deltaTime)
 {
     int buf[7];
@@ -2133,6 +2207,9 @@ case1_end:
         RgError(D_00A56C58, D_00A56660, 0x7C3, state);
         break;
     }
+#ifdef PORT_HOST
+    xsgSelectMouse(pSel, pSelDat);
+#endif
     _PassTimeSelectData(pSelDat, deltaTime);
     RgSelectRobotPassTime(pSel->pRobot, deltaTime);
     buf[0] = _GetSelectCharID(pSelDat);

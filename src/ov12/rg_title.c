@@ -3,6 +3,9 @@
  */
 #include "common.h"
 #include "shared.h"
+#ifdef PORT_HOST
+#include "port/runtime/xsg_mouse.h"
+#endif
 
 extern void assert_prog(const char *expression, const char *source_file,
                         int line);
@@ -330,6 +333,16 @@ void RgTitlePassTime(RgTitle *pTitle, float delta)
                 return;
             }
         } else {
+#ifdef PORT_HOST
+            {   /* the mouse (port/docs/MOUSE.md): 1P Game, 2P Game, Controls, Exit as drawn */
+                static const short r[4][4] = {{170, 228, 172, 19}, {170, 247, 172, 22}, {170, 272, 172, 30}, {170, 304, 172, 30}};
+                const int n = xsg_mouse_rects(r, 4, pTitle->cursor_id);
+                if (n != pTitle->cursor_id) {
+                    pTitle->cursor_id = n;
+                    XrgSoundSystemCursor();
+                }
+            }
+#endif
             if (XrgPadIsUp() != 0 && pTitle->cursor_id != 0) {
                 pTitle->cursor_id--;
                 XrgSoundSystemCursor();
