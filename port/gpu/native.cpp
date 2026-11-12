@@ -547,6 +547,18 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
                        VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
     auto& color = t.color;
     auto& depth = t.depth;
+    // The draws' uniform data in one buffer of this pass (bound per draw at an offset): a Granite
+    // allocate_constant_data per draw took ~9 % of the main thread at 8x (its handle's atomic
+    // refcount waits on the write-combined UBO stores before it).
+    const VkDeviceSize ualign = std::max<VkDeviceSize>(16, dev.get_gpu_properties().limits.minUniformBufferOffsetAlignment);
+    const VkDeviceSize ustride = (sizeof(Ubo) + ualign - 1) & ~(ualign - 1);
+    Vulkan::BufferCreateInfo ubi = {};
+    ubi.domain = Vulkan::BufferDomain::LinkedDeviceHostPreferDevice;
+    ubi.size = std::max<size_t>(1, list.size()) * ustride;
+    ubi.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    const Vulkan::BufferHandle ubuf = dev.create_buffer(ubi);
+    uint8_t* const umap = static_cast<uint8_t*>(dev.map_host_buffer(*ubuf, Vulkan::MEMORY_ACCESS_WRITE_BIT));
+    VkDeviceSize uoff = 0;
 
     cmd->image_barrier(*color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                        VK_PIPELINE_STAGE_2_NONE, 0, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -696,10 +708,13 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
         }
         if (shadow) sc = {{0, 0}, {rg.w, rg.h}};
         cmd->set_scissor(sc);
-        std::memcpy(cmd->allocate_constant_data(0, 0, sizeof(Ubo)), &uu, sizeof uu);
+        std::memcpy(umap + uoff, &uu, sizeof uu);
+        cmd->set_uniform_buffer(0, 0, *ubuf, uoff, sizeof(Ubo));
+        uoff += ustride;
         if (s->skin) cmd->draw_indexed(n);
         else cmd->draw(n);
     }
+    dev.unmap_host_buffer(*ubuf, Vulkan::MEMORY_ACCESS_WRITE_BIT);
     cmd->end_render_pass();
     cmd->image_barrier(*t.id, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
