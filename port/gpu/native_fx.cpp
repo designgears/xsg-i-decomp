@@ -984,6 +984,8 @@ void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterfa
     uint32_t start = 0;
     uint8_t oq[16];
     const uint64_t t0 = xsgprof::g_on ? xsgprof::Now() : 0;
+    if (g_obuf.capacity() < g_obuf.size() + len)   // one qword out per qword in: no growth inside the loop
+        g_obuf.reserve(std::max(g_obuf.capacity() * 2, g_obuf.size() + len + (256u << 10)));
     for (uint32_t i = 0; i + 16 <= len; i += 16) {
         if (pre) pre(data + i);
         Qword(path, p, data + i, oq);
@@ -994,7 +996,11 @@ void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterfa
             OwnFlush(path);
             Snapshot(gs);
         }
-        g_obuf.insert(g_obuf.end(), oq, oq + 16);
+        {
+            const size_t o = g_obuf.size();
+            g_obuf.resize(o + 16);
+            std::memcpy(g_obuf.data() + o, oq, 16);
+        }
         if (g_copy_req) {
             g_copy_req = false;
             gs.gif_transfer(path, data + start, i + 16 - start);   // through the copy

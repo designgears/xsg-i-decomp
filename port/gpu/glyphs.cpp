@@ -232,6 +232,12 @@ void Feed(uint32_t path, const uint8_t* data, uint32_t len, std::vector<uint8_t>
             p.left = p.flg == 0 ? nloop * p.nreg : p.flg == 1 ? (nloop * p.nreg + 1) / 2 : nloop;
             continue;
         }
+        if (p.flg >= 2 && !g_x.on) {   // IMAGE nobody captures: skip it whole (most of the stream's bytes)
+            const uint32_t n = std::min<uint32_t>(p.left, (len - i) / 16);
+            p.left -= n;
+            i += (n - 1) * 16;
+            continue;
+        }
         p.left--;
         if (p.flg >= 2) {   // IMAGE
             if (g_x.on) {
