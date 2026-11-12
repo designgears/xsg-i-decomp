@@ -51,6 +51,9 @@ const uint8_t* MirrorData();
 uint32_t TextureGen(uint64_t tex0);
 /* The oldest upload generation among a texture's pages (its CLUT not included). */
 uint32_t TextureGenMin(uint64_t tex0);
+/* A content hash of a texture's pages (its CLUT not included; per-page hashes are cached until an
+   upload touches the page). */
+uint64_t TextureHash(uint64_t tex0);
 /* A TEX0 texture decoded from a 4 MB GS-memory image (RGBA8). */
 std::vector<uint32_t> DecodeVramTexture(const uint8_t* vram, uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h);
 /* fn(y0, y1) over [0, h) split across a few threads (frame decodes). */

@@ -1733,6 +1733,13 @@ uint32_t TextureGen(uint64_t tex0) {
     const uint32_t cpage = Bits(tex0, 37, 14) / 32;
     return std::max(gen, std::max(g_page_gen[cpage & 511], g_page_gen[(cpage + 1) & 511]));
 }
+uint64_t TextureHash(uint64_t tex0) {
+    uint32_t p0, np;
+    PageRange(Bits(tex0, 0, 14), std::max(1u, Bits(tex0, 14, 6)), Bits(tex0, 20, 6), 1u << std::min(10u, Bits(tex0, 30, 4)), &p0, &np);
+    uint64_t h = 1469598103934665603ull;
+    for (uint32_t i = 0; i < np; ++i) h = (h ^ PageHash((p0 + i) & 511)) * 1099511628211ull;
+    return h;
+}
 uint32_t TextureGenMin(uint64_t tex0) {
     uint32_t p0, np, gen = ~0u;
     PageRange(Bits(tex0, 0, 14), std::max(1u, Bits(tex0, 14, 6)), Bits(tex0, 20, 6), 1u << std::min(10u, Bits(tex0, 30, 4)), &p0, &np);

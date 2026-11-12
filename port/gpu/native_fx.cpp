@@ -333,8 +333,12 @@ void Record(PostFrame& pf, uint32_t fbp, const Vtx* v, int n, uint32_t type, boo
             }
             static std::map<std::tuple<uint64_t, uint64_t, uint64_t>, std::shared_ptr<Tex>> cache;
             if (cache.size() > 256) cache.clear();
+            // the texture's content (its pages' hashes; the game re-uploads the same effect
+            // textures every frame, so neither the mirror's nor the pages' upload generation
+            // keeps a decode), and the CLUT buffer for indexed formats
+            const bool indexed = ((tex0 >> 20) & 63) >= 0x13;
             const auto key = std::make_tuple(tex0 & ((1ull << 61) - 1), g.reg[0x3b],
-                                             uint64_t(xsgnative::MirrorGen()) ^ (xsgnative::ClutHash() << 20));
+                                             xsgnative::TextureHash(tex0) ^ (indexed ? xsgnative::ClutHash() * 31 : 0));
             auto it = cache.find(key);
             if (it == cache.end()) {
                 pf.texels += uint64_t(1u << tw) << th;
