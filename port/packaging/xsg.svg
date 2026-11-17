@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Original icon for the PC port's AppImage: an orbit around a star.
+     Plain geometry, no game artwork. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b2a4a"/>
+      <stop offset="1" stop-color="#0a1020"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.35" stop-color="#bfe6ff"/>
+      <stop offset="1" stop-color="#3fa9f5" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="44" fill="url(#bg)"/>
+  <ellipse cx="128" cy="128" rx="92" ry="34" fill="none" stroke="#3fa9f5" stroke-width="7"
+           transform="rotate(-28 128 128)"/>
+  <ellipse cx="128" cy="128" rx="92" ry="34" fill="none" stroke="#8fd0ff" stroke-width="3"
+           stroke-opacity="0.6" transform="rotate(32 128 128)"/>
+  <circle cx="128" cy="128" r="44" fill="url(#glow)"/>
+  <path d="M128 92 L136 120 L164 128 L136 136 L128 164 L120 136 L92 128 L120 120 Z" fill="#ffffff"/>
+  <circle cx="196" cy="88" r="7" fill="#ffffff"/>
+</svg>

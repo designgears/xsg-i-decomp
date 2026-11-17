@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Xenosaga Episode I
+Comment=PC port of Xenosaga Episode I (needs your own disc image)
+Exec=xsg
+Icon=xsg
+Terminal=false
+Categories=Game;RolePlaying;
+StartupWMClass=xsg-gpu

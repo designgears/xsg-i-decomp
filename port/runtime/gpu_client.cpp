@@ -21,20 +21,28 @@
 #include <strings.h>
 #include <ctime>
 #include <fcntl.h>
+#include <string>
+#include <unistd.h>
+#include <vector>
+#ifdef _WIN32
+#include "xsg_win32_ipc.h"   /* Windows: named events for the shared words, a file mapping */
+#else
 #include <linux/futex.h>
 #include <spawn.h>
-#include <string>
 #include <sys/mman.h>
 #include <sys/syscall.h>
 #include <sys/wait.h>
-#include <unistd.h>
-#include <vector>
+#endif
 
 extern "C" {
 #include "xsg_rt.h"
 }
 
+#ifndef _WIN32
 extern char** environ;
+#else
+extern "C" const char* xsg_w32_exe_path(void);   /* win32/platform_win32.c */
+#endif
 
 namespace xsggpu {
 namespace {
@@ -50,7 +58,11 @@ constexpr u32 kSlack = 1024u << 10;  // a PACKED packet may run past kChunk by t
 GpuShm* shm;
 u8* ring;
 u8* reply;
+#ifdef _WIN32
+HANDLE child_h;   /* xsg-gpu.exe; in a kill-on-close job, so it ends with the game */
+#else
 pid_t child = -1;
+#endif
 u32 wpos;
 bool open_msg;
 u32 open_at, open_len;
@@ -60,6 +72,18 @@ u64 priv_sent[0x20];
 bool priv_valid[0x20];
 u64 stalls;
 
+#ifdef _WIN32
+long Futex(volatile u32* a, int op, u32 v, const timespec* ts) { return xsg_w32_futex(a, op, v, ts); }
+
+void CheckChild() {
+    DWORD code = 0;
+    if (child_h && WaitForSingleObject(child_h, 0) == WAIT_OBJECT_0) {
+        GetExitCodeProcess(child_h, &code);
+        xsg_logf("[gpu] xsg-gpu exited (status %d); the game stops too\n", int(code));
+        std::_Exit(int(code));
+    }
+}
+#else
 long Futex(volatile u32* a, int op, u32 v, const timespec* ts) {
     return syscall(SYS_futex, (u32*)a, op, v, ts, nullptr, 0);
 }
@@ -72,6 +96,7 @@ void CheckChild() {
         std::_Exit(code);
     }
 }
+#endif
 
 void Publish() {
     __atomic_store_n(&shm->wpos, wpos, __ATOMIC_SEQ_CST);
@@ -134,6 +159,58 @@ void WaitReply(u32 s) {
     }
 }
 
+#ifdef _WIN32
+std::string DefaultBin() {   /* <dir of xsg.exe>\gpu\xsg-gpu.exe */
+    std::string s = xsg_w32_exe_path();
+    const size_t sl = s.find_last_of("\\/");
+    if (sl == std::string::npos) return "gpu\\xsg-gpu.exe";
+    return s.substr(0, sl) + "\\gpu\\xsg-gpu.exe";
+}
+
+/* The shared memory and the child: an inheritable pagefile-backed mapping whose handle
+   value xsg-gpu.exe gets as argv[1] (Linux passes fd 3), and --parent=<pid> for the event
+   names (xsg_win32_ipc.h) and its "game went away" check.  The child goes into a job that
+   kills it when the game's last handle to the job closes, i.e. when the game exits. */
+void* MapShm(HANDLE* out) {
+    SECURITY_ATTRIBUTES sa = {sizeof sa, nullptr, TRUE};
+    HANDLE h = CreateFileMappingA(INVALID_HANDLE_VALUE, &sa, PAGE_READWRITE, 0, XSG_GPU_SHM_SIZE, nullptr);
+    if (!h) { xsg_logf("[gpu] CreateFileMapping: error %lu\n", GetLastError()); return nullptr; }
+    void* m = MapViewOfFile(h, FILE_MAP_ALL_ACCESS, 0, 0, XSG_GPU_SHM_SIZE);
+    if (!m) { xsg_logf("[gpu] MapViewOfFile of %u bytes: error %lu\n", XSG_GPU_SHM_SIZE, GetLastError()); return nullptr; }
+    xsg_w32_ipc_init(m, GetCurrentProcessId());
+    *out = h;
+    return m;
+}
+
+bool SpawnGpu(const std::string& bin, HANDLE map, const char* stream) {
+    std::string cmd = "\"" + bin + "\" " + std::to_string((unsigned long long)(uintptr_t)map) +
+                      " --parent=" + std::to_string(GetCurrentProcessId());
+    if (stream) cmd += std::string(" \"--stream=") + stream + "\"";
+    static HANDLE job;
+    if (!job) {
+        job = CreateJobObjectA(nullptr, nullptr);
+        JOBOBJECT_EXTENDED_LIMIT_INFORMATION li = {};
+        li.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        if (job) SetInformationJobObject(job, JobObjectExtendedLimitInformation, &li, sizeof li);
+    }
+    STARTUPINFOA si = {};
+    si.cb = sizeof si;
+    PROCESS_INFORMATION pi = {};
+    std::vector<char> line(cmd.begin(), cmd.end());
+    line.push_back(0);
+    if (!CreateProcessA(bin.c_str(), line.data(), nullptr, nullptr, TRUE, CREATE_SUSPENDED, nullptr, nullptr, &si, &pi)) {
+        xsg_logf("[gpu] cannot start %s: error %lu ([debug] gpu_bin in settings.ini overrides the path)\n", bin.c_str(),
+                 GetLastError());
+        return false;
+    }
+    if (job && !AssignProcessToJobObject(job, pi.hProcess))
+        xsg_logf("[gpu] could not put xsg-gpu in a job (error %lu): it may outlive a crashed game\n", GetLastError());
+    ResumeThread(pi.hThread);
+    CloseHandle(pi.hThread);
+    child_h = pi.hProcess;
+    return true;
+}
+#else
 std::string DefaultBin() {
     char buf[4096];
     ssize_t n = readlink("/proc/self/exe", buf, sizeof buf - 1);
@@ -142,12 +219,18 @@ std::string DefaultBin() {
     std::string s(buf);
     return s.substr(0, s.rfind('/')) + "/gpu/xsg-gpu";
 }
+#endif
 
 }  // namespace
 
 bool Active() { return shm != nullptr; }
 
 bool Start(const char* stream) {
+#ifdef _WIN32
+    HANDLE map = nullptr;
+    void* m = MapShm(&map);
+    if (!m) return false;
+#else
     int fd = memfd_create("xsg-gpu-ring", MFD_CLOEXEC);
     if (fd < 0 || ftruncate(fd, XSG_GPU_SHM_SIZE) != 0) {
         xsg_logf("[gpu] memfd: %s\n", std::strerror(errno));
@@ -158,6 +241,7 @@ bool Start(const char* stream) {
         xsg_logf("[gpu] mmap of %u bytes: %s\n", XSG_GPU_SHM_SIZE, std::strerror(errno));
         return false;
     }
+#endif
     GpuShm* s = static_cast<GpuShm*>(m);
     std::memset(s, 0, sizeof *s);
     s->magic = XSG_GPU_MAGIC;
@@ -170,6 +254,11 @@ bool Start(const char* stream) {
     // live-stream FIFO, which only one process may feed, goes on its command line.
     const char* bin_cfg = xsg_cfg("debug.gpu_bin");
     std::string bin = bin_cfg ? bin_cfg : DefaultBin();
+#ifdef _WIN32
+    if (!SpawnGpu(bin, map, stream)) return false;
+    CloseHandle(map);   /* the child has its own copy; the view keeps the section alive here */
+    const int pid = int(GetProcessId(child_h));
+#else
     std::string fd_arg = std::to_string(XSG_GPU_FD), stream_arg = std::string("--stream=") + (stream ? stream : "");
     char* argv[] = {&bin[0], &fd_arg[0], stream ? &stream_arg[0] : nullptr, nullptr};
     posix_spawn_file_actions_t fa;
@@ -214,6 +303,7 @@ bool Start(const char* stream) {
         return false;
     }
     child = pid;
+#endif
     shm = s;
     ring = static_cast<u8*>(m) + XSG_GPU_HDR;
     reply = ring + XSG_GPU_RING;
@@ -397,6 +487,26 @@ int SettingsRead(GpuSettings* out) {
    command line; the new run reads settings.ini afresh. */
 [[noreturn]] void Restart() {
     xsg_logf("[settings] restart requested by the menu\n");
+#ifdef _WIN32
+    if (child_h) {
+        TerminateProcess(child_h, 0);
+        WaitForSingleObject(child_h, 5000);
+    }
+    STARTUPINFOW si = {};
+    si.cb = sizeof si;
+    PROCESS_INFORMATION pi = {};
+    std::fflush(nullptr);
+    std::wstring line = GetCommandLineW();
+    if (CreateProcessW(nullptr, &line[0], nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
+        CloseHandle(pi.hThread);
+        WaitForSingleObject(pi.hProcess, INFINITE);   /* stay the parent a console/launcher waits on */
+        DWORD code = 0;
+        GetExitCodeProcess(pi.hProcess, &code);
+        std::_Exit(int(code));
+    }
+    xsg_logf("[settings] restart failed: error %lu\n", GetLastError());
+    std::_Exit(1);
+#else
     if (child > 0) {
         kill(child, SIGTERM);
         waitpid(child, nullptr, 0);
@@ -418,9 +528,33 @@ int SettingsRead(GpuSettings* out) {
     execv("/proc/self/exe", argv.data());
     xsg_logf("[settings] restart failed: %s\n", std::strerror(errno));
     std::_Exit(1);
+#endif
+}
+
+/* First-run setup (port/docs/SETUP.md): xsg-gpu shows its setup screen until the user picks a
+   valid disc image (saved there as [game] iso) or quits.  Synchronous; the game waits. */
+int Setup(unsigned reason, const char* tried, const char* search_dir, char* out, unsigned len) {
+    if (!shm) return -1;
+    static GpuSetupReq req;
+    std::memset(&req, 0, sizeof req);
+    req.reason = reason;
+    std::snprintf(req.path, sizeof req.path, "%s", tried ? tried : "");
+    std::snprintf(req.search_dir, sizeof req.search_dir, "%s", search_dir ? search_dir : "");
+    const u32 s = ++seq;
+    Send(GPU_MSG_SETUP, s, 0, &req, sizeof req);
+    WaitReply(s);   // the window closed: xsg-gpu exits and CheckChild ends the game with it
+    const GpuSetupReply* r = reinterpret_cast<const GpuSetupReply*>(reply);
+    if (!r->ok) return 0;
+    std::snprintf(out, len, "%.*s", int(sizeof r->path), r->path);
+    return 1;
 }
 
 }  // namespace xsggpu
+
+/* C entry for disc.c: 1 = a path in out, 0 = the user quit, -1 = no xsg-gpu (headless / soft GS). */
+extern "C" int xsg_gpu_setup(unsigned reason, const char* tried, const char* search_dir, char* out, unsigned len) {
+    return xsggpu::Setup(reason, tried, search_dir, out, len);
+}
 
 /* The shared block (mouse.cpp reads GpuMouse from it); null without xsg-gpu. */
 extern "C" void* xsg_gpu_shm_base(void) { return xsggpu::shm; }

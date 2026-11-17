@@ -90,6 +90,17 @@ void ModeInit() {
     xsg_logf("[gs] renderer: %s\n", g_mode == Mode::Soft ? "soft" : g_mode == Mode::Gpu ? "gpu" : "both");
 }
 
+}  // namespace
+
+/* First-run setup (disc.c): start xsg-gpu now, as the first GS call would.  1 if it runs. */
+extern "C" int xsg_gs_start_gpu(void) {
+    std::lock_guard<std::recursive_mutex> l(g_lock);
+    ModeInit();
+    return g_gpu ? 1 : 0;
+}
+
+namespace {
+
 /* Every quadword the GS receives goes through here. */
 inline void GsQword(int path, u64 lo, u64 hi) {
     if (g_soft) G().Qword(path, lo, hi);

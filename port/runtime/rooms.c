@@ -256,6 +256,12 @@ void xsg_room_tick(int kind, unsigned event_id)
             return;
         }
         xsg_logf("[room] jump to %s\n", nm);
+        {   /* [debug] skip_events = jump: fast through the boot's events, the jumped-to scene at speed */
+            extern int xsg_skip_events;
+            const char *se = xsg_cfg("debug.skip_events");
+            if (se && !strcmp(se, "jump"))
+                xsg_skip_events = 0;
+        }
         Java_xeno_util_Runtime_jump_sub((int)target, -1);
     }
 }

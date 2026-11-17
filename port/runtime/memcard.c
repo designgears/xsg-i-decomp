@@ -51,10 +51,16 @@ static int card_present(int port, int slot)
         if (d && *d)
             snprintf(root, sizeof root, "%s", d);
         else {
+#ifdef _WIN32
+            /* %LOCALAPPDATA%\xsg\mc0, as xsg-gpu's menu */
+            char d[1024];
+            snprintf(root, sizeof root, "%s", *xsg_w32_dir("LOCALAPPDATA", d, sizeof d) ? d : ".");
+#else
             const char *h = getenv("HOME");
             snprintf(root, sizeof root, "%s/.local", h ? h : "/tmp");
             mkdir(root, 0755);
             strcat(root, "/share"); mkdir(root, 0755);
+#endif
             strcat(root, "/xsg"); mkdir(root, 0755);
             strcat(root, "/mc0");
         }

@@ -8,6 +8,7 @@
  * pointer is over here, as ui_kind / ui_index.  Coordinates are ImGui's (window logical
  * pixels). */
 #pragma once
+#include <string>
 #include "imgui.h"
 #include <cstdint>
 
@@ -46,6 +47,8 @@ bool PointerVisible();
 bool PointerHot();
 /* Hold to skip (gpu_ipc.h GpuMouse g_skip): bits 0-7 progress, bit 8 a skippable scene, bit 9 show. */
 uint32_t PointerSkip();
+/* The movie caption the game asks for now (GpuMouse g_caption; UTF-8, '\n' between lines), "" none. */
+const std::string& PointerCaption();
 /* The native renderer (native.cpp): the pointer in the game's 512 x 448 frame (x may lie in the
    widescreen margins, < 0 or >= 512; false when the mouse is off, outside, or over a UI panel), the object ids the game wants outlined, and the object id it found
    under the pointer (-1 unknown: no native frame). */

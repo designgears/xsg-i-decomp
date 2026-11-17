@@ -63,19 +63,26 @@ const uint32_t kCrtFrag[] = {
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
+#ifndef _WIN32
 #include <linux/futex.h>
+#endif
+#include <algorithm>
 #include <memory>
 #include <mutex>
 #include <string>
-#include <sys/mman.h>
 #include <sys/stat.h>
+#include <thread>
+#include <vector>
+#ifdef _WIN32
+#include "xsg_win32_ipc.h"   // port/runtime: the cross-process wait/wake (named events)
+#else
+#include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
-#include <thread>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <spawn.h>
-#include <vector>
+#endif
 
 // File-local stb_image_write (static): the menu's screenshots and test shots.
 #pragma GCC diagnostic push
@@ -91,7 +98,17 @@ using namespace ParallelGS;
 namespace {
 
 GpuShm* shm;
+#ifdef _WIN32
+/* The game, from --parent=<pid>: getppid() below answers its pid while it runs and 0 once it
+   has exited, so the "game went away" checks read as on Linux. */
+unsigned long g_parent;
+HANDLE g_parent_h;
+unsigned long getppid() {
+    return g_parent_h && WaitForSingleObject(g_parent_h, 0) == WAIT_OBJECT_0 ? 0 : g_parent;
+}
+#else
 pid_t g_parent;
+#endif
 uint8_t* ring;
 uint8_t* reply;
 
@@ -106,7 +123,11 @@ void Log(const char* fmt, ...) {
 }
 
 long Futex(volatile uint32_t* addr, int op, uint32_t val, const timespec* ts) {
+#ifdef _WIN32
+    return xsg_w32_futex(addr, op, val, ts);
+#else
     return syscall(SYS_futex, (uint32_t*)addr, op, val, ts, nullptr, 0);
+#endif
 }
 
 
@@ -138,6 +159,9 @@ Stream* g_stream;
 
 void StreamWriter() {
     Stream& s = *g_stream;
+#ifdef _WIN32
+    (void)s;   // [debug] stream (a FIFO) is Linux-only; main() never starts this thread on Windows
+#else
     for (;;) {
         {
             std::unique_lock<std::mutex> l(s.m);
@@ -157,6 +181,7 @@ void StreamWriter() {
             off += size_t(n);
         }
     }
+#endif
 }
 
 bool StreamWants() {
@@ -219,10 +244,19 @@ struct SdlPlatform final : Vulkan::WSIPlatform {
    first use compiled synchronously (a 30+ ms hitch at an effect's first appearance, every run).
    xsg-gpu is usually ended by a signal, so it is saved whenever it grew (at the 600-vsync tick). */
 std::string PipelineCachePath() {
+#ifdef _WIN32
+    // %LOCALAPPDATA%\xsg\cache
+    std::string dir = XsgWinDir("LOCALAPPDATA");
+    if (dir.empty()) return dir;
+    dir += "/xsg";
+    mkdir(dir.c_str(), 0755);
+    dir += "/cache";
+#else
     const char* x = std::getenv("XDG_CACHE_HOME");
     const char* home = std::getenv("HOME");
     std::string dir = x && *x ? std::string(x) + "/xsg" : home ? std::string(home) + "/.cache/xsg" : std::string();
     if (dir.empty()) return dir;
+#endif
     mkdir(dir.c_str(), 0755);
     return dir + "/pipeline_cache.bin";
 }
@@ -836,6 +870,9 @@ struct Renderer {
         const char* layer = getenv("VKLayer_DLSS5");
         if (!layer || std::strcmp(layer, "1") != 0 || int(on) == neural_state) return;
         neural_state = on;
+#ifdef _WIN32
+        Log("DLSS 5 Neural Rendering is not supported on Windows");
+#else
         const std::string shm = "/tmp/dlssnr-" + std::to_string(getuid()) + "/shm.bin";
         auto run = [](std::vector<std::string> a) {
             std::vector<char*> argv;
@@ -852,6 +889,7 @@ struct Renderer {
         if (on && access(shm.c_str(), F_OK) != 0) run({"dlssnr-helper", "start"});
         const bool ok = run({"dlssnr-shmctl", shm, "set", "enabled", on ? "1" : "0"});
         Log("DLSS 5 Neural Rendering %s%s", on ? "on" : "off", ok ? "" : " (dlssnr-shmctl failed: is the helper installed?)");
+#endif
     }
 
 
@@ -971,6 +1009,55 @@ struct Renderer {
         }
     }
 
+    /* GPU_MSG_SETUP (port/docs/SETUP.md): the first-run setup screen, drawn and presented here at
+       ~60 Hz until the user continues with a valid disc image or quits; the game waits for the
+       reply.  Closing the window ends xsg-gpu, and the game with it. */
+    void Setup(const GpuSetupReq& req) {
+        GpuSetupReply* out = reinterpret_cast<GpuSetupReply*>(reply);
+        std::memset(out, 0, sizeof *out);
+        std::string tried(req.path, strnlen(req.path, sizeof req.path)),
+            dir(req.search_dir, strnlen(req.search_dir, sizeof req.search_dir));
+#ifdef XSG_GPU_SDL
+        if (!windowed) {
+            Log("setup: no window (headless); set [game] iso in %s", xsgcfg::Path().c_str());
+            out->ok = 2;
+            return;
+        }
+        Log("setup: no usable disc image (reason %u, '%s'): the setup screen", req.reason, tried.c_str());
+        xsgmenu::SetupBegin(int(req.reason), tried, dir);
+        std::string path;
+        int r = 0;
+        for (uint32_t n = 1; !r; ++n) {
+            const auto t = std::chrono::steady_clock::now();
+            xsginput::BeginFrame(n);
+            platform->poll_input();
+            if (!platform->is_alive) {
+                Log("setup: window closed");
+                std::_Exit(0);   // the game sees the process go and exits too
+            }
+            if (getppid() != g_parent) { Log("game went away"); std::_Exit(0); }
+            xsgmenu::Stats st;
+            st.windowed = true;
+            st.target_w = platform->w;
+            st.target_h = platform->h;
+            st.present = PresentName();
+            xsgmenu::Frame(n, st);
+            r = xsgmenu::SetupResult(&path);
+            Present(ScanoutResult{}, true);
+            std::this_thread::sleep_until(t + std::chrono::microseconds(16667));
+        }
+        if (r > 0) {
+            out->ok = 1;
+            std::snprintf(out->path, sizeof out->path, "%s", path.c_str());
+            Log("setup: %s (saved as [game] iso in %s)", path.c_str(), xsgcfg::Path().c_str());
+        } else {
+            Log("setup: quit");
+        }
+#else
+        out->ok = 2;
+#endif
+    }
+
     void Reply(uint32_t seq) {
         __atomic_store_n(&shm->reply_seq, seq, __ATOMIC_RELEASE);
         Futex(&shm->reply_seq, FUTEX_WAKE, INT32_MAX, nullptr);
@@ -1003,6 +1090,23 @@ void Renderer::InitMenu() {
 }  // namespace
 
 int main(int argc, char** argv) {
+#ifdef _WIN32
+    /* The game (gpu_client.cpp) passes its file mapping as an inherited handle value in argv[1]
+       and its pid as --parent=<pid>; it also puts this process in a kill-on-close job object,
+       which ends it with the game (Linux: PR_SET_PDEATHSIG). */
+    unsigned long long hmap = 0;
+    const char* stream = nullptr;
+    for (int i = 1; i < argc; ++i) {
+        if (!std::strncmp(argv[i], "--stream=", 9)) stream = argv[i] + 9;
+        else if (!std::strncmp(argv[i], "--parent=", 9)) g_parent = std::strtoul(argv[i] + 9, nullptr, 0);
+        else hmap = std::strtoull(argv[i], nullptr, 0);
+    }
+    if (g_parent) g_parent_h = OpenProcess(SYNCHRONIZE, FALSE, DWORD(g_parent));
+    void* m = hmap ? MapViewOfFile(HANDLE(uintptr_t(hmap)), FILE_MAP_ALL_ACCESS, 0, 0, XSG_GPU_SHM_SIZE) : nullptr;
+    if (!m) { Log("mapping of handle %llu failed (xsg-gpu is started by the game)", hmap); return 1; }
+    xsg_w32_ipc_init(m, g_parent);
+    if (stream && *stream) { Log("[debug] stream is not supported on Windows"); stream = nullptr; }
+#else
     std::signal(SIGPIPE, SIG_IGN);
     g_parent = getppid();
     prctl(PR_SET_PDEATHSIG, SIGTERM);  // the game died: go too
@@ -1014,6 +1118,7 @@ int main(int argc, char** argv) {
     }
     void* m = mmap(nullptr, XSG_GPU_SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (m == MAP_FAILED) { Log("mmap of fd %d failed (run by the game with XSG_GS=gpu|both)", fd); return 1; }
+#endif
     shm = static_cast<GpuShm*>(m);
     if (shm->magic != XSG_GPU_MAGIC || shm->version != XSG_GPU_VERSION) { Log("bad shm header"); return 1; }
     ring = static_cast<uint8_t*>(m) + XSG_GPU_HDR;
@@ -1096,6 +1201,13 @@ int main(int argc, char** argv) {
             uint32_t n = h.b;
             if (n > XSG_GPU_REPLY / 16) n = XSG_GPU_REPLY / 16;
             r.gs.read_transfer_fifo(reply, n);
+            r.Reply(h.a);
+            break;
+        }
+        case GPU_MSG_SETUP: {
+            static GpuSetupReq req;
+            std::memcpy(&req, payload, std::min<size_t>(sizeof req, h.len));
+            r.Setup(req);
             r.Reply(h.a);
             break;
         }

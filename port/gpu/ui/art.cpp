@@ -264,7 +264,13 @@ ImTextureID ArtOverride(const char* name, uint32_t* w, uint32_t* h) {
         o.tried = true;
         const char* xdg = std::getenv("XDG_CONFIG_HOME");
         const char* home = std::getenv("HOME");
+#ifdef _WIN32
+        (void)xdg;
+        (void)home;
+        const std::string dir = XsgWinDir("APPDATA") + "/xsg/art";   // %APPDATA%\xsg\art
+#else
         const std::string dir = xdg && *xdg ? std::string(xdg) + "/xsg/art" : std::string(home ? home : ".") + "/.config/xsg/art";
+#endif
         int iw = 0, ih = 0, n = 0;
         if (unsigned char* px = xsgui_stbi_load((dir + "/" + name + ".png").c_str(), &iw, &ih, &n, 4)) {
             o.id = ImTextureID(xsgmenu::RenderTexture(0, reinterpret_cast<const uint32_t*>(px), uint32_t(iw), uint32_t(ih)));

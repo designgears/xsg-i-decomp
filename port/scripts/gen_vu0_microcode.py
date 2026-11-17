@@ -54,8 +54,10 @@ def main():
             f.write("  " + ",".join("0x%02x" % b for b in img[i:i + 16]) + ",\n")
         f.write("};\nconst unsigned int xsg_vu0_microcode_size = %d;\n" % len(img))
         f.write("/* entry labels: VU0 micro-memory byte addresses */\n")
+        # (the symbol names in assembly: i386 COFF, i.e. Windows, prefixes C names with `_`)
+        f.write('#ifdef _WIN32\n#define XSG_SYM(n) "_" n\n#else\n#define XSG_SYM(n) n\n#endif\n')
         for name, value in sorted(labels, key=lambda t: t[1]):
-            f.write('__asm__(".globl %s\\n\\t.set %s, 0x%x");\n' % (name, name, value))
+            f.write('__asm__(".globl " XSG_SYM("%s") "\\n\\t.set " XSG_SYM("%s") ", 0x%x");\n' % (name, name, value))
 
 
 if __name__ == "__main__":

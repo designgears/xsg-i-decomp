@@ -12,12 +12,16 @@
 #include <pthread.h>
 #include <time.h>
 #include <signal.h>
+#ifndef _WIN32
 #include <ucontext.h>
+#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _WIN32
 #include <sys/mman.h>
+#endif
 #include <unistd.h>
 
 #include "xsg_rt.h"
@@ -45,6 +49,11 @@ void xsg_vlogf(const char *fmt, va_list ap)
     fflush(xsg_log_fp);
 }
 
+#ifdef _WIN32
+/* Windows: the stub xsg.exe reserved the range; see win32/platform_win32.c. */
+void xsg_w32_map_ps2_memory(void);
+void xsg_map_ps2_memory(void) { xsg_w32_map_ps2_memory(); }
+#else
 static void *map_fixed(uint32_t addr, uint32_t size, const char *what)
 {
     void *p = mmap((void *)(uintptr_t)addr, size, PROT_READ | PROT_WRITE,
@@ -97,11 +106,14 @@ void xsg_map_ps2_memory(void)
     xsg_logf("[mem] RAM 0x%08x-0x%08x, EE HW 0x%08x, VU mem 0x%08x, GS priv 0x%08x, SPR 0x%08x\n",
              xsg_ram_low, PS2_RAM_SIZE, PS2_EEHW_BASE, PS2_VU_BASE, PS2_GSPRIV_BASE, PS2_SPR_BASE);
 }
+#endif /* !_WIN32 */
 
 /* Copy the original SLUS ELF's loadable segments to their PS2 addresses, so
  * that game code which reads main-image data through hard-coded PS2
  * addresses (e.g. ov01 data_unit_org_get reads 0x426F48) sees the original
- * bytes.  The host's own copy of that data is what C symbols refer to. */
+ * bytes.  The host's own copy of that data is what C symbols refer to.
+ * [game] elf, else <game_dir>/extracted-iso/SLUS_204.69, else the copy on the
+ * disc image (so the ISO is all a player needs; xsg_disc_init runs first). */
 void xsg_load_main_image(void)
 {
     const char *path = xsg_cfg("game.elf");
@@ -111,29 +123,48 @@ void xsg_load_main_image(void)
         snprintf(buf, sizeof buf, "%s/extracted-iso/SLUS_204.69", root ? root : XSG_DEFAULT_GAME_DIR);
         path = buf;
     }
+    unsigned char *img = NULL;
+    uint32_t len = 0;
     FILE *f = fopen(path, "rb");
-    if (!f) {
-        xsg_logf("[mem] %s not found: PS2 RAM image left zeroed\n", path);
-        return;
-    }
-    Elf32_Ehdr eh;
-    if (fread(&eh, sizeof eh, 1, f) != 1 || memcmp(eh.e_ident, ELFMAG, SELFMAG)) {
+    if (f) {
+        fseek(f, 0, SEEK_END);
+        long n = ftell(f);
+        fseek(f, 0, SEEK_SET);
+        if (n > 0 && (img = malloc((size_t)n)) && fread(img, 1, (size_t)n, f) == (size_t)n)
+            len = (uint32_t)n;
         fclose(f);
+    } else if (!xsg_cfg("game.elf") && !xsg_disc_read_file("\\SLUS_204.69;1", (void **)&img, &len)) {
+        path = "disc:SLUS_204.69";
+    }
+    if (!len) {
+        xsg_logf("[mem] %s not found (nor on the disc image): PS2 RAM image left zeroed\n", path);
+        free(img);
         return;
     }
-    for (int i = 0; i < eh.e_phnum; i++) {
-        Elf32_Phdr ph;
-        fseek(f, eh.e_phoff + i * eh.e_phentsize, SEEK_SET);
-        if (fread(&ph, sizeof ph, 1, f) != 1 || ph.p_type != PT_LOAD)
-            continue;
-        if (ph.p_vaddr < xsg_ram_low || ph.p_vaddr + ph.p_memsz > PS2_RAM_SIZE)
-            continue;
-        fseek(f, ph.p_offset, SEEK_SET);
-        if (fread((void *)(uintptr_t)ph.p_vaddr, 1, ph.p_filesz, f) != ph.p_filesz)
-            xsg_logf("[mem] short read of segment %d\n", i);
-        xsg_logf("[mem] %s segment %d -> 0x%08x (+0x%x)\n", path, i, ph.p_vaddr, ph.p_memsz);
+    const Elf32_Ehdr *eh = (const Elf32_Ehdr *)img;
+    if (len < sizeof *eh || memcmp(eh->e_ident, ELFMAG, SELFMAG)) {
+        xsg_logf("[mem] %s is not an ELF\n", path);
+        free(img);
+        return;
     }
-    fclose(f);
+    for (int i = 0; i < eh->e_phnum; i++) {
+        uint32_t at = eh->e_phoff + (uint32_t)i * eh->e_phentsize;
+        if (at + sizeof(Elf32_Phdr) > len)
+            break;
+        const Elf32_Phdr *ph = (const Elf32_Phdr *)(img + at);
+        if (ph->p_type != PT_LOAD)
+            continue;
+        if (ph->p_vaddr < xsg_ram_low || ph->p_vaddr + ph->p_memsz > PS2_RAM_SIZE)
+            continue;
+        uint32_t n = ph->p_filesz;
+        if (ph->p_offset > len || n > len - ph->p_offset) {
+            xsg_logf("[mem] short segment %d\n", i);
+            n = ph->p_offset < len ? len - ph->p_offset : 0;
+        }
+        memcpy((void *)(uintptr_t)ph->p_vaddr, img + ph->p_offset, n);
+        xsg_logf("[mem] %s segment %d -> 0x%08x (+0x%x)\n", path, i, ph->p_vaddr, ph->p_memsz);
+    }
+    free(img);
 }
 
 /* Stand-in for the DMA controller: the EE register range is plain memory, so
@@ -192,6 +223,13 @@ static void on_alarm(int sig)
     (void)sig;
 }
 
+#ifdef _WIN32
+/* Windows: the [debug] timeout runs on a watchdog thread, crashes go to a vectored
+   exception handler (win32/platform_win32.c). */
+void xsg_w32_install_crash_handler(void);
+void xsg_w32_start_timeout(unsigned seconds, void (*fn)(void));
+static void on_timeout(void) { on_alarm(0); }
+#else
 /* Async-signal-safe hex line: "<label>0x%08x\n" via write(2). */
 static void fault_hex(int fd, const char *label, unsigned long v)
 {
@@ -258,7 +296,11 @@ static void on_fault(int sig, siginfo_t *si, void *uc)
     signal(sig, SIG_DFL);
     raise(sig);
 }
+#endif /* !_WIN32 */
 
+#ifdef _WIN32
+#define main xsg_host_main   /* called by xsg_win32_start (win32/platform_win32.c) */
+#endif
 int main(int argc, char **argv)
 {
     (void)argc;
@@ -273,6 +315,11 @@ int main(int argc, char **argv)
             xsg_log_fp = stderr;
     }
     xsg_cfg_report();
+#ifdef _WIN32
+    xsg_w32_install_crash_handler();
+    if (xsg_cfg("debug.timeout"))
+        xsg_w32_start_timeout((unsigned)atoi(xsg_cfg("debug.timeout")), on_timeout);
+#else
     struct sigaction sa;
     memset(&sa, 0, sizeof sa);
     sa.sa_sigaction = on_fault;
@@ -294,12 +341,16 @@ int main(int argc, char **argv)
         signal(SIGALRM, on_alarm);
         alarm(atoi(xsg_cfg("debug.timeout")));
     }
+#endif
     xsg_map_ps2_memory();
+    /* The disc image first: the setup screen when there is none (it waits for the user),
+       then the main image, which may come from the disc. */
+    xsg_disc_setup();
+    xsg_disc_init();
     xsg_load_main_image();
     pthread_t dmac;
     pthread_create(&dmac, NULL, dmac_thread, NULL);
     xsg_overlay_init();
-    xsg_disc_init();
     xsg_kernel_init();
     xsg_prof_init();
     xsg_logf("[boot] entering game main()\n");

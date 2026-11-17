@@ -14,7 +14,17 @@
 #include "xsg_settings.h"
 #include <string.h>
 #include <time.h>
+#ifdef _WIN32
+/* Windows (port/docs/WINDOWS.md): EE threads are fibers instead of ucontexts
+   (win32/platform_win32.c; <windows.h> clashes with the EE kernel's names). */
+void *xsg_w32_fiber_init(void);
+void *xsg_w32_fiber_create(unsigned stack, void (*fn)(int), int arg);
+void xsg_w32_fiber_switch(void *f);
+void xsg_w32_fiber_delete(void *f);
+void xsg_w32_stack_bounds(char **lo, char **hi);
+#else
 #include <ucontext.h>
+#endif
 #include <unistd.h>
 
 #include "xsg_rt.h"
@@ -50,7 +60,11 @@ struct thread {
     unsigned seq; /* FIFO order among equal priorities */
     void (*func)(void *);
     void *arg;
+#ifdef _WIN32
+    void *fiber;
+#else
     ucontext_t ctx;
+#endif
     void *host_stack;
     void *bt[12]; /* where it last blocked (for the timeout dump) */
     int nbt;
@@ -106,6 +120,9 @@ void xsg_kernel_init(void)
     th[1].state = TS_READY;
     th[1].prio = 1; /* crt0 runs main at the highest user priority */
     th[1].seq = seq_counter++;
+#ifdef _WIN32
+    th[1].fiber = xsg_w32_fiber_init();
+#endif
     /* settings.ini: [game] fps_limit (the menu changes it live through
        GpuSettings), or [debug] frame_us, which fixes the period. */
     const char *fl = xsg_cfg("game.fps_limit");
@@ -153,7 +170,12 @@ static void switch_to(int next)
         return;
     int prev = cur;
     cur = next;
+#ifdef _WIN32
+    (void)prev;
+    xsg_w32_fiber_switch(th[next].fiber);
+#else
     swapcontext(&th[prev].ctx, &th[next].ctx);
+#endif
 }
 
 static void dump_threads(void)
@@ -180,6 +202,10 @@ static void note_block(void)
     char *lo = th[cur].host_stack, *hi = lo + HOST_STACK;
     void **fp = __builtin_frame_address(0);
     int n = 0;
+#ifdef _WIN32
+    /* the fiber's committed stack, from the TIB (SwitchToFiber keeps it current) */
+    xsg_w32_stack_bounds(&lo, &hi);
+#endif
     if (!lo) { /* main thread: the process stack */
         lo = (char *)fp;
         hi = lo + (8u << 20);
@@ -330,7 +356,9 @@ int CreateThread(struct ee_ThreadParam *p)
         th[i].state = TS_DORMANT;
         th[i].prio = p->initPriority;
         th[i].func = p->func;
+#ifndef _WIN32
         th[i].host_stack = malloc(HOST_STACK);
+#endif
         xsg_logf("[kernel] CreateThread -> %d func=%p prio=%d ps2stack=%p+0x%x\n", i,
                  (void *)p->func, p->initPriority, p->stack, p->stackSize);
         return i;
@@ -344,11 +372,23 @@ int StartThread(int id, void *arg)
     xsg_logf("[kernel] StartThread %d arg=%p\n", id, arg);
     struct thread *t = &th[id];
     t->arg = arg;
+#ifdef _WIN32
+    if (!th[1].fiber)
+        th[1].fiber = xsg_w32_fiber_init();   /* main = EE thread 1 */
+    if (t->fiber)
+        xsg_w32_fiber_delete(t->fiber);   /* a restarted thread (not if it is the running one) */
+    t->fiber = xsg_w32_fiber_create(HOST_STACK, thread_trampoline, id);
+    if (!t->fiber) {
+        xsg_logf("[kernel] CreateFiber for thread %d failed\n", id);
+        exit(3);
+    }
+#else
     getcontext(&t->ctx);
     t->ctx.uc_stack.ss_sp = t->host_stack;
     t->ctx.uc_stack.ss_size = HOST_STACK;
     t->ctx.uc_link = NULL;
     makecontext(&t->ctx, (void (*)(void))thread_trampoline, 1, id);
+#endif
     make_ready(id);
     maybe_preempt();
     return id;

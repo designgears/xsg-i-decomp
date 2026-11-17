@@ -13,6 +13,12 @@
 #define STBI_ONLY_PNG
 #include "stb_image.h"
 
+#include <cstdlib>
+#include <sys/stat.h>
+#ifdef XSG_GPU_SDL
+#include <SDL3/SDL_filesystem.h>
+#endif
+
 #ifndef XSG_PROMPTS_DIR
 #define XSG_PROMPTS_DIR "assets/prompts"
 #endif
@@ -28,7 +34,24 @@ ImTextureID Load(const std::string& rel) {
     auto it = g_cache.find(rel);
     if (it != g_cache.end()) return it->second;
     ImTextureID id = 0;
-    const std::string path = std::string(XSG_PROMPTS_DIR) + "/" + rel + ".png";
+    // the icons: the source tree's (a build run in place; empty in packaged builds), else an
+    // AppImage's copy, else next to the executable: <dir of xsg-gpu>/../share/xsg/prompts (the
+    // Windows zip: gpu\xsg-gpu.exe, share\xsg\prompts) or <dir>/prompts (port/packaging)
+    static const std::string dir = [] {
+        struct stat st;
+        if (*XSG_PROMPTS_DIR && stat(XSG_PROMPTS_DIR, &st) == 0) return std::string(XSG_PROMPTS_DIR);
+        if (const char* a = std::getenv("APPDIR"); a && *a) return std::string(a) + "/usr/share/xsg/prompts";
+#ifdef XSG_GPU_SDL
+        if (const char* b = SDL_GetBasePath(); b && *b) {
+            for (const char* rel : {"../share/xsg/prompts", "share/xsg/prompts", "prompts"}) {
+                const std::string d = std::string(b) + rel;
+                if (stat(d.c_str(), &st) == 0) return d;
+            }
+        }
+#endif
+        return std::string(XSG_PROMPTS_DIR);
+    }();
+    const std::string path = dir + "/" + rel + ".png";
     int w = 0, h = 0, n = 0;
     if (unsigned char* px = stbi_load(path.c_str(), &w, &h, &n, 4)) {
         id = ImTextureID(xsgmenu::RenderTexture(0, reinterpret_cast<const uint32_t*>(px), uint32_t(w), uint32_t(h)));

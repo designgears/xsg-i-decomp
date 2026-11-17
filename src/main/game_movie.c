@@ -340,9 +340,20 @@ void GameMpeg2Play(char *name, int mode)
                 text = 0;
             }
             if (xglMpeg2Open(&mpeg, name) >= 0) {
+#ifdef PORT_HOST
+                /* the port's own subtitles for this movie, drawn by xsg-gpu (port/runtime/disc.c
+                 * xsg_movie_caption_*: the uncensored 3039C's English) */
+                extern int xsg_movie_caption_open(const char *movie);
+                extern void xsg_movie_caption_frame(int frame);
+                extern void xsg_movie_caption_close(void);
+                xsg_movie_caption_open(name);
+#endif
                 GameLoopState.input_delay = 32;
                 for (;;) {
                     status = xglMpeg2Play(&mpeg);
+#ifdef PORT_HOST
+                    xsg_movie_caption_frame(mpeg.frame);
+#endif
                     if (text != 0) {
                         cursor = (unsigned char *)text;
                         while (*cursor++ != 0) {
@@ -445,6 +456,9 @@ finish_movie_pause:
                     xglSleep();
                 }
                 xglMpeg2Close(&mpeg);
+#ifdef PORT_HOST
+                xsg_movie_caption_close();
+#endif
             }
         } while (replay != 0);
         xglRenderCopyDisp2Draw();

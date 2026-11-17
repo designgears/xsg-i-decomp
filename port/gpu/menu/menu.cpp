@@ -26,6 +26,7 @@
 #include "../ui/menus.h"
 #include "../ui/pointer.h"
 #include "../ui/prompts.h"
+#include "xsg_iso_check.h"
 #ifdef XSG_GPU_SDL
 #include "imgui_impl_sdl3.h"
 #include <SDL3/SDL.h>
@@ -42,7 +43,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <mutex>
 #include <string>
+#include <sys/stat.h>
 #include <vector>
 
 extern char** environ;
@@ -604,6 +607,21 @@ void TabGame(float scale) {
     opt_toggle("game.movies", "Play movies", "The FMV cutscenes, decoded by ffmpeg. Off skips them.");
     if (!xsgcfg::GetBool("game.movies")) opt_disable_next("Movies are off.");
     opt_edit("game.ffmpeg", "ffmpeg program", "The ffmpeg binary that decodes the movies. Empty: ffmpeg on PATH.");
+    if (!xsgcfg::GetBool("game.movies")) opt_disable_next("Movies are off.");
+    opt_toggle("game.uncensored", "Uncensored 3039C",
+               "Censored / uncensored version of the 3039C scene. On plays 3039C_un.pss from the uncensored "
+               "folder (the Japanese release's uncut picture with the English voices) in place of the disc's "
+               "3039C.pss (no file: the disc's). Applies the next time the scene plays.");
+    if (!xsgcfg::GetBool("game.movies") || !xsgcfg::GetBool("game.uncensored"))
+        opt_disable_next("Uncensored is off.");
+    opt_toggle("game.uncensored_subs", "English subtitles (3039C)",
+               "The uncensored 3039C is the Japanese release's picture (Japanese subtitles burned in) with the US "
+               "release's English voices. On shows the English subtitles at the top of the screen "
+               "(uncensored/3039C_un.cap).");
+    if (!xsgcfg::GetBool("game.movies") || !xsgcfg::GetBool("game.uncensored"))
+        opt_disable_next("Uncensored is off.");
+    opt_edit("game.uncensored_dir", "Uncensored folder", "Where 3039C_un.pss and 3039C_un.cap are looked for. Empty: the uncensored "
+             "folder in the install root (next to xsg.exe, or in the AppImage), else uncensored in the game folder.");
     opt_group("AUDIO");
     opt_toggle("audio.enabled", "Audio", "Mutes or unmutes the game's sound output (live). Off at start opens no "
                "audio device at all.");
@@ -626,10 +644,10 @@ void TabGame(float scale) {
     opt_edit("game.memcard_dir", "Memory card folder",
              ("Where slot 1's saves are kept. Empty: " + g_mc_dir + ".").c_str());
     opt_group("GAME FILES");
-    opt_edit("game.game_dir", "Game folder", "The folder with iso/ (the disc image) and extracted-iso/ (SLUS_204.69). "
+    opt_edit("game.game_dir", "Game folder", "The folder with iso/ (the disc image) and, optionally, extracted-iso/ (SLUS_204.69). "
              "Empty: the folder the port was built with.");
     opt_edit("game.iso", "Disc image", "The disc image. Empty: the first image in <game folder>/iso.");
-    opt_edit("game.elf", "Main executable", "SLUS_204.69. Empty: <game folder>/extracted-iso/SLUS_204.69.");
+    opt_edit("game.elf", "Main executable", "SLUS_204.69. Empty: <game folder>/extracted-iso/SLUS_204.69, else the copy on the disc image.");
     opt_end();
 }
 
@@ -786,7 +804,11 @@ void TabInfo(float scale) {
         g_host.screenshot) {
         std::string dir;
         if (const char* d = xsgcfg::CStr("game.screenshot_dir")) dir = d;
+#ifdef _WIN32
+        else if (std::string u = XsgWinDir("USERPROFILE"); !u.empty()) dir = u + "/Pictures/xsg";
+#else
         else if (const char* h = std::getenv("HOME"); h && *h) dir = std::string(h) + "/Pictures/xsg";
+#endif
         else dir = ".";
         char name[64];
         std::time_t t = std::time(nullptr);
@@ -1128,6 +1150,268 @@ void LayoutMenu(float scale) {
 }
 
 }  // namespace
+static void PadFrame();
+namespace {
+
+/* ------------------------------------------------------------- first-run setup (port/docs/SETUP.md)
+   A full-window screen in the menu's style, shown when the game has no usable disc image
+   (GPU_MSG_SETUP): Choose disc image... (SDL's file dialog, the XDG portal on Linux), or an
+   .iso dropped on the window; Continue once xsg_iso_check accepts it (saved as [game] iso). */
+struct {
+    bool active;
+    int result;               // 1 continue, -1 quit
+    std::string path;         // the candidate (or what the game tried)
+    std::string search_dir;
+    int code = XSG_ISO_NONE;
+    std::string status, detail;
+    int focus = -1;           // a button to focus at the next layout (0 choose, 1 continue, 2 quit)
+    bool dialog_open;
+    std::mutex m;             // the dialog's callback may run on another thread
+    bool dialog_done;
+    std::string dialog_pick;  // "" cancelled
+    std::string dialog_err;
+} g_setup;
+
+void SetupCandidate(const std::string& path, bool initial = false) {
+    XsgIsoInfo info;
+    g_setup.path = path;
+    g_setup.code = xsg_iso_check(path.c_str(), &info);
+    char msg[4400];
+    xsg_iso_message(g_setup.code, &info, path.c_str(), msg, sizeof msg);
+    g_setup.status = msg;
+    switch (g_setup.code) {
+    case XSG_ISO_OK: g_setup.detail = path; break;
+    case XSG_ISO_GONE:
+        g_setup.status = initial ? "The disc image set before is gone" : "No such file";
+        g_setup.detail = path + (initial ? " was moved or deleted. Choose it again." : "");
+        break;
+    case XSG_ISO_WRONG_GAME: g_setup.detail = path; break;
+    case XSG_ISO_NOT_ISO:
+        g_setup.detail = "A disc image is an .iso (or a .bin / .img with 2048-byte sectors) dumped from the game disc.";
+        break;
+    default: g_setup.detail = path; break;
+    }
+    if (g_setup.code == XSG_ISO_OK) g_setup.focus = 1;
+    Log("setup: %s -> %s", path.c_str(), g_setup.status.c_str());
+}
+
+#ifdef XSG_GPU_SDL
+void SDLCALL SetupDialogDone(void*, const char* const* files, int) {
+    std::lock_guard<std::mutex> l(g_setup.m);
+    g_setup.dialog_done = true;
+    g_setup.dialog_pick = files && files[0] ? files[0] : "";
+    g_setup.dialog_err = files ? "" : SDL_GetError();
+}
+#endif
+
+void SetupChoose() {
+#ifdef XSG_GPU_SDL
+    if (g_setup.dialog_open) return;
+    static const SDL_DialogFileFilter kFilters[] = {{"Disc images (*.iso, *.bin, *.img)", "iso;bin;img"}, {"All files", "*"}};
+    std::string start;
+    if (size_t sl = g_setup.path.rfind('/'); sl != std::string::npos && sl > 0) start = g_setup.path.substr(0, sl + 1);
+#ifdef _WIN32
+    else if (std::string u = XsgWinDir("USERPROFILE"); !u.empty()) start = u + "/";
+    if (size_t sl = start.find_last_of("/\\"); sl != std::string::npos && sl > 0 && sl + 1 == start.size())
+        start.pop_back();   // the CRT's stat() refuses a directory with a trailing separator
+#else
+    else if (const char* h = std::getenv("HOME"); h && *h) start = std::string(h) + "/";
+#endif
+    struct stat st;
+    if (!start.empty() && (::stat(start.c_str(), &st) != 0 || !S_ISDIR(st.st_mode))) start.clear();
+    g_setup.dialog_open = true;
+    Log("setup: file dialog");
+#ifdef _WIN32
+    for (char& c : start) if (c == '/') c = '\\';   // the common dialog takes "C:\dir\" as a folder, "C:/dir/" as a file name
+#endif
+    SDL_ShowOpenFileDialog(SetupDialogDone, nullptr, g_win, kFilters, 2, start.empty() ? nullptr : start.c_str(), false);
+#endif
+}
+
+/* The dialog's answer, on the main thread. */
+void SetupPollDialog() {
+    std::string pick, err;
+    {
+        std::lock_guard<std::mutex> l(g_setup.m);
+        if (!g_setup.dialog_done) return;
+        g_setup.dialog_done = false;
+        pick.swap(g_setup.dialog_pick);
+        err.swap(g_setup.dialog_err);
+    }
+    g_setup.dialog_open = false;
+    if (!pick.empty()) SetupCandidate(pick);
+    else if (!err.empty()) {
+        Log("setup: file dialog failed: %s", err.c_str());
+        g_setup.status = "The file dialog could not open";
+        g_setup.detail = "Drop the .iso file on this window instead.  (" + err + ")";
+        g_setup.code = XSG_ISO_NONE;
+    }
+}
+
+void SetupContinue() {
+    if (g_setup.code != XSG_ISO_OK) return;
+    // checked again now: the file may have gone since it was picked
+    SetupCandidate(g_setup.path);
+    if (g_setup.code != XSG_ISO_OK) return;
+    xsgcfg::Set("game.iso", g_setup.path);
+    xsgcfg::SaveNow();
+    g_setup.result = 1;
+}
+
+void LayoutSetup(float scale) {
+    ImGuiIO& io = ImGui::GetIO();
+    ImVec2 sz = io.DisplaySize;
+    ImDrawList* bg = ImGui::GetBackgroundDrawList();
+    bg->AddRectFilledMultiColor(ImVec2(0, 0), sz, IM_COL32(12, 12, 40, 255), IM_COL32(12, 12, 40, 255), IM_COL32(3, 3, 14, 255),
+                                IM_COL32(3, 3, 14, 255));
+    Backdrop(bg, sz, scale, 1.0f);
+    float w = std::min(sz.x - 40 * scale, std::round(1180 * scale)), h = std::min(sz.y - 40 * scale, std::round(470 * scale));
+    ImGui::SetNextWindowPos(ImVec2(std::round((sz.x - w) * 0.5f), std::round((sz.y - h) * 0.5f)));
+    ImGui::SetNextWindowSize(ImVec2(w, h));
+    ImGui::Begin("##setup", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoMove |
+                                         ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
+    ImGuiWindow* win = ImGui::GetCurrentWindow();
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    Panel(dl, win->Pos, ImVec2(win->Pos.x + w, win->Pos.y + h), scale, 1.0f);
+    const float pad = ImGui::GetStyle().WindowPadding.x;
+    const float rx = win->Pos.x + w - pad, cw = w - 2 * pad;
+    // header, as the settings menu's
+    ImGui::PushFont(g_head);
+    ImVec2 tp = ImGui::GetCursorScreenPos();
+    dl->AddText(tp, col::kText, "XENOSAGA EPISODE I \xe2\x80\x94 PC");
+    float th = ImGui::GetFontSize();
+    ImGui::PopFont();
+    ImGui::PushFont(g_small);
+    const char* tag = "FIRST-TIME SETUP";
+    ImVec2 tg = ImGui::CalcTextSize(tag);
+    dl->AddText(ImVec2(rx - tg.x, tp.y + th - tg.y - 4 * scale), col::kSteel, tag);
+    ImGui::PopFont();
+    dl->AddLine(ImVec2(tp.x, tp.y + th + 6 * scale), ImVec2(rx, tp.y + th + 6 * scale), col::kFrameDim);
+    dl->AddRectFilled(ImVec2(tp.x, tp.y + th + 5 * scale), ImVec2(tp.x + 120 * scale, tp.y + th + 8 * scale), col::kCyan);
+    ImGui::SetCursorScreenPos(ImVec2(tp.x, tp.y + th + 30 * scale));
+
+    auto group = [&](const char* title) {   // the option pages' small-caps cyan group label
+        ImVec2 p = ImGui::GetCursorScreenPos();
+        ImFont* f = ImGui::GetFont();
+        const float fs = ImGui::GetFontSize() * 0.8f;
+        dl->AddRectFilled(ImVec2(p.x + 3 * scale, p.y + fs * 0.25f), ImVec2(p.x + 3 * scale + fs * 0.5f, p.y + fs * 0.75f), col::kCyan);
+        dl->AddText(f, fs, ImVec2(p.x + 3 * scale + fs * 0.9f, p.y), col::kCyan, title);
+        const float tw = f->CalcTextSizeA(fs, FLT_MAX, 0, title).x;
+        dl->AddLine(ImVec2(p.x + 3 * scale + fs * 1.4f + tw, p.y + fs * 0.55f), ImVec2(p.x + cw - 3 * scale, p.y + fs * 0.55f), col::kFrameDim);
+        ImGui::Dummy(ImVec2(cw, fs * 1.25f));
+    };
+    group("DISC IMAGE");
+    ImGui::PushTextWrapPos(win->Pos.x + w - pad);
+    ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorConvertU32ToFloat4(col::kTextDim));
+    ImGui::TextUnformatted("The game runs from your own copy of the disc. Choose its disc image (.iso), "
+                           "or drop the file on this window.");
+    ImGui::PopStyleColor();
+    ImGui::Dummy(ImVec2(0, 14 * scale));
+    group("STATUS");
+    {   // the status box: cyan when the image is good, amber when not
+        const bool ok = g_setup.code == XSG_ISO_OK;
+        const char* line = g_setup.dialog_open ? "Waiting for the file dialog\xe2\x80\xa6" : g_setup.status.c_str();
+        ImVec2 p = ImGui::GetCursorScreenPos();
+        const float bh = std::round(96 * scale);
+        ImVec2 b(p.x + cw, p.y + bh);
+        dl->AddRectFilled(p, b, IM_COL32(10, 10, 34, 170));
+        dl->AddRect(p, b, ok ? col::kCyanDim : IM_COL32(244, 196, 98, 90));
+        dl->AddRectFilled(p, ImVec2(p.x + 4 * scale, b.y), ok ? col::kCyan : col::kWarn);
+        ImGui::SetCursorScreenPos(ImVec2(p.x + 22 * scale, p.y + 14 * scale));
+        ImGui::PushTextWrapPos(b.x - 16 * scale);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorConvertU32ToFloat4(ok ? col::kCyan : col::kWarn));
+        ImGui::TextUnformatted(line);
+        ImGui::PopStyleColor();
+        ImGui::SetCursorScreenPos(ImVec2(p.x + 22 * scale, ImGui::GetCursorScreenPos().y + 2 * scale));
+        ImGui::PushFont(g_small);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorConvertU32ToFloat4(col::kTextDim));
+        if (!g_setup.dialog_open) ImGui::TextUnformatted(g_setup.detail.c_str());
+        ImGui::PopStyleColor();
+        ImGui::PopFont();
+        ImGui::PopTextWrapPos();
+        ImGui::SetCursorScreenPos(ImVec2(p.x, b.y + 18 * scale));
+    }
+    ImGui::PopTextWrapPos();
+
+    // the buttons, at the bottom as the menu's footer
+    const float bh = std::round(44 * scale);
+    ImGui::SetCursorScreenPos(ImVec2(tp.x, win->Pos.y + h - ImGui::GetStyle().WindowPadding.y - bh));
+    auto button = [&](int idx, const char* id, const char* label, float bw, bool enabled, bool primary) {
+        if (g_setup.focus == idx) {
+            ImGui::SetKeyboardFocusHere();
+            ImGui::SetNavCursorVisible(true);
+            g_setup.focus = -1;
+        }
+        ImVec2 p = ImGui::GetCursorScreenPos();
+        ImGui::BeginDisabled(!enabled);
+        bool click = ImGui::InvisibleButton(id, ImVec2(bw, bh));
+        ImGui::EndDisabled();
+        bool sel = enabled && (ImGui::IsItemHovered() || (ImGui::IsItemFocused() && GImGui->NavCursorVisible));
+        ImVec2 b(p.x + bw, p.y + bh);
+        dl->AddRectFilled(p, b, sel ? IM_COL32(60, 76, 150, 200) : primary && enabled ? IM_COL32(26, 40, 90, 220) : IM_COL32(14, 14, 44, 200));
+        dl->AddRect(p, b, sel ? col::kCyan : primary && enabled ? col::kCyanDim : col::kFrameDim);
+        if (sel) DrawBrackets(dl, ImVec2(p.x - 3, p.y - 3), ImVec2(b.x + 3, b.y + 3), col::kCyan, 7 * scale, 1.5f * scale);
+        ImVec2 ts = ImGui::CalcTextSize(label);
+        dl->AddText(ImVec2(p.x + (bw - ts.x) * 0.5f, p.y + (bh - ts.y) * 0.5f), enabled ? col::kText : col::kTextOff, label);
+        return click && enabled;
+    };
+    if (button(0, "##choose", "CHOOSE DISC IMAGE\xe2\x80\xa6", std::round(300 * scale), !g_setup.dialog_open, false)) SetupChoose();
+    ImGui::SameLine();
+    if (button(1, "##continue", "CONTINUE", std::round(190 * scale), g_setup.code == XSG_ISO_OK, true)) SetupContinue();
+    ImGui::SameLine();
+    if (button(2, "##quit", "QUIT", std::round(190 * scale), true, false)) g_setup.result = -1;
+    ImGui::SameLine();
+    {
+        const char* hint = "A / Enter  select      Ctrl+O  choose";
+        ImGui::PushFont(g_small);
+        ImVec2 ts = ImGui::CalcTextSize(hint);
+        ImVec2 c = ImGui::GetCursorScreenPos();
+        dl->AddText(ImVec2(std::max(c.x + 12 * scale, rx - ts.x), c.y + (bh - ts.y) * 0.5f), col::kTextDim, hint);
+        ImGui::PopFont();
+    }
+    ImGui::End();
+    if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_O) || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceUp, false)) SetupChoose();
+}
+
+void SetupFrame(const Stats& s) {
+    SetupPollDialog();
+    ImGuiIO& io = ImGui::GetIO();
+    float fb = 1.0f;
+    if (!s.windowed) {
+        io.DisplaySize = ImVec2(float(s.target_w), float(s.target_h));
+        io.DisplayFramebufferScale = ImVec2(1, 1);
+        io.DeltaTime = 1 / 60.0f;
+    }
+#ifdef XSG_GPU_SDL
+    else if (g_win) {
+        ImGui_ImplSDL3_NewFrame();
+        fb = io.DisplayFramebufferScale.y > 0 ? io.DisplayFramebufferScale.y : 1.0f;
+        static bool shown;
+        if (!shown) { SDL_ShowCursor(); SDL_SetCursor(SDL_GetDefaultCursor()); shown = true; }
+    }
+#endif
+    g_visible = false;
+    if (io.DisplaySize.x <= 0 || io.DisplaySize.y <= 0) return;
+    float scale = MenuScale(io.DisplaySize.y);
+    if (g_font_scale != scale * fb) FontsUp(scale, fb);
+    if (g_style_scale != scale) {
+        ImGui::GetStyle() = g_base;
+        ImGui::GetStyle().ScaleAllSizes(scale);
+        g_style_scale = scale;
+    }
+    if (g_reset) {
+        io.ClearInputKeys();
+        io.ClearInputMouse();
+    }
+    PadFrame();
+    g_reset = false;
+    ImGui::NewFrame();
+    LayoutSetup(scale);
+    ImGui::Render();
+    g_visible = ImGui::GetDrawData()->TotalVtxCount > 0;
+}
+
+}  // namespace
 
 /* ======================================================================== API */
 #ifdef XSG_GPU_SDL
@@ -1160,7 +1444,11 @@ void Init(Vulkan::Device* dev, void*, GpuSettings* shared, const Host& host) {
     if (!g_ok) Log("renderer set-up failed; the menu stays closed");
     TestParse();
     // read-only facts for the pages
+#ifdef _WIN32
+    if (std::string l = XsgWinDir("LOCALAPPDATA"); !l.empty()) g_mc_dir = l + "/xsg/mc0";   // %LOCALAPPDATA%\xsg\mc0
+#else
     if (const char* h = std::getenv("HOME"); h && *h) g_mc_dir = std::string(h) + "/.local/share/xsg/mc0";   // the default
+#endif
     for (int i = 0; const xsgcfg::Meta* m = xsgcfg::At(i); ++i)
         if (!m->live) g_boot_values.push_back({m->key, xsgcfg::Get(m->key)});
     g_overlay = OverlayMode();
@@ -1180,6 +1468,28 @@ bool Event(const SDL_Event& ev) {
     // synthetic key events (XSG_GPU_INPUT_TEST) carry no window; the SDL3 backend drops those
     if ((e.type == SDL_EVENT_KEY_DOWN || e.type == SDL_EVENT_KEY_UP) && !e.key.windowID && g_win)
         e.key.windowID = SDL_GetWindowID(g_win);
+    if (g_setup.active) {   // the setup screen has all the input; drops are disc images
+        switch (e.type) {
+        case SDL_EVENT_DROP_FILE:
+            if (e.drop.data) SetupCandidate(e.drop.data);
+            return true;
+        case SDL_EVENT_KEY_DOWN:
+        case SDL_EVENT_KEY_UP:
+        case SDL_EVENT_TEXT_INPUT:
+        case SDL_EVENT_MOUSE_MOTION:
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        case SDL_EVENT_MOUSE_BUTTON_UP:
+        case SDL_EVENT_MOUSE_WHEEL:
+            if (g_win) ImGui_ImplSDL3_ProcessEvent(&e);
+            return true;
+        case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+        case SDL_EVENT_WINDOW_FOCUS_LOST:
+        case SDL_EVENT_WINDOW_FOCUS_GAINED:
+            if (g_win) ImGui_ImplSDL3_ProcessEvent(&e);
+            return false;
+        default: return false;
+        }
+    }
     switch (e.type) {
     case SDL_EVENT_KEY_DOWN: {
         const SDL_Scancode sc = e.key.scancode;
@@ -1271,9 +1581,9 @@ static void PadFrame() {
     // (the menus show it as a "Settings" hint)
     static bool back_prev;
     const bool back = (b >> SDL_GAMEPAD_BUTTON_BACK) & 1;
-    if (back && !back_prev && !((b >> SDL_GAMEPAD_BUTTON_START) & 1) && g_game_menu_up && !g_open && !g_cap) SetOpen(true);
+    if (back && !back_prev && !((b >> SDL_GAMEPAD_BUTTON_START) & 1) && g_game_menu_up && !g_open && !g_cap && !g_setup.active) SetOpen(true);
     back_prev = back;
-    if (combo && !g_combo_prev && !g_cap) SetOpen(!g_open);
+    if (combo && !g_combo_prev && !g_cap && !g_setup.active) SetOpen(!g_open);
     g_combo_prev = combo;
     if (g_cap == CAP_PAD) {
         uint32_t nb = b & ~g_cap_pad_prev;
@@ -1295,7 +1605,7 @@ static void PadFrame() {
         return;
     }
     if (g_cap == CAP_KEY && Now() - g_cap_t > 8) g_cap = CAP_NONE;
-    if (!g_open) { g_pad_prev = b; g_stick_dir = -1; return; }
+    if (!g_open && !g_setup.active) { g_pad_prev = b; g_stick_dir = -1; return; }
     g_stick_dir = StickToDpad(lx, ly);
     uint32_t eff = b;
     if (g_stick_dir == ImGuiKey_GamepadDpadUp) eff |= 1u << SDL_GAMEPAD_BUTTON_DPAD_UP;
@@ -1332,6 +1642,13 @@ void Frame(uint32_t vsync, const Stats& s) {
             else if (k == "TAB") g_tab_req = std::atoi(v.c_str());
             else if (k == "SHOT" && g_host.screenshot) g_host.screenshot(v);
             else if (k == "RESTART") { xsgcfg::SaveNow(); Publish(true); }
+            else if (k == "SETUP_DROP") { if (g_setup.active) SetupCandidate(v); Log("test: setup drop %s at vsync %u", v.c_str(), vsync); }
+            else if (k == "SETUP") {   // continue | quit | choose: a button of the setup screen
+                if (g_setup.active && v == "continue") SetupContinue();
+                else if (g_setup.active && v == "quit") g_setup.result = -1;
+                else if (g_setup.active && v == "choose") SetupChoose();
+                Log("test: setup %s at vsync %u", v.c_str(), vsync);
+            }
             else if (k == "MOVE" || k == "CLICK" || k == "WHEEL" || k == "PRESS" || k == "RELEASE") {   // the mouse at game x/y (512 x 448)[/button]
                 float gx = 0, gy = 0;
                 int btn = 1;
@@ -1348,6 +1665,10 @@ void Frame(uint32_t vsync, const Stats& s) {
             else { xsgcfg::Set(k.c_str(), v); Log("test: %s = %s at vsync %u", k.c_str(), v.c_str(), vsync); }
         }
         g_test.next_set++;
+    }
+    if (g_setup.active) {
+        SetupFrame(s);
+        return;
     }
     g_test.shot.clear();
     if (g_test.at && vsync >= g_test.at && g_test.page < 0) {
@@ -1469,6 +1790,9 @@ void Frame(uint32_t vsync, const Stats& s) {
                 c = mix(0) | mix(8) | mix(16) | (c & 0xff000000u);
             }
     }
+    if (!g_open)   // movie subtitles (the uncensored 3039C's English), at the top
+        xsgui::CaptionDraw(ImGui::GetBackgroundDrawList(), ImGui::GetFont(), s.game_x / fb, s.game_y / fb, s.game_w / fb,
+                           s.game_h / fb);
     if (skip && !g_open)   // over the screen fade: the button stays readable on a fade to black
         xsgui::SkipDraw(ImGui::GetBackgroundDrawList(), ImGui::GetFont(), s.game_x / fb, s.game_y / fb, s.game_w / fb,
                         s.game_h / fb);
@@ -1491,6 +1815,39 @@ void Frame(uint32_t vsync, const Stats& s) {
         }
         g_test.page = next;
     }
+}
+
+void SetupBegin(int reason, const std::string& tried, const std::string& search_dir) {
+    g_setup.active = true;
+    g_setup.result = 0;
+    g_setup.search_dir = search_dir;
+    g_setup.focus = 0;
+    g_reset = true;
+    if (reason == XSG_ISO_NONE || tried.empty()) {
+        g_setup.path.clear();
+        g_setup.code = XSG_ISO_NONE;
+        g_setup.status = "No disc image found";
+        g_setup.detail = search_dir.empty() ? std::string("Choose the disc image of Xenosaga Episode I (SLUS-20469).")
+                                            : "No .iso file in " + search_dir + ".";
+    } else {
+        SetupCandidate(tried, true);
+        if (g_setup.code == XSG_ISO_OK) {   // fine here after all (e.g. remounted): let the user confirm
+            g_setup.focus = 1;
+        }
+    }
+    Log("setup screen: %s", g_setup.status.c_str());
+}
+
+int SetupResult(std::string* path) {
+    if (!g_setup.active) return 0;
+    if (!g_ok) return -1;
+    if (!g_setup.result) return 0;
+    const int r = g_setup.result;
+    if (r > 0) *path = g_setup.path;
+    g_setup.active = false;
+    g_reset = true;
+    Log("setup screen: %s", r > 0 ? "continue" : "quit");
+    return r;
 }
 
 bool Visible() {

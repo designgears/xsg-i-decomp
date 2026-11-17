@@ -47,6 +47,14 @@ set(XSG_FLAGS
 if(PORT_ASM_TRAP)
   list(APPEND XSG_FLAGS -DPORT_ASM_TRAP)
 endif()
+# Windows (MinGW): the Linux i386 ABI's struct layout and struct returns, which the
+# game's data and its mismatched cross-TU prototypes were made to work with
+# (MinGW defaults to MS bitfield layout and returns small structs in registers).
+if(WIN32)
+  # ...and 4-byte alignment of long long/double in structs (Linux i386; MinGW uses 8, which
+  # moved UnduQuery's 64-bit masks past InitUwamono's 0x40-byte local copy of it).
+  list(APPEND XSG_FLAGS -mno-ms-bitfields -fpcc-struct-return -mno-align-double)
+endif()
 # Stage 11: -DXSG_SANITIZE=undefined,float-cast-overflow instruments the game C
 # (and the runtime's C) with UBSan; see STAGE11_UB.md.  The link adds the
 # runtime library, otherwise link_xsg.py would autostub the __ubsan_* handlers.
@@ -103,6 +111,16 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 set(XSG_GAME_DIR "${XSG_ROOT}/game" CACHE PATH "Default game directory (iso/, extracted-iso/)")
 
 file(GLOB XSG_RUNTIME_SRCS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/runtime/*.c")
+# Windows (port/docs/WINDOWS.md): MinGW-w64 i686 cross build, e.g.
+#   cmake -S port -B port/build-win32 -DCMAKE_TOOLCHAIN_FILE=$PWD/port/cmake/mingw-i686.cmake
+# The runtime gets a platform layer (runtime/win32/) and a force-included POSIX
+# compat header; the game is linked into xsg.dll, loaded by the stub xsg.exe.
+set(XSG_W32_DIR "${CMAKE_CURRENT_SOURCE_DIR}/runtime/win32")
+if(WIN32)
+  list(APPEND XSG_RUNTIME_SRCS ${XSG_W32_DIR}/platform_win32.c)
+  set(XSG_W32_RT_FLAGS -include ${XSG_W32_DIR}/xsg_win_compat.h)
+  set(XSG_W32_RT_INCS ${XSG_W32_DIR}/include ${XSG_W32_DIR})
+endif()
 # Stage 7: the resident VU0 microprogram, from the PS2 build's DVP object.
 add_custom_command(
   OUTPUT ${CMAKE_BINARY_DIR}/vu0_microcode.c
@@ -117,7 +135,22 @@ set_source_files_properties(${XSG_VU1REF_FAST} PROPERTIES COMPILE_OPTIONS "-O2;-
 set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c" PROPERTIES COMPILE_OPTIONS "-msse2;-mfpmath=sse")
 target_compile_options(xsg_runtime PRIVATE -m32 -std=gnu11 -D_FILE_OFFSET_BITS=64 -O1 -g -Wall -Wno-unused-parameter
   -fno-pic -fno-stack-protector -fno-omit-frame-pointer)
-target_compile_definitions(xsg_runtime PRIVATE "XSG_DEFAULT_GAME_DIR=\"${XSG_GAME_DIR}\"")
+# XSG_PACKAGED (port/packaging): no source/build-tree paths compiled in.  XSG_GAME_DIR is then
+# only where the build reads the IOP modules; at run time the game uses settings.ini or the
+# first-run setup screen.
+option(XSG_PACKAGED "Build for a package: no source/build-tree paths compiled in" OFF)
+if(XSG_PACKAGED)
+  set(XSG_RUNTIME_GAME_DIR "")
+  set(XSG_RUNTIME_SHOT_DIR "shots")
+else()
+  set(XSG_RUNTIME_GAME_DIR "${XSG_GAME_DIR}")
+  set(XSG_RUNTIME_SHOT_DIR "${CMAKE_BINARY_DIR}/shots")
+endif()
+target_compile_definitions(xsg_runtime PRIVATE "XSG_DEFAULT_GAME_DIR=\"${XSG_RUNTIME_GAME_DIR}\"")
+if(WIN32)
+  target_compile_options(xsg_runtime PRIVATE ${XSG_W32_RT_FLAGS} -mno-ms-bitfields)
+  target_include_directories(xsg_runtime BEFORE PRIVATE ${XSG_W32_RT_INCS} "${CMAKE_CURRENT_SOURCE_DIR}/runtime")
+endif()
 
 # Stage 5: software GS (vendored, MIT, see third_party/ps2-port-engine-gs/) and its bridge.
 set(XSG_GS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/ps2-port-engine-gs")
@@ -126,7 +159,13 @@ add_library(xsg_gs OBJECT ${XSG_GS_SRCS})
 target_compile_options(xsg_gs PRIVATE -m32 -std=c++17 -O2 -g -msse4.1 -fno-pic -fno-stack-protector -w)
 set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu1.cpp" PROPERTIES COMPILE_OPTIONS "-mfpmath=sse;-msse2")
 target_include_directories(xsg_gs PRIVATE "${XSG_GS_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/runtime")
-target_compile_definitions(xsg_gs PRIVATE "XSG_DEFAULT_SHOT_DIR=\"${CMAKE_BINARY_DIR}/shots\"")
+target_compile_definitions(xsg_gs PRIVATE "XSG_DEFAULT_SHOT_DIR=\"${XSG_RUNTIME_SHOT_DIR}\"")
+if(WIN32)
+  # The 32-bit CRT's malloc aligns to 8 while GCC assumes 16 for operator new:
+  # over-aligned types (vu1.cpp's 16-byte DP) must take the aligned new.
+  target_compile_options(xsg_gs PRIVATE ${XSG_W32_RT_FLAGS} -mno-ms-bitfields $<$<COMPILE_LANGUAGE:CXX>:-faligned-new=8>)
+  target_include_directories(xsg_gs BEFORE PRIVATE ${XSG_W32_RT_INCS})
+endif()
 
 # Stage 10: the IOP sound driver (src/audio, SSD.IRX + RSSD.IRX) built for the
 # host and run by runtime/iop_sound.c.  Its tables come from the user's IRX
@@ -138,6 +177,29 @@ file(GLOB XSG_RSSD_SRCS CONFIGURE_DEPENDS "${XSG_ROOT}/src/audio/rssd/*.c")
 set(XSG_SOUND_FLAGS -m32 -std=gnu89 -O1 -g -w -fno-strict-aliasing -fwrapv -fno-common -fno-builtin
   -fno-pic -fno-stack-protector -mno-sse -mno-sse2 -Wno-error=incompatible-pointer-types
   -Wno-error=implicit-function-declaration -Wno-error=int-conversion -DPORT_HOST)
+# The driver's symbols all get the ssdiop_ prefix.  ELF: objcopy --prefix-symbols=ssdiop_.
+# COFF (Windows) prefixes C names with `_`: the driver is compiled without it and
+# prefixed with `_ssdiop_`, which gives the C names ssdiop_* again.
+if(WIN32)
+  list(APPEND XSG_SOUND_FLAGS -fno-leading-underscore -mno-ms-bitfields -mno-align-double)
+  set(XSG_LD_R ${XSG_MINGW_PREFIX}-ld -r)
+  # (objcopy --prefix-symbols would rename COFF section symbols too)
+  set(XSG_PREFIX_SSDIOP ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/coff_prefix_symbols.py
+      ${XSG_MINGW_PREFIX}-nm ${XSG_MINGW_PREFIX}-objcopy _ssdiop_)
+else()
+  set(XSG_LD_R ld -m elf_i386 -r)
+  set(XSG_PREFIX_SSDIOP objcopy --prefix-symbols=ssdiop_)
+endif()
+# COFF: no weak data definitions (scripts/coff_weak_defs.py); ELF uses the file as generated.
+if(WIN32)
+  set(XSG_IOP_DATA_SUFFIX _coff)
+  set(XSG_IOP_DATA_FIX ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/coff_weak_defs.py
+      ${XSG_MINGW_PREFIX}-nm ${CMAKE_BINARY_DIR}/iop_sound_data.S ${CMAKE_BINARY_DIR}/iop_sound_data_coff.S
+      $<TARGET_OBJECTS:xsg_ssd> $<TARGET_OBJECTS:xsg_rssd>)
+else()
+  set(XSG_IOP_DATA_SUFFIX "")
+  set(XSG_IOP_DATA_FIX ${CMAKE_COMMAND} -E true)
+endif()
 add_library(xsg_ssd OBJECT ${XSG_SSD_SRCS})
 target_compile_options(xsg_ssd PRIVATE ${XSG_SOUND_FLAGS} -D_fdata=ssd_fdata)
 add_library(xsg_rssd OBJECT ${XSG_RSSD_SRCS})
@@ -151,10 +213,11 @@ add_custom_command(
   COMMENT "Extracting the IOP sound driver's data")
 add_custom_command(
   OUTPUT ${CMAKE_BINARY_DIR}/iop_sound_driver.o
-  COMMAND ${CMAKE_C_COMPILER} -m32 -c ${CMAKE_BINARY_DIR}/iop_sound_data.S -o ${CMAKE_BINARY_DIR}/iop_sound_data.o
-  COMMAND ld -m elf_i386 -r -o ${CMAKE_BINARY_DIR}/iop_sound_driver.r.o
+  COMMAND ${XSG_IOP_DATA_FIX}
+  COMMAND ${CMAKE_C_COMPILER} -m32 -c ${CMAKE_BINARY_DIR}/iop_sound_data${XSG_IOP_DATA_SUFFIX}.S -o ${CMAKE_BINARY_DIR}/iop_sound_data.o
+  COMMAND ${XSG_LD_R} -o ${CMAKE_BINARY_DIR}/iop_sound_driver.r.o
           $<TARGET_OBJECTS:xsg_ssd> $<TARGET_OBJECTS:xsg_rssd> ${CMAKE_BINARY_DIR}/iop_sound_data.o
-  COMMAND objcopy --prefix-symbols=ssdiop_ ${CMAKE_BINARY_DIR}/iop_sound_driver.r.o ${CMAKE_BINARY_DIR}/iop_sound_driver.o
+  COMMAND ${XSG_PREFIX_SSDIOP} ${CMAKE_BINARY_DIR}/iop_sound_driver.r.o ${CMAKE_BINARY_DIR}/iop_sound_driver.o
   DEPENDS xsg_ssd xsg_rssd $<TARGET_OBJECTS:xsg_ssd> $<TARGET_OBJECTS:xsg_rssd> ${CMAKE_BINARY_DIR}/iop_sound_data.S
   COMMAND_EXPAND_LISTS
   COMMENT "Linking the host IOP sound driver")
@@ -170,6 +233,42 @@ add_custom_command(
 # Stage 11: fail if a game file reaches one PS2 data symbol through another
 # that GCC treats as a separate object (find_overlap_access.py; needs the
 # compiled objects, so it runs here rather than at configure time).
+if(WIN32)
+  # Windows: xsg.dll (the game + runtime, linked like the Linux executable but as a
+  # DLL at a fixed base), then the stub xsg.exe that reserves PS2 RAM and loads it
+  # (runtime/win32/stub.c).  find_overlap_access.py already gates the same sources
+  # in the Linux build.  winpthreads and the GCC runtime are static.
+  add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/xsg.dll ${CMAKE_BINARY_DIR}/xsg.dll.a
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/link_xsg.py
+            --target pe --tool-prefix ${XSG_MINGW_PREFIX}-
+            --build ${CMAKE_BINARY_DIR} --out ${CMAKE_BINARY_DIR}/xsg.dll --cc ${CMAKE_C_COMPILER}
+            --runtime $<TARGET_OBJECTS:xsg_runtime> $<TARGET_OBJECTS:xsg_gs> ${CMAKE_BINARY_DIR}/iop_sound_driver.o
+            --libs=-static --libs=-static-libgcc --libs=-static-libstdc++ --libs=-lstdc++ --libs=-lwinpthread
+            --libs=-lwinmm --libs=-lm
+    DEPENDS xsg_game xsg_runtime xsg_gs $<TARGET_OBJECTS:xsg_runtime> $<TARGET_OBJECTS:xsg_gs>
+            ${CMAKE_BINARY_DIR}/iop_sound_driver.o
+            ${CMAKE_BINARY_DIR}/data/data_sources.cmake
+            ${CMAKE_CURRENT_SOURCE_DIR}/scripts/link_xsg.py
+    COMMAND_EXPAND_LISTS
+    COMMENT "Linking xsg.dll")
+  # icon + version resource (port/packaging/windows)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/packaging/windows/resources.cmake)
+  xsg_windows_rc(XSG_STUB_RC xsg "Xenosaga Episode I (PC port)")
+  add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/xsg_res.o
+    COMMAND ${XSG_MINGW_PREFIX}-windres ${XSG_STUB_RC} -O coff -o ${CMAKE_BINARY_DIR}/xsg_res.o
+    DEPENDS ${XSG_STUB_RC} ${CMAKE_CURRENT_SOURCE_DIR}/packaging/windows/xsg.rc.in)
+  add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/xsg.exe
+    COMMAND ${CMAKE_C_COMPILER} -O1 -nostdlib -fno-asynchronous-unwind-tables -fno-stack-protector
+            ${XSG_W32_DIR}/stub.c ${CMAKE_BINARY_DIR}/xsg_res.o ${CMAKE_BINARY_DIR}/xsg.dll.a -o ${CMAKE_BINARY_DIR}/xsg.exe
+            -Wl,-e,_stub_entry@0 -Wl,--image-base,0x10000 -Wl,--disable-dynamicbase
+            -Wl,--disable-reloc-section -Wl,--large-address-aware -Wl,--subsystem,console
+    DEPENDS ${XSG_W32_DIR}/stub.c ${CMAKE_BINARY_DIR}/xsg.dll.a ${CMAKE_BINARY_DIR}/xsg_res.o
+    COMMENT "Linking the stub xsg.exe")
+  add_custom_target(xsg_exe ALL DEPENDS ${CMAKE_BINARY_DIR}/xsg.dll ${CMAKE_BINARY_DIR}/xsg.exe)
+else()
 add_custom_command(
   OUTPUT ${CMAKE_BINARY_DIR}/xsg
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/find_overlap_access.py
@@ -186,6 +285,7 @@ add_custom_command(
   COMMAND_EXPAND_LISTS
   COMMENT "Linking host executable xsg")
 add_custom_target(xsg_exe ALL DEPENDS ${CMAKE_BINARY_DIR}/xsg)
+endif()
 
 # Stage 9: xsg-gpu, the 64-bit paraLLEl-GS renderer process (port/gpu/, own
 # CMake project because it is not -m32; paraLLEl-GS is fetched and linked only
@@ -194,7 +294,14 @@ option(XSG_GPU "Build the xsg-gpu hardware renderer (fetches paraLLEl-GS)" ON)
 set(XSG_PGS_SOURCE_DIR "" CACHE PATH "Use this paraLLEl-GS checkout instead of fetching it")
 if(XSG_GPU)
   include(ExternalProject)
-  set(_xsg_gpu_args -DCMAKE_BUILD_TYPE=Release)
+  set(_xsg_gpu_args -DCMAKE_BUILD_TYPE=Release -DXSG_PACKAGED=${XSG_PACKAGED})
+  if(WIN32)
+    # xsg-gpu.exe is 64-bit: the other MinGW toolchain; it lands in <build>/gpu/ next to SDL3.dll.
+    list(APPEND _xsg_gpu_args -DCMAKE_TOOLCHAIN_FILE=${CMAKE_CURRENT_SOURCE_DIR}/cmake/mingw-x86_64.cmake)
+    if(XSG_SDL3_DIR)
+      list(APPEND _xsg_gpu_args -DXSG_SDL3_DIR=${XSG_SDL3_DIR})
+    endif()
+  endif()
   if(XSG_PGS_SOURCE_DIR)
     list(APPEND _xsg_gpu_args -DFETCHCONTENT_SOURCE_DIR_PARALLEL_GS=${XSG_PGS_SOURCE_DIR})
   endif()

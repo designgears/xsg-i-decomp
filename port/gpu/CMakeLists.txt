@@ -54,8 +54,26 @@ endif()
 set(PARALLEL_GS_STANDALONE ON CACHE BOOL "" FORCE)
 add_subdirectory(${parallel_gs_SOURCE_DIR} ${parallel_gs_BINARY_DIR} EXCLUDE_FROM_ALL SYSTEM)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(SDL3 IMPORTED_TARGET sdl3)
+if(WIN32)
+  # Windows (port/docs/WINDOWS.md): SDL3 from the official MinGW devel release, pinned,
+  # unpacked under .work/tools (SDL3-devel-3.4.20-mingw.tar.gz,
+  # sha256 d2d3bf3fb97a90b22e908a306d7362631ef1bab229d988fe6669595dc29cd9ed).
+  set(XSG_SDL3_VERSION 3.4.20)
+  set(XSG_SDL3_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../.work/tools/SDL3-${XSG_SDL3_VERSION}/x86_64-w64-mingw32"
+      CACHE PATH "SDL3 MinGW devel tree (include/, lib/, bin/SDL3.dll)")
+  if(EXISTS ${XSG_SDL3_DIR}/include/SDL3/SDL.h)
+    add_library(xsg_sdl3 SHARED IMPORTED)
+    set_target_properties(xsg_sdl3 PROPERTIES
+      IMPORTED_LOCATION ${XSG_SDL3_DIR}/bin/SDL3.dll
+      IMPORTED_IMPLIB ${XSG_SDL3_DIR}/lib/libSDL3.dll.a
+      INTERFACE_INCLUDE_DIRECTORIES ${XSG_SDL3_DIR}/include)
+    add_library(PkgConfig::SDL3 ALIAS xsg_sdl3)
+    set(SDL3_FOUND TRUE)
+  endif()
+else()
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(SDL3 IMPORTED_TARGET sdl3)
+endif()
 
 # The software GS's local-memory swizzle (MIT, ours) decodes VRAM for the stream.
 set(XSG_GS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/ps2-port-engine-gs)
@@ -112,11 +130,31 @@ add_executable(xsg-gpu xsg_gpu.cpp audio.cpp xsg_input.cpp glyphs.cpp native.cpp
 set_source_files_properties(${XSG_GS_DIR}/src/gs_memory.cpp PROPERTIES COMPILE_OPTIONS "-msse4.1;-w")
 target_include_directories(xsg-gpu PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../runtime ${XSG_GS_DIR}/include
   ${CMAKE_CURRENT_BINARY_DIR} ${parallel_gs_SOURCE_DIR}/Granite/third_party/stb/stb ${XSG_IMGUI_DIR} ${XSG_IMGUI_DIR}/backends)
-target_link_libraries(xsg-gpu PRIVATE parallel-gs granite-vulkan pthread)
+if(WIN32)
+  # Only SDL3.dll (copied next to the exe) besides system DLLs: the MinGW runtime is static.
+  target_link_libraries(xsg-gpu PRIVATE parallel-gs granite-vulkan)
+  target_link_options(xsg-gpu PRIVATE -static -static-libgcc -static-libstdc++)
+  # POSIX stand-ins (mkdir, pread, setenv) and 64-bit file offsets for xsg-gpu's own sources.
+  target_compile_options(xsg-gpu PRIVATE -include ${CMAKE_CURRENT_SOURCE_DIR}/xsg_win_compat.h)
+  target_compile_definitions(xsg-gpu PRIVATE _FILE_OFFSET_BITS=64 NOMINMAX WIN32_LEAN_AND_MEAN)
+else()
+  target_link_libraries(xsg-gpu PRIVATE parallel-gs granite-vulkan pthread)
+endif()
+if(WIN32)
+  # icon + version resource (port/packaging/windows)
+  enable_language(RC)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/../packaging/windows/resources.cmake)
+  xsg_windows_rc(XSG_GPU_RC xsg-gpu "Xenosaga Episode I (PC port) renderer")
+  target_sources(xsg-gpu PRIVATE ${XSG_GPU_RC})
+endif()
 if(SDL3_FOUND)
   target_compile_definitions(xsg-gpu PRIVATE XSG_GPU_SDL=1)
   target_sources(xsg-gpu PRIVATE ${XSG_IMGUI_DIR}/backends/imgui_impl_sdl3.cpp)
   target_link_libraries(xsg-gpu PRIVATE PkgConfig::SDL3)
+  if(WIN32)
+    add_custom_command(TARGET xsg-gpu POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${XSG_SDL3_DIR}/bin/SDL3.dll $<TARGET_FILE_DIR:xsg-gpu>/SDL3.dll)
+  endif()
 else()
   message(WARNING "xsg-gpu: SDL3 not found (pkg-config sdl3); headless only")
 endif()
@@ -125,4 +163,11 @@ set_source_files_properties(${XSG_IMGUI_DIR}/imgui.cpp ${XSG_IMGUI_DIR}/imgui_dr
   ${XSG_IMGUI_DIR}/imgui_widgets.cpp ${XSG_IMGUI_DIR}/backends/imgui_impl_sdl3.cpp PROPERTIES COMPILE_OPTIONS "-w")
 
 # Input prompt icons (port/assets/prompts, CC0): read from the source tree.
-set_source_files_properties(ui/prompts.cpp PROPERTIES COMPILE_DEFINITIONS "XSG_PROMPTS_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/../assets/prompts\"")
+# Packaged builds (XSG_PACKAGED, port/packaging) compile in no source-tree path: the icons are
+# found next to the executable instead (ui/prompts.cpp).
+option(XSG_PACKAGED "Build for a package: no source/build-tree paths compiled in" OFF)
+if(XSG_PACKAGED)
+  set_source_files_properties(ui/prompts.cpp PROPERTIES COMPILE_DEFINITIONS "XSG_PROMPTS_DIR=\"\"")
+else()
+  set_source_files_properties(ui/prompts.cpp PROPERTIES COMPILE_DEFINITIONS "XSG_PROMPTS_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/../assets/prompts\"")
+endif()

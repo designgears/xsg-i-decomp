@@ -16,7 +16,7 @@ the pointer.  Settings: F1 > Controls > Mouse (`[mouse]` in settings.ini).
 | Xenocard help (minigame) | index: pointing at a category or topic selects it, a click opens it (a click on the other list goes there); a page: a left click turns to the next page, the wheel turns pages, right click is back |
 | battle command list | the same; on the rebuilt UI the rows as drawn |
 | battle attack rows (both UIs), LB / RB footer, pause card (rebuilt UI) | a click presses that row's button |
-| battle targets | the unit under the pointer is outlined; pointing selects it (`hover`, once the pointer moves); a click on another unit selects it, a click on the current target confirms |
+| battle targets | the unit under the pointer is outlined (pointing never selects it); a click on another unit selects it, a click on the current target confirms |
 | field, `field = hold` | hold the left button: walk toward the pointer (run beyond `run_radius`); click a person: walk up and talk; click elsewhere: CIRCLE (examine, whatever `click_advances`) |
 | field, `field = click` | click a spot: walk there; click a person: walk up and talk; holding also walks |
 | field, either | a person under the pointer is outlined; the d-pad, keys or the stick end a mouse walk |
@@ -85,7 +85,7 @@ The field camera is the map's own and takes no input, so the mouse has no camera
   the object's nml model entries (`nmlModelEntry`, `nmlModelEntryCard`) with
   `xsg_mouse_object_begin(id)` / `xsg_mouse_object_end()`, as act_2.c brackets actors; only
   opaque draws write the id.  Then `xsg_mouse_object_pick(ids, n, sel)` picks among them like
-  battle units (cyan hover, gold current, hover selects once the pointer moves, a click on the
+  battle units (cyan hover, gold current; only a click changes the target, a click on the
   current one confirms).  The Xenocard table does this: card_fread.c tags each board card with
   its cursor target (`XSG_CARD_TAG`, zone * 16 + index, as cgp.c `CGPCursor2Pos` reads them).
   It needs the native renderer; without it (`pick` -1) nothing is picked and the pad works.

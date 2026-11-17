@@ -90,3 +90,7 @@
 __pycache__/
 *.pyc
 .venv/
+
+# The packaged game (port/packaging/make_appimage.sh): built from your own copy
+# of the game, never tracked.
+*.AppImage

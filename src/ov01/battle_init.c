@@ -5657,8 +5657,8 @@ static int xsgUnitActor(void *unit)
    model's pixels (object ids); otherwise by its body on screen: from its root (grBBCalc on the
    unit) up to its marker point (sefGetNullPosition, projected through the cursor object's
    place, borrowed and restored, as menuActCurPut does) and a little above.
-   Hovering outlines it (and selects it with [mouse] hover, once the pointer moves), a click
-   selects it, a click on the current target confirms.  Returns the index to select, -1 for none. */
+   Hovering outlines it (never selects it: the target only changes on a click), a click selects
+   it, a click on the current target confirms.  Returns the index to select, -1 for none. */
 static int xsgMouseUnitPick(CursorObject *cursor, void **units, int count, int cur)
 {
     const XsgMouse *m = xsg_mouse();
@@ -5707,8 +5707,7 @@ static int xsgMouseUnitPick(CursorObject *cursor, void **units, int count, int c
         if (best == cur) xsg_mouse_tap(XSG_PAD_CIRCLE);   /* the target again: confirm */
         return best;
     }
-    if (best != cur && m->hover && m->moved) return best;   /* pointing selects */
-    return -1;
+    return -1;   /* pointing only outlines: the target changes on a click ([mouse] hover is for lists) */
 }
 #endif
 int curSel(CursorObject *cursor, CursorSelectList *list, int nextMask, int prevMask)

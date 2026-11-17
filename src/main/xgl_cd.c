@@ -1017,6 +1017,15 @@ int xglCdStreamOpen(CdStreamParam *stream, const char *path)
     mode = position.source;
     switch (mode) {
     case 0:
+#ifdef PORT_HOST
+        {   /* uncensored 3039C (port/runtime/disc.c xsg_cd_stream_override): the next
+             * sceCdStStart streams that file, so the stream ends at its length */
+            extern int xsg_cd_stream_override(const char *path, int *bytes);
+            int override_bytes;
+            if (xsg_cd_stream_override(path, &override_bytes))
+                stream->file_byte_count = override_bytes;
+        }
+#endif
         sceCdSync(0);
         sceCdDiskReady(0);
         stream->descriptor = position.lbn;

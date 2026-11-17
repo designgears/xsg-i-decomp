@@ -6,6 +6,17 @@
  *
  * Samples are kept in memory and written at exit / XSG_TIMEOUT as lines of hex
  * addresses (innermost first); port/tools/prof_report.py symbolises them. */
+#ifdef _WIN32
+/* Windows (port/docs/WINDOWS.md): no SIGPROF timer; the profiler is Linux-only. */
+#include "xsg_settings.h"
+#include "xsg_rt.h"
+void xsg_prof_dump(void) {}
+void xsg_prof_init(void)
+{
+    if (xsg_cfg("debug.prof"))
+        xsg_logf("[prof] the sampling profiler is not available on Windows\n");
+}
+#else
 #define _GNU_SOURCE
 #include <execinfo.h>
 #include "xsg_settings.h"
@@ -103,3 +114,4 @@ void xsg_prof_init(void)
     atexit(xsg_prof_dump);
     xsg_logf("[prof] sampling the game thread at %d Hz -> %s\n", hz, prof_path);
 }
+#endif /* !_WIN32 */

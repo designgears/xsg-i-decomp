@@ -272,6 +272,32 @@ void SkipDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
     HaloText(dl, bf, hs, ImVec2(bx + bw + 8 * kx, cy - ls.y * 0.5f), col::kText, "Hold to skip", vis);
 }
 
+void CaptionDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh) {
+    using namespace xsgmenu;
+    const std::string& cap = PointerCaption();
+    if (cap.empty()) return;
+    LayoutBegin(gx, gy, gw, gh);
+    const float k = LayoutK();
+    ImFont* const bf = UiFont(kFontBodyBold, font);
+    const float hs = 17.0f * k, step = hs * 1.3f;
+    const float cx = Map(256, 0, kCentre).x;
+    float y = Map(256, 14, kCentre).y;   // the top of the picture, 14 game px in
+    size_t pos = 0;
+    while (pos <= cap.size()) {
+        size_t nl = cap.find('\n', pos);
+        if (nl == std::string::npos) nl = cap.size();
+        const std::string line = cap.substr(pos, nl - pos);
+        if (!line.empty()) {
+            const ImVec2 sz = bf->CalcTextSizeA(hs, 1e9f, 0, line.c_str());
+            // the halo twice: subtitles sit on bright scenery too
+            HaloText(dl, bf, hs, ImVec2(cx - sz.x * 0.5f, y), col::kText, line.c_str(), 1.0f);
+            HaloText(dl, bf, hs, ImVec2(cx - sz.x * 0.5f, y), col::kText, line.c_str(), 1.0f);
+        }
+        y += step;
+        pos = nl + 1;
+    }
+}
+
 void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh) {
     using namespace xsgmenu;
     LayoutBegin(gx, gy, gw, gh);

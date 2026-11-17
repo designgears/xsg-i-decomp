@@ -1,5 +1,7 @@
 # In-game menu (xsg-gpu)
 
+The first-run setup screen (no disc image yet) shares this look and code: see SETUP.md.
+
 Branch `pc-port`, 2026-11-07. The menu is drawn by the renderer process `xsg-gpu` with
 Dear ImGui over the game image, so it needs `[renderer] gs = gpu` (the default) or `both`. Its design follows
 TotK Recomp's menu (MIT). The look follows Xenosaga's own UI: indigo "virtual space" panels
@@ -46,7 +48,7 @@ held while a field is open.
 | | Renderer (paraLLEl-GS / native), Native internal scale, Super-sampling, Super-sampled textures, High-resolution scanout | `[renderer] native, native_scale, ssaa, ssaa_textures, hires_scanout` | live |
 | | DLSS / frame generation | — (disabled, "coming soon") | — |
 | Game | FPS limit | `[game] fps_limit` | live (game process) |
-| | Play movies, ffmpeg program | `[game] movies, ffmpeg` | restart |
+| | Play movies, ffmpeg program, Uncensored 3039C, English subtitles (3039C), Uncensored folder | `[game] movies, ffmpeg, uncensored, uncensored_subs, uncensored_dir` | restart (uncensored: live, from the next time 3039C plays) |
 | | Audio, Sound driver | `[audio] enabled` (live), `sound_driver` (restart) | |
 | | Master / Music / Effects / Voice and movies | `[audio] master … voice` | live |
 | | Memory card, Memory card folder | `[game] memcard, memcard_dir` | restart |
@@ -191,6 +193,9 @@ environment variable the setting took over; it is no longer read.
 | `[game] fps_limit` | `60` | 60, 30, 120, uncapped | live | `XSG_FAST` | Vblank rate = game speed; uncapped replaces XSG_FAST=1. |
 | `[game] movies` | `1` | 0, 1 | live | `XSG_MPEG` | Play the FMV movies (needs ffmpeg). |
 | `[game] ffmpeg` | (empty) | text | live | `XSG_FFMPEG` | ffmpeg binary for movies (empty: ffmpeg on PATH). |
+| `[game] uncensored` | `0` | 0, 1 | live | — | Uncensored 3039C scene: plays uncensored/3039C_un.pss in place of the disc's 3039C.pss (PACKAGING.md). |
+| `[game] uncensored_subs` | `1` | 0, 1 | live | — | English subtitles at the top of the screen in the uncensored 3039C (its picture has the Japanese release's subtitles). |
+| `[game] uncensored_dir` | (empty) | text | live | — | Folder holding 3039C_un.pss (empty: the uncensored folder in the install root, else <game_dir>/uncensored). |
 | `[game] memcard` | `1` | 0, 1 | live | `XSG_MC` | Memory card in slot 1. |
 | `[game] memcard_dir` | (empty) | text | live | `XSG_MC_DIR` | Memory card folder (empty: ~/.local/share/xsg/mc0). |
 | `[game] game_dir` | (empty) | text | restart | `XSG_GAME_DIR` | Game data folder with iso/ and extracted-iso/ (empty: build default). |
@@ -393,7 +398,10 @@ menu_test = <vsync>[:<vsyncs per page>[:<W>x<H>]]   open the menu at that vsync 
     menu_<n>_<tab>.png for each tab (0 display .. 5 debug), then menu_6_overlay.png (full
     overlay), to menu_test_dir (default .).  Headless works; images are game frame + menu at WxH.
 menu_test_set = <vsync>:<key>=<value>[,...][;...]   timed settings without input;
-    special keys SAVE=1, OPEN=0|1, TAB=n, SHOT=<png path>, RESTART=1.
+    special keys SAVE=1, OPEN=0|1, TAB=n, SHOT=<png path>, RESTART=1; on the first-run
+    setup screen (SETUP.md) SETUP_DROP=<path> (as if the file were dropped on the window)
+    and SETUP=continue|quit|choose (its buttons).  Setup runs before the game: its vsyncs
+    count from 1 when the screen opens.
 ```
 
 ### Test rooms (`port/runtime/rooms.c`)

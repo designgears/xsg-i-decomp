@@ -57,22 +57,36 @@ static void load(void)
     const char *x = getenv("XDG_CONFIG_HOME"), *h = getenv("HOME");
     if (p && *p)
         snprintf(g_path, sizeof g_path, "%s", p);
+#ifdef _WIN32
+    else {   /* %APPDATA%\xsg\settings.ini, as xsg-gpu's menu/cfg.cpp */
+        char d[1024];
+        (void)x, (void)h;
+        snprintf(g_path, sizeof g_path, "%s/xsg/settings.ini", *xsg_w32_dir("APPDATA", d, sizeof d) ? d : ".");
+    }
+#else
     else if (x && *x)
         snprintf(g_path, sizeof g_path, "%s/xsg/settings.ini", x);
     else
         snprintf(g_path, sizeof g_path, "%s/.config/xsg/settings.ini", h && *h ? h : ".");
+#endif
     read_file();
 }
 
 /* Change counter for live settings: bumped by every reload. */
 volatile unsigned xsg_cfg_gen;
 static struct timespec g_mtime;
+#ifdef _WIN32
+/* MinGW's struct stat has whole seconds only: compare the size too. */
+#define XSG_STAT_MTIM(st) ((struct timespec){(st).st_mtime, (long)((st).st_size & 0x3fffffff)})
+#else
+#define XSG_STAT_MTIM(st) ((st).st_mtim)
+#endif
 
 static void read_file(void)
 {
     struct stat st;
     if (stat(g_path, &st) == 0)
-        g_mtime = st.st_mtim;
+        g_mtime = XSG_STAT_MTIM(st);
     FILE *f = fopen(g_path, "r");
     if (!f)
         return;
@@ -121,7 +135,7 @@ int xsg_cfg_poll(void)
     struct stat st;
     if (stat(g_path, &st) != 0)
         return 0;
-    if (st.st_mtim.tv_sec == g_mtime.tv_sec && st.st_mtim.tv_nsec == g_mtime.tv_nsec)
+    if (XSG_STAT_MTIM(st).tv_sec == g_mtime.tv_sec && XSG_STAT_MTIM(st).tv_nsec == g_mtime.tv_nsec)
         return 0;
     read_file();
     __atomic_add_fetch(&xsg_cfg_gen, 1, __ATOMIC_RELEASE);

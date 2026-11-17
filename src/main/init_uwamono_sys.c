@@ -1044,6 +1044,11 @@ typedef struct InitUwamonoQuery {
     unsigned char unmodeled_0a[0xe];
     void *header;
     unsigned char unmodeled_20[0x20];
+#ifdef PORT_HOST
+    /* UnduParamInit fills a whole UnduQuery (0x4C bytes): on the host its 64-bit
+       includedAttributes ends 4 bytes past this copy (Windows: the saved ebx). */
+    unsigned char host_tail[0x10];
+#endif
 } InitUwamonoQuery;
 extern void UnduParamInit(void *param);
 extern void *UnduDataGetHeader(int map_index, int unit_index);

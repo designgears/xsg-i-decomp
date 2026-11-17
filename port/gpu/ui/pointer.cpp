@@ -1,4 +1,5 @@
 /* The native mouse, xsg-gpu's side (pointer.h). */
+#include <cstring>
 #include "pointer.h"
 
 #include "layout.h"
@@ -45,6 +46,7 @@ bool g_game_on;               // the pointer is in the game picture with the mou
 int g_gx, g_gy;               // the pointer, game px (centre anchor; negative / past 512 in the wide margins)
 int g_out_sel, g_out_hov;
 uint32_t g_skip;              // the game's hold-to-skip report (GpuMouse g_skip)
+std::string g_caption;        // the movie caption to show (GpuMouse g_caption)
 uint32_t g_hov_mask[8];
 int g_pick = -1;
 int g_pick_age;
@@ -131,6 +133,7 @@ void PointerSettings(ImVec2 a, ImVec2 b) {
 
 bool PointerHot() { return g_hot; }
 uint32_t PointerSkip() { return g_skip; }
+const std::string& PointerCaption() { return g_caption; }
 bool PointerGame(int* x, int* y) {
     *x = g_gx;
     *y = g_gy;
@@ -195,6 +198,7 @@ bool PointerEnd(ImDrawList* dl, float gx, float gy, float gw, float gh, bool reb
         static uint32_t last_seq;
         static double last_t;
         static GpuMouse snap;   // a read that keeps meeting a write keeps the last good report
+        static std::string snap_caption;
         bool ok = false;
         for (int tries = 0; tries < 100 && !ok; ++tries) {
             const uint32_t s0 = __atomic_load_n(&g_shm->g_seq, __ATOMIC_ACQUIRE);
@@ -202,10 +206,15 @@ bool PointerEnd(ImDrawList* dl, float gx, float gy, float gw, float gh, bool reb
             const uint32_t hot = g_shm->g_hot, o0 = g_shm->g_outline[0], o1 = g_shm->g_outline[1], sk = g_shm->g_skip;
             uint32_t hm[8];
             for (int i = 0; i < 8; ++i) hm[i] = g_shm->g_hoverable[i];
+            char cap[sizeof g_shm->g_caption];
+            uint32_t cl = g_shm->g_caption_len;
+            if (cl > sizeof cap) cl = 0;
+            std::memcpy(cap, g_shm->g_caption, cl);
             __atomic_thread_fence(__ATOMIC_ACQUIRE);
             ok = __atomic_load_n(&g_shm->g_seq, __ATOMIC_RELAXED) == s0;
             if (!ok) continue;
             snap.g_hot = hot, snap.g_outline[0] = int32_t(o0), snap.g_outline[1] = int32_t(o1), snap.g_skip = sk;
+            snap_caption.assign(cap, cl);
             for (int i = 0; i < 8; ++i) snap.g_hoverable[i] = hm[i];
             if (s0 != last_seq) last_seq = s0, last_t = Now();
         }
@@ -216,6 +225,7 @@ bool PointerEnd(ImDrawList* dl, float gx, float gy, float gw, float gh, bool reb
         g_out_hov = fresh ? snap.g_outline[1] : 0;
         for (int i = 0; i < 8; ++i) g_hov_mask[i] = fresh ? snap.g_hoverable[i] : 0;
         g_skip = Now() - last_t < 0.25 ? snap.g_skip : 0;   // hold to skip: pad players too, mouse or not
+        if (Now() - last_t < 0.25) g_caption = snap_caption; else g_caption.clear();
     }
 
     // the pointer in the game's space, per anchor

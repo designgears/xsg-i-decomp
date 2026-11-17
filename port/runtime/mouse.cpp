@@ -50,6 +50,9 @@ int g_outline[2];
 uint32_t g_hoverable[8];   // ids (bit = id - 1): actors, then hooks' objects
 uint32_t g_skip;           // GpuMouse g_skip (xsg_skip_hold), as of g_skip_frame
 uint32_t g_skip_frame = ~0u - 100;
+char g_caption[256];       // GpuMouse g_caption (xsg_caption_set), as of g_caption_frame
+uint32_t g_caption_len;
+uint32_t g_caption_frame = ~0u - 100;
 bool g_list_seen, g_list_seen_prev;   // a menu had the pointer this frame / the last (xsg_mouse_capture)
 
 // pad taps: masks waiting, one in flight (pressed for 2 reads, released for 2)
@@ -123,6 +126,9 @@ void Publish() {
     p->g_outline[1] = g_outline[1];
     for (int i = 0; i < 8; ++i) p->g_hoverable[i] = g_hoverable[i];
     p->g_skip = xsg_frame - g_skip_frame <= 3 ? g_skip : 0;   // a cutscene at 30 fps calls every other vblank
+    const uint32_t cl = xsg_frame - g_caption_frame <= 3 ? g_caption_len : 0;   // stale (paused, skipped, over): none
+    std::memcpy(p->g_caption, g_caption, cl);
+    p->g_caption_len = cl;
     __atomic_store_n(&p->g_seq, s + 2, __ATOMIC_RELEASE);
 }
 
@@ -373,6 +379,14 @@ void xsg_mouse_capture(void) {
 }
 
 void xsg_mouse_tap(unsigned mask) { Tap(mask); }
+
+void xsg_caption_set(const char* utf8) {
+    size_t n = utf8 ? std::strlen(utf8) : 0;
+    if (n > sizeof g_caption) n = sizeof g_caption;
+    std::memcpy(g_caption, utf8, n);
+    g_caption_len = uint32_t(n);
+    g_caption_frame = xsg_frame;
+}
 
 int xsg_skip_hold(unsigned held) {
     constexpr uint32_t kSkipHold = 60;      // vblanks (1 s) of holding

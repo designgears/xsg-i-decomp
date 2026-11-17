@@ -72,6 +72,12 @@ bool IsOpen();
 std::string TestShot(uint32_t* w, uint32_t* h);
 bool TestRunning(uint32_t* w, uint32_t* h);
 
+/* First-run setup screen (port/docs/SETUP.md, GPU_MSG_SETUP): Frame() draws it instead of
+   anything else until SetupResult() returns 1 (Continue: *path is validated and saved as
+   [game] iso) or -1 (Quit).  reason: the XSG_ISO_* code the game found for `tried`. */
+void SetupBegin(int reason, const std::string& tried, const std::string& search_dir);
+int SetupResult(std::string* path);
+
 }  // namespace xsgmenu
 
 #endif

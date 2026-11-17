@@ -19,5 +19,8 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
    right, [north] Hold to skip, filling as the hold goes.  Shows for a few seconds after any input. */
 bool SkipActive();
 void SkipDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh);
+/* The movie caption (pointer.h PointerCaption: the uncensored 3039C's English subtitles), centred
+   at the top of the picture in the UI's bold font with a dark halo; nothing when there is none. */
+void CaptionDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh);
 
 }  // namespace xsgui

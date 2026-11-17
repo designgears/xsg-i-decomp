@@ -212,12 +212,21 @@ void *ssdiop_AllocSysMemory(int mode, int size, void *addr)
 {
     (void)mode; (void)addr;
     void *p = NULL;
+#ifdef _WIN32
+    if (!(p = _aligned_malloc(size > 0 ? (size_t)size : 1, 64)))
+        return NULL;
+#else
     if (posix_memalign(&p, 64, size > 0 ? (size_t)size : 1))
         return NULL;
+#endif
     memset(p, 0, size > 0 ? (size_t)size : 1);
     return p;
 }
+#ifdef _WIN32
+int ssdiop_FreeSysMemory(void *p) { _aligned_free(p); return 0; }
+#else
 int ssdiop_FreeSysMemory(void *p) { free(p); return 0; }
+#endif
 int ssdiop_QueryMaxFreeMemSize(void) { return 0x100000; }
 int ssdiop_RegisterLibraryEntries(void *lib) { (void)lib; return 0; }
 unsigned ssdiop_ssd_entry[8]; /* SSD's export table (SsdStart only) */

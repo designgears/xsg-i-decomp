@@ -52,6 +52,10 @@ uint32_t xsg_ps2_addr_of(void *host_fn);
 
 /* ---- disc ----------------------------------------------------------- */
 void xsg_disc_init(void);
+/* First-run setup (port/docs/SETUP.md): the setup screen when there is no usable disc image. */
+void xsg_disc_setup(void);
+/* A whole file from the disc image, malloc'd (free it); 0 on success. */
+int xsg_disc_read_file(const char *name, void **buf, uint32_t *size);
 
 /* ---- input --------------------------------------------------------- */
 unsigned xsg_pad_script_buttons(void); /* XSG_PAD script, SCE_PAD mask */

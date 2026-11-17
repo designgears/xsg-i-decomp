@@ -17,7 +17,11 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <iconv.h>
+#endif
 #include <set>
 #include <vector>
 
@@ -63,6 +67,23 @@ void AppendUtf8(std::string& o, uint32_t c) {
 /* One JIS X 0208 character (EUC bytes hi, lo) through iconv, full-width forms
    folded to ASCII (the menu font is Latin). */
 void Jis(std::string& o, uint8_t hi, uint8_t lo) {
+#ifdef _WIN32
+    // No iconv: EUC-JP -> Shift-JIS (arithmetic), then code page 932.
+    uint32_t u = 0;
+    {
+        const unsigned j1 = hi & 0x7f, j2 = lo & 0x7f;
+        if (j1 < 0x21 || j1 > 0x7e || j2 < 0x21 || j2 > 0x7e) { o += '?'; return; }
+        const unsigned char sj[2] = {
+            (unsigned char)(((j1 + 1) >> 1) + (j1 <= 0x5e ? 0x70 : 0xb0)),
+            (unsigned char)(j2 + ((j1 & 1) ? (j2 < 0x60 ? 0x1f : 0x20) : 0x7e))};
+        wchar_t w[2];
+        if (MultiByteToWideChar(932, MB_ERR_INVALID_CHARS, reinterpret_cast<const char*>(sj), 2, w, 2) != 1) {
+            o += '?';
+            return;
+        }
+        u = uint32_t(w[0]);
+    }
+#else
     static iconv_t cd = iconv_open("UTF-32LE", "EUC-JP");
     char in[2] = {char(hi), char(lo)};
     uint32_t u = 0;
@@ -73,6 +94,7 @@ void Jis(std::string& o, uint8_t hi, uint8_t lo) {
         o += '?';
         return;
     }
+#endif
     if (u == 0x3000) u = ' ';
     else if (u >= 0xff01 && u <= 0xff5e) u -= 0xfee0;
     else if (u == 0x3001) u = ',';

@@ -1,0 +1,33 @@
+// Windows resources (port/packaging/windows, port/docs/WINDOWS.md): icon and version.
+// Configured by port/CMakeLists.txt / port/gpu/CMakeLists.txt; @XSG_RC_ICON_LINE@ is empty
+// when ImageMagick (magick) was not found to render port/packaging/xsg.svg.
+#include <winver.h>
+@XSG_RC_ICON_LINE@
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION @XSG_RC_VERSION_COMMAS@
+PRODUCTVERSION @XSG_RC_VERSION_COMMAS@
+FILEFLAGSMASK 0x3fL
+FILEFLAGS 0x0L
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName", "Xenosaga Episode I PC port (unofficial)"
+            VALUE "FileDescription", "@XSG_RC_DESCRIPTION@"
+            VALUE "FileVersion", "@XSG_RC_VERSION_STRING@"
+            VALUE "InternalName", "@XSG_RC_NAME@"
+            VALUE "OriginalFilename", "@XSG_RC_NAME@.exe"
+            VALUE "ProductName", "Xenosaga Episode I PC port"
+            VALUE "ProductVersion", "@XSG_RC_VERSION_STRING@"
+            VALUE "Comments", "Built from your own copy of the game; for your own use only."
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

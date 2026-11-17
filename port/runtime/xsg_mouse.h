@@ -116,6 +116,10 @@ int xsg_mouse_object_pick(const int *ids, int n, int sel);
    the rebuilt UI's skip button (bottom right), for kSkipHold vblanks returns 1 once: skip now.
    It also reports the hold's progress for the button's fill. */
 int xsg_skip_hold(unsigned held);
+/* The movie caption to show this frame (UTF-8, '\n' between lines; "" none): published
+   to xsg-gpu, which draws it at the top of the screen.  Called every frame while one
+   applies (disc.c xsg_movie_caption_frame); not refreshed for a few frames, it is gone. */
+void xsg_caption_set(const char *utf8);
 
 /* sdk.c scePadRead: buttons (SCE_PAD mask, active high) the mouse presses this read. */
 unsigned xsg_mouse_pad_buttons(void);

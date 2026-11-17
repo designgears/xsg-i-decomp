@@ -31,7 +31,7 @@
 #include <stdint.h>
 
 #define XSG_GPU_MAGIC 0x55504758u /* "XGPU" */
-#define XSG_GPU_VERSION 8u
+#define XSG_GPU_VERSION 9u
 #define XSG_GPU_FD 3
 #define XSG_GPU_HDR (256u << 10)
 #define XSG_GPU_RING (64u << 20)
@@ -65,7 +65,26 @@ enum {
     GPU_MSG_NATIVE = 7,    /* a = kind (GPU_NATIVE_*), b = vertex count; payload: GpuNativeBatch + vertices */
     GPU_MSG_UI_IMAGE = 9,  /* a = image id (1: the title picture), b = w | h << 16; payload: RGBA32 (PS2 alpha) */
     GPU_MSG_UI_TEX = 8,    /* a = texture-set key, b = entries; payload: GpuUiTexEntry[b] then their PSMCT32 words */
+    GPU_MSG_SETUP = 10,    /* a = seq; payload: GpuSetupReq.  xsg-gpu shows the setup screen until the user picks a
+                              valid disc image or quits, then writes GpuSetupReply to the reply area (port/docs/SETUP.md) */
 };
+
+/* First-run setup (GPU_MSG_SETUP): sent by the game before anything reads the disc when no usable
+   disc image is configured.  reason is an XSG_ISO_* code (xsg_iso_check.h) for `path`, the image the
+   game tried ("" when none was found).  The reply's path is validated and already saved as
+   [game] iso in settings.ini; ok = 0: the user quit. */
+#define XSG_GPU_SETUP_PATH 4096
+typedef struct {
+    uint32_t reason;
+    uint32_t pad[3];
+    char path[XSG_GPU_SETUP_PATH];
+    char search_dir[XSG_GPU_SETUP_PATH];   /* where the game looked (<game_dir>/iso), for the message */
+} GpuSetupReq;
+typedef struct {
+    volatile uint32_t ok;
+    uint32_t pad[3];
+    char path[XSG_GPU_SETUP_PATH];
+} GpuSetupReply;
 
 /* Native renderer (port/docs/NATIVE_RENDERER.md, XSG_GPU_NATIVE=1): the inputs
  * of one VU1 geometry batch, taken from VU1 data memory after the batch ran.
@@ -215,7 +234,10 @@ typedef struct {
     volatile uint32_t g_hoverable[8];   /* object ids (bit = id - 1, 1..256) the renderer outlines under the pointer, at once */
     volatile uint32_t g_skip;      /* a skippable cutscene this frame (mouse.cpp xsg_skip_hold): bits 0-7 hold progress
                                       (255 = done), bit 8 skippable, bit 9 recent input (show the prompt) */
-    uint32_t reserved[89];
+    volatile uint32_t g_caption_len; /* the movie caption to show now (disc.c xsg_movie_caption_frame -> mouse.cpp
+                                        xsg_caption_set): g_caption's UTF-8 bytes ('\n' between lines), 0 none */
+    char g_caption[256];
+    uint32_t reserved[24];
 } GpuMouse;
 
 /* In-game menu (port/docs/MENU.md): the settings the game process applies
@@ -376,6 +398,7 @@ typedef struct {
 } GpuSettings;
 
 #ifdef __cplusplus
+static_assert(sizeof(GpuMouse) % 4 == 0 && sizeof(((GpuMouse*)0)->reserved) == 96, "GpuMouse: the caption came out of reserved (89 words before)");
 static_assert(sizeof(GpuAudio) == 64 + XSG_GPU_AUDIO_FRAMES * 4 && sizeof(GpuAudio) <= XSG_GPU_AUDIO, "audio ring layout");
 static_assert(sizeof(GpuUiKgOp) == 68 && sizeof(GpuUiKeyGuide) == 16 + 68 * XSG_GPU_UI_KG_OPS, "ui op layout (32 / 64-bit)");
 static_assert(sizeof(GpuUiBattleCmd) == 28 + 5 * 20 && sizeof(GpuUiUnit) == 52, "battle layout (32 / 64-bit)");
@@ -384,6 +407,8 @@ static_assert(XSG_GPU_UI_MENU_OFF + sizeof(GpuUiMenuList) <= XSG_GPU_HDR, "the m
 static_assert(XSG_GPU_UI_CMD_OFF + sizeof(GpuUiBattleCmd) <= XSG_GPU_UI_DMG_OFF, "battle command block overlaps");
 static_assert(XSG_GPU_UI_DMG_OFF + sizeof(GpuUiDmgList) <= XSG_GPU_UI_KG_OFF && sizeof(GpuUiDmg) == 28, "damage list layout");
 static_assert(XSG_GPU_UI_BATTLE_OFF + sizeof(GpuUiBattle) <= XSG_GPU_UI_CMD_OFF, "battle block overlaps");
+static_assert(sizeof(GpuSetupReq) == 16 + 2 * XSG_GPU_SETUP_PATH && sizeof(GpuSetupReply) == 16 + XSG_GPU_SETUP_PATH &&
+              sizeof(GpuSetupReply) <= XSG_GPU_REPLY, "setup layout (32 / 64-bit)");
 static_assert(sizeof(GpuMouse) == 512 && XSG_GPU_MOUSE_OFF + sizeof(GpuMouse) <= XSG_GPU_SETTINGS_OFF &&
               XSG_GPU_PAD_OFF + sizeof(GpuPad) <= XSG_GPU_MOUSE_OFF, "mouse block layout");
 #endif

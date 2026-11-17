@@ -101,6 +101,9 @@ int ReadFile(const std::string& path) {
 }
 
 std::string ConfigDir() {
+#ifdef _WIN32
+    if (std::string a = XsgWinDir("APPDATA"); !a.empty()) return a + "/xsg";   // %APPDATA%\xsg
+#endif
     if (const char* x = std::getenv("XDG_CONFIG_HOME"); x && *x) return std::string(x) + "/xsg";
     if (const char* h = std::getenv("HOME"); h && *h) return std::string(h) + "/.config/xsg";
     return ".";
