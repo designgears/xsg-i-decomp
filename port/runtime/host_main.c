@@ -25,6 +25,7 @@
 #include <unistd.h>
 
 #include "xsg_rt.h"
+#include "xsg_datafill.h"
 
 #ifndef MAP_FIXED_NOREPLACE
 #define MAP_FIXED_NOREPLACE 0x100000
@@ -348,6 +349,11 @@ int main(int argc, char **argv)
     xsg_disc_setup();
     xsg_disc_init();
     xsg_load_main_image();
+    if (xsg_data_fill()) {
+        xsg_logf("[boot] the game's data could not be read from the disc image; "
+                 "this build needs Xenosaga Episode I (USA, SLUS-20469)\n");
+        return 1;
+    }
     pthread_t dmac;
     pthread_create(&dmac, NULL, dmac_thread, NULL);
     xsg_overlay_init();

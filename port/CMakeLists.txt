@@ -105,12 +105,18 @@ set_target_properties(xsg_game PROPERTIES LINKER_LANGUAGE C)
 
 # ---------------------------------------------------------------------------
 # Stage 3: host runtime + the linked executable port/build/xsg.
-# Game data comes from the PS2 build's own outputs (build/<unit>/..., made by
-# configure.py from the user's disc); gen_host_data.py converts it for i386.
+# Game data: port/data holds its layout only (labels, sizes, pointer words as
+# relocations, and fill tables); the bytes are copied from the player's disc at
+# start-up (runtime/datafill.c).  The build needs no game files.  Regenerate
+# port/data after a decomp change with port/scripts/gen_data.sh (needs the PS2
+# build in build/<unit>, made by configure.py from the disc).
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 set(XSG_GAME_DIR "${XSG_ROOT}/game" CACHE PATH "Default game directory (iso/, extracted-iso/)")
 
+set(XSG_DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data")
 file(GLOB XSG_RUNTIME_SRCS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/runtime/*.c")
+list(APPEND XSG_RUNTIME_SRCS ${XSG_DATA_DIR}/fill_index.c)
+file(GLOB_RECURSE XSG_DATA_SKELETON CONFIGURE_DEPENDS "${XSG_DATA_DIR}/*.s" "${XSG_DATA_DIR}/syms/*")
 # Windows (port/docs/WINDOWS.md): MinGW-w64 i686 cross build, e.g.
 #   cmake -S port -B port/build-win32 -DCMAKE_TOOLCHAIN_FILE=$PWD/port/cmake/mingw-i686.cmake
 # The runtime gets a platform layer (runtime/win32/) and a force-included POSIX
@@ -121,16 +127,13 @@ if(WIN32)
   set(XSG_W32_RT_FLAGS -include ${XSG_W32_DIR}/xsg_win_compat.h)
   set(XSG_W32_RT_INCS ${XSG_W32_DIR}/include ${XSG_W32_DIR})
 endif()
-# Stage 7: the resident VU0 microprogram, from the PS2 build's DVP object.
-add_custom_command(
-  OUTPUT ${CMAKE_BINARY_DIR}/vu0_microcode.c
-  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen_vu0_microcode.py
-          ${XSG_ROOT}/build/main/build/vu0/Vu0MicroCode.o ${CMAKE_BINARY_DIR}/vu0_microcode.c
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen_vu0_microcode.py ${XSG_ROOT}/build/main/build/vu0/Vu0MicroCode.o)
+# Stage 7: the resident VU0 microprogram, assembled from src/main/vu0/Vu0MicroCode.dvp
+# by the PS2 build; port/data/vu0_microcode.c is gen_vu0_microcode.py's output (gen_data.sh).
 # XSG_GPU_NATIVE fast path (gs_bridge.cpp): set-0 strip batches run the VU1 C
 # reference in place instead of the interpreter.  Same float rules as vu1.cpp.
 file(GLOB XSG_VU1REF_FAST CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/render/vu1_ref/*.c")
-add_library(xsg_runtime OBJECT ${XSG_RUNTIME_SRCS} ${CMAKE_BINARY_DIR}/vu0_microcode.c ${XSG_VU1REF_FAST})
+add_library(xsg_runtime OBJECT ${XSG_RUNTIME_SRCS} ${XSG_DATA_DIR}/vu0_microcode.c ${XSG_VU1REF_FAST})
+target_include_directories(xsg_runtime PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/runtime")
 set_source_files_properties(${XSG_VU1REF_FAST} PROPERTIES COMPILE_OPTIONS "-O2;-msse2;-mfpmath=sse;-ffp-contract=off")
 set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c" PROPERTIES COMPILE_OPTIONS "-msse2;-mfpmath=sse")
 target_compile_options(xsg_runtime PRIVATE -m32 -std=gnu11 -D_FILE_OFFSET_BITS=64 -O1 -g -Wall -Wno-unused-parameter
@@ -168,10 +171,10 @@ if(WIN32)
 endif()
 
 # Stage 10: the IOP sound driver (src/audio, SSD.IRX + RSSD.IRX) built for the
-# host and run by runtime/iop_sound.c.  Its tables come from the user's IRX
-# files (gen_iop_sound_data.py); the whole driver is one relocatable object
+# host and run by runtime/iop_sound.c.  Its tables' layout is
+# port/data/iop_sound_data.S (gen_iop_sound_data.py --skeleton); their bytes come from
+# the disc's IRX files at start-up (datafill.c).  The whole driver is one relocatable object
 # with every symbol prefixed `ssdiop_`, so it cannot clash with the EE code.
-set(XSG_IOP_DIR "${XSG_GAME_DIR}/extracted-iso/IOP")
 file(GLOB XSG_SSD_SRCS CONFIGURE_DEPENDS "${XSG_ROOT}/src/audio/ssd/*.c")
 file(GLOB XSG_RSSD_SRCS CONFIGURE_DEPENDS "${XSG_ROOT}/src/audio/rssd/*.c")
 set(XSG_SOUND_FLAGS -m32 -std=gnu89 -O1 -g -w -fno-strict-aliasing -fwrapv -fno-common -fno-builtin
@@ -194,7 +197,7 @@ endif()
 if(WIN32)
   set(XSG_IOP_DATA_SUFFIX _coff)
   set(XSG_IOP_DATA_FIX ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/coff_weak_defs.py
-      ${XSG_MINGW_PREFIX}-nm ${CMAKE_BINARY_DIR}/iop_sound_data.S ${CMAKE_BINARY_DIR}/iop_sound_data_coff.S
+      ${XSG_MINGW_PREFIX}-nm ${XSG_DATA_DIR}/iop_sound_data.S ${CMAKE_BINARY_DIR}/iop_sound_data_coff.S
       $<TARGET_OBJECTS:xsg_ssd> $<TARGET_OBJECTS:xsg_rssd>)
 else()
   set(XSG_IOP_DATA_SUFFIX "")
@@ -204,31 +207,30 @@ add_library(xsg_ssd OBJECT ${XSG_SSD_SRCS})
 target_compile_options(xsg_ssd PRIVATE ${XSG_SOUND_FLAGS} -D_fdata=ssd_fdata)
 add_library(xsg_rssd OBJECT ${XSG_RSSD_SRCS})
 target_compile_options(xsg_rssd PRIVATE ${XSG_SOUND_FLAGS} -D_fdata=rssd_fdata)
-add_custom_command(
-  OUTPUT ${CMAKE_BINARY_DIR}/iop_sound_data.S
-  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen_iop_sound_data.py
-          ${XSG_IOP_DIR}/SSD.IRX ${XSG_IOP_DIR}/RSSD.IRX ${CMAKE_BINARY_DIR}/iop_sound_data.S
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen_iop_sound_data.py
-          ${XSG_IOP_DIR}/SSD.IRX ${XSG_IOP_DIR}/RSSD.IRX
-  COMMENT "Extracting the IOP sound driver's data")
+if(WIN32)
+  set(XSG_IOP_DATA_S ${CMAKE_BINARY_DIR}/iop_sound_data_coff.S)
+else()
+  set(XSG_IOP_DATA_S ${XSG_DATA_DIR}/iop_sound_data.S)
+endif()
 add_custom_command(
   OUTPUT ${CMAKE_BINARY_DIR}/iop_sound_driver.o
   COMMAND ${XSG_IOP_DATA_FIX}
-  COMMAND ${CMAKE_C_COMPILER} -m32 -c ${CMAKE_BINARY_DIR}/iop_sound_data${XSG_IOP_DATA_SUFFIX}.S -o ${CMAKE_BINARY_DIR}/iop_sound_data.o
+  COMMAND ${CMAKE_C_COMPILER} -m32 -c ${XSG_IOP_DATA_S} -o ${CMAKE_BINARY_DIR}/iop_sound_data.o
   COMMAND ${XSG_LD_R} -o ${CMAKE_BINARY_DIR}/iop_sound_driver.r.o
           $<TARGET_OBJECTS:xsg_ssd> $<TARGET_OBJECTS:xsg_rssd> ${CMAKE_BINARY_DIR}/iop_sound_data.o
   COMMAND ${XSG_PREFIX_SSDIOP} ${CMAKE_BINARY_DIR}/iop_sound_driver.r.o ${CMAKE_BINARY_DIR}/iop_sound_driver.o
-  DEPENDS xsg_ssd xsg_rssd $<TARGET_OBJECTS:xsg_ssd> $<TARGET_OBJECTS:xsg_rssd> ${CMAKE_BINARY_DIR}/iop_sound_data.S
+  DEPENDS xsg_ssd xsg_rssd $<TARGET_OBJECTS:xsg_ssd> $<TARGET_OBJECTS:xsg_rssd> ${XSG_DATA_DIR}/iop_sound_data.S
   COMMAND_EXPAND_LISTS
   COMMENT "Linking the host IOP sound driver")
 
-add_custom_command(
-  OUTPUT ${CMAKE_BINARY_DIR}/data/data_sources.cmake
-  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen_host_data.py
-          --root ${XSG_ROOT} --out ${CMAKE_BINARY_DIR}/data
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen_host_data.py
-          ${XSG_ROOT}/build/main/main.elf.ld
-  COMMENT "Converting PS2 game data for the host")
+# The overlap check reads the PS2 build's symbol tables and splat labels
+# (build/<unit>); a checkout without the PS2 build (CI) skips it.
+if(EXISTS "${XSG_ROOT}/build/main/symbol_addrs.txt")
+  set(XSG_OVERLAP_CHECK ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/find_overlap_access.py
+      ${CMAKE_BINARY_DIR} --root ${XSG_ROOT})
+else()
+  set(XSG_OVERLAP_CHECK ${CMAKE_COMMAND} -E echo "find_overlap_access.py skipped: no PS2 build in ${XSG_ROOT}/build")
+endif()
 
 # Stage 11: fail if a game file reaches one PS2 data symbol through another
 # that GCC treats as a separate object (find_overlap_access.py; needs the
@@ -242,13 +244,13 @@ if(WIN32)
     OUTPUT ${CMAKE_BINARY_DIR}/xsg.dll ${CMAKE_BINARY_DIR}/xsg.dll.a
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/link_xsg.py
             --target pe --tool-prefix ${XSG_MINGW_PREFIX}-
-            --build ${CMAKE_BINARY_DIR} --out ${CMAKE_BINARY_DIR}/xsg.dll --cc ${CMAKE_C_COMPILER}
+            --build ${CMAKE_BINARY_DIR} --data ${XSG_DATA_DIR} --out ${CMAKE_BINARY_DIR}/xsg.dll --cc ${CMAKE_C_COMPILER}
             --runtime $<TARGET_OBJECTS:xsg_runtime> $<TARGET_OBJECTS:xsg_gs> ${CMAKE_BINARY_DIR}/iop_sound_driver.o
             --libs=-static --libs=-static-libgcc --libs=-static-libstdc++ --libs=-lstdc++ --libs=-lwinpthread
             --libs=-lwinmm --libs=-lm
     DEPENDS xsg_game xsg_runtime xsg_gs $<TARGET_OBJECTS:xsg_runtime> $<TARGET_OBJECTS:xsg_gs>
             ${CMAKE_BINARY_DIR}/iop_sound_driver.o
-            ${CMAKE_BINARY_DIR}/data/data_sources.cmake
+            ${XSG_DATA_SKELETON}
             ${CMAKE_CURRENT_SOURCE_DIR}/scripts/link_xsg.py
     COMMAND_EXPAND_LISTS
     COMMENT "Linking xsg.dll")
@@ -271,14 +273,13 @@ if(WIN32)
 else()
 add_custom_command(
   OUTPUT ${CMAKE_BINARY_DIR}/xsg
-  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/find_overlap_access.py
-          ${CMAKE_BINARY_DIR} --root ${XSG_ROOT}
+  COMMAND ${XSG_OVERLAP_CHECK}
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/link_xsg.py
-          --build ${CMAKE_BINARY_DIR} --out ${CMAKE_BINARY_DIR}/xsg --cc ${CMAKE_C_COMPILER}
+          --build ${CMAKE_BINARY_DIR} --data ${XSG_DATA_DIR} --out ${CMAKE_BINARY_DIR}/xsg --cc ${CMAKE_C_COMPILER}
           --runtime $<TARGET_OBJECTS:xsg_runtime> $<TARGET_OBJECTS:xsg_gs> ${CMAKE_BINARY_DIR}/iop_sound_driver.o --libs=-lm --libs=-lstdc++ --libs=-pthread ${XSG_SANITIZE_LIBS}
   DEPENDS xsg_game xsg_runtime xsg_gs $<TARGET_OBJECTS:xsg_runtime> $<TARGET_OBJECTS:xsg_gs>
           ${CMAKE_BINARY_DIR}/iop_sound_driver.o
-          ${CMAKE_BINARY_DIR}/data/data_sources.cmake
+          ${XSG_DATA_SKELETON}
           ${CMAKE_CURRENT_SOURCE_DIR}/scripts/link_xsg.py
           ${CMAKE_CURRENT_SOURCE_DIR}/scripts/find_overlap_access.py
           ${CMAKE_CURRENT_SOURCE_DIR}/scripts/find_overlap_access_allow.txt
@@ -316,7 +317,7 @@ endif()
 # Stage 7: VU0 model unit tests (port/tests/test_vu0.c); run port/build*/test_vu0.
 add_executable(test_vu0 EXCLUDE_FROM_ALL
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_vu0.c ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu1.cpp ${CMAKE_CURRENT_SOURCE_DIR}/runtime/settings.c ${CMAKE_BINARY_DIR}/vu0_microcode.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu1.cpp ${CMAKE_CURRENT_SOURCE_DIR}/runtime/settings.c ${XSG_DATA_DIR}/vu0_microcode.c
   ${XSG_ROOT}/src/main/m_math.c)
 set_source_files_properties(${XSG_ROOT}/src/main/m_math.c TARGET_DIRECTORY test_vu0 PROPERTIES
   COMPILE_OPTIONS "${XSG_FLAGS};-DPORT_HOST;-I${XSG_ROOT}/include;-I${XSG_ROOT}")
@@ -331,7 +332,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/render/vu1_ref.cmake)
 # Stage 10: VU1 interpreter replay against XSG_VU1_CAPTURE files (bit-identical check + bench).
 add_executable(test_vu1_replay EXCLUDE_FROM_ALL
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_vu1_replay.cpp ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu1.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/runtime/prof.c ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c ${CMAKE_CURRENT_SOURCE_DIR}/runtime/settings.c ${CMAKE_BINARY_DIR}/vu0_microcode.c)
+  ${CMAKE_CURRENT_SOURCE_DIR}/runtime/prof.c ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c ${CMAKE_CURRENT_SOURCE_DIR}/runtime/settings.c ${XSG_DATA_DIR}/vu0_microcode.c)
 target_include_directories(test_vu1_replay PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/runtime)
 target_compile_options(test_vu1_replay PRIVATE -m32 -O2 -g -fno-pic -msse4.1 -mfpmath=sse)
 target_link_options(test_vu1_replay PRIVATE -m32 -no-pie)

@@ -17,11 +17,11 @@ cat >&2 <<'EOF'
 ==============================================================================
  Xenosaga Episode I PC port -- AppImage packager
 
- The binaries packed here (xsg, xsg-gpu) contain code and data built from
- YOUR copy of the game: decompiled code, plus data split from the game's
- executable and IOP modules.  The AppImage is for your own use only; do not
- distribute it.  It contains no disc image and no extracted game files: the
- game reads your own ISO at run time ([game] iso in settings.ini).
+ The binaries packed here (xsg, xsg-gpu) hold the decompiled code and the
+ layout of the game's data, but none of the game's bytes: the game reads its
+ data from your own ISO at start-up ([game] iso in settings.ini, or the
+ first-run setup screen).  If you pack uncensored/3039C_un.pss, that file is
+ game data: keep such a package to yourself.
 ==============================================================================
 EOF
 

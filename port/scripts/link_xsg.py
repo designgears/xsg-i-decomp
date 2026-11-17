@@ -178,11 +178,12 @@ def containing_symbol(table, defined, addr):
     return best
 
 
-def read_alias_scripts(root):
-    """name -> expression from the PS2 link's alias/undefined-symbol scripts."""
+def read_alias_scripts(syms_dir):
+    """name -> expression from the PS2 link's alias/undefined-symbol scripts
+    (copied to port/data/syms/<unit> by gen_host_data.py --skeleton)."""
     al = {}
     for u in UNITS:
-        d = os.path.join(root, "build", u)
+        d = os.path.join(syms_dir, u)
         for f in ("undefined_syms_auto.txt", "undefined_funcs_auto.txt", "aliases.ld",
                   "externals.ld"):
             p = os.path.join(d, f)
@@ -204,6 +205,8 @@ def main():
     ap.add_argument("--runtime", nargs="*", default=[])
     ap.add_argument("--libs", action="append", default=[])
     ap.add_argument("--target", choices=["elf", "pe"], default="elf")
+    ap.add_argument("--data", default=None, help="converted data, <dir>/<unit>/*.s (default <build>/data)")
+    ap.add_argument("--syms", default=None, help="symbol scripts, <dir>/<unit>/ (default port/data/syms)")
     ap.add_argument("--tool-prefix", default="", help="binutils prefix, e.g. i686-w64-mingw32-")
     ap.add_argument("--image-base", default="0x40000000", help="pe: the DLL's (fixed) base address")
     a = ap.parse_args()
@@ -214,7 +217,8 @@ def main():
     obj_ext = (".o", ".obj") if PE else (".o",)
     b = os.path.abspath(a.build)
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-    data_dir = os.path.join(b, "data")
+    data_dir = os.path.abspath(a.data) if a.data else os.path.join(b, "data")
+    syms_dir = os.path.abspath(a.syms) if a.syms else os.path.join(root, "port", "data", "syms")
     work = os.path.join(b, "link")
     os.makedirs(work, exist_ok=True)
 
@@ -363,7 +367,7 @@ def main():
         sys.stderr.write(r.stderr[-4000:])
         sys.exit(1)
 
-    aliases = read_alias_scripts(root)
+    aliases = read_alias_scripts(syms_dir)
     OVL_EXTERNALS = {n for n, (e, u) in aliases.items() if u == "main" and n.startswith("data")}
     defsyms, tramp, fstubs, dstubs, aliased = [], [], [], [], []
     main_data = read_data_symbols(os.path.join(root, "config/symbols/main.txt"))

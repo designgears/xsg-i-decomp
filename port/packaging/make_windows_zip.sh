@@ -17,12 +17,11 @@ cat >&2 <<'EOF'
 ==============================================================================
  Xenosaga Episode I PC port -- Windows zip packager
 
- The binaries packed here (xsg.exe/xsg.dll, xsg-gpu.exe) contain code and data
- built from YOUR copy of the game: decompiled code, plus data split from the
- game's executable and IOP modules.  The zip is for your own use only; do not
- distribute it.  It contains no disc image and no extracted game files: the
- game reads your own ISO at run time ([game] iso in settings.ini, or the
- first-run setup screen).
+ The binaries packed here (xsg.exe/xsg.dll, xsg-gpu.exe) hold the decompiled
+ code and the layout of the game's data, but none of the game's bytes: the game
+ reads its data from your own ISO at start-up ([game] iso in settings.ini, or
+ the first-run setup screen).  If you pack uncensored/3039C_un.pss, that file
+ is game data: keep such a package to yourself.
 ==============================================================================
 EOF
 
@@ -134,9 +133,9 @@ cat > "$stage/README.txt" <<'EOF'
 Xenosaga Episode I -- PC port (Windows build)
 =============================================
 
-Built from YOUR copy of the game (decompiled code plus data split from your
-disc's executable and IOP modules).  For your own use only; do not distribute.
-No disc image or game files are included.
+You need your own disc image of Xenosaga Episode I (USA, SLUS-20469).  This
+package holds no game files: the game reads its data from your disc image when
+it starts.
 
 Running
   Double-click xsg.exe.  The first time, a setup screen asks for your disc

@@ -59,8 +59,10 @@ later moved or deleted, the setup screen comes back saying so.
 The main executable's segments (`xsg_load_main_image`) come from `[game] elf`, else
 `<game_dir>/extracted-iso/SLUS_204.69`, else **`SLUS_204.69` read from the disc image**
 (`disc.c xsg_disc_read_file`; byte-identical to the extracted file).  No other runtime
-code reads `extracted-iso/` or `game_dir`.  (The IOP sound driver's `SSD.IRX` /
-`RSSD.IRX` tables are a build-time input, CMake `XSG_IOP_DIR`.)
+code reads `extracted-iso/` or `game_dir`, except the data fill: the bytes of the
+game's data (SLUS_204.69, OV*.OVL, IOP/SSD.IRX, IOP/RSSD.IRX) are copied from
+`extracted-iso/` when present, else from the disc image ([DATA.md](DATA.md)).  The
+build needs no game files.
 
 ## Headless and test configs
 

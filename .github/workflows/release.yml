@@ -1,0 +1,106 @@
+# Build the PC port's Linux AppImage and Windows zip and publish them as a release.
+# The build needs no game files: the game's data is filled from the player's disc
+# image at start-up (port/docs/DATA.md), so the packages hold no game data.
+#
+# Push a tag `v*` to release it; run manually (workflow_dispatch) to only build
+# the packages as workflow artifacts.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SDL3_MINGW_URL: https://github.com/libsdl-org/SDL/releases/download/release-3.4.20/SDL3-devel-3.4.20-mingw.tar.gz
+  SDL3_MINGW_SHA256: d2d3bf3fb97a90b22e908a306d7362631ef1bab229d988fe6669595dc29cd9ed
+
+jobs:
+  linux:
+    name: Linux AppImage
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - name: Install toolchain
+        run: |
+          printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >> /etc/pacman.conf
+          pacman -Syu --noconfirm --needed git cmake ninja python lib32-glibc lib32-gcc-libs \
+            sdl3 shaderc vulkan-headers file curl
+      - uses: actions/checkout@v4
+      - name: Mark the checkout safe for git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: No game data in port/data
+        run: python3 port/scripts/check_no_game_data.py port/data
+      - name: Build
+        run: |
+          cmake -S port -B port/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DXSG_PACKAGED=ON
+          cmake --build port/build -j"$(nproc)"
+      - name: Package
+        run: |
+          XSG_BUILD=$PWD/port/build XSG_GAME_DIR=/nonexistent \
+            port/packaging/make_appimage.sh --out "$PWD/Xenosaga_Episode_I-x86_64.AppImage"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: Xenosaga_Episode_I-x86_64.AppImage
+          if-no-files-found: error
+
+  windows:
+    name: Windows zip
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - name: Install toolchain
+        run: |
+          pacman -Syu --noconfirm --needed git cmake ninja python mingw-w64-gcc shaderc file curl zip unzip
+      - uses: actions/checkout@v4
+      - name: Mark the checkout safe for git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: SDL3 (MinGW devel release, pinned)
+        run: |
+          mkdir -p .work/tools
+          curl -fL --retry 3 -o /tmp/sdl3.tar.gz "$SDL3_MINGW_URL"
+          echo "$SDL3_MINGW_SHA256  /tmp/sdl3.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/sdl3.tar.gz -C .work/tools
+      - name: Build and package
+        run: |
+          XSG_WIN_BUILD=$PWD/port/build-win32-pkg XSG_GAME_DIR=/nonexistent \
+            port/packaging/make_windows_zip.sh --build --out "$PWD/Xenosaga_Episode_I-windows.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-zip
+          path: Xenosaga_Episode_I-windows.zip
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [linux, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cat > notes.md <<'EOF'
+          Xenosaga Episode I PC port.
+
+          **You need your own disc image** of Xenosaga Episode I (USA, SLUS-20469), as an `.iso`.
+          These packages contain no game data: the game reads its data from your disc image when it
+          starts. The first time, a setup screen asks for the image.
+
+          - **Linux:** `Xenosaga_Episode_I-x86_64.AppImage` — `chmod +x` it and run it. Needs Vulkan.
+          - **Windows:** `Xenosaga_Episode_I-windows.zip` — unzip and run `xsg.exe`. Needs Vulkan.
+          EOF
+          gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "$TAG" --notes-file notes.md \
+            dist/Xenosaga_Episode_I-x86_64.AppImage dist/Xenosaga_Episode_I-windows.zip

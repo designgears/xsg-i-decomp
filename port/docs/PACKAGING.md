@@ -4,16 +4,18 @@
 `Xenosaga_Episode_I-x86_64.AppImage`, which runs on a typical x86-64 Linux desktop
 with Vulkan, including one with no 32-bit (multilib) libraries installed.
 
-## Your copy only
+## No game data in the package
 
-`xsg` and `xsg-gpu` contain code and data built from **your** copy of the game:
-the decompiled code, plus data split from the game's executable and IOP modules.
-The AppImage is for your own use. Don't distribute it. It contains no disc image
-and no extracted game files. The game reads your ISO at run time (`[game] iso` in
+`xsg` and `xsg-gpu` hold the decompiled code and the *layout* of the game's data
+(labels, sizes, pointer words), but none of the game's bytes: those are copied from
+the player's disc image at start-up ([DATA.md](DATA.md)). Building needs no game
+files, so the packages can be built anywhere, CI included (`.github/workflows/release.yml`),
+and published. The game reads your ISO at run time (`[game] iso` in
 `~/.config/xsg/settings.ini`, or the first-run setup screen). The script refuses to
 pack anything that looks like game data (`*.iso`, `*.bin`, `*.img`, `*.7z`,
 `SLUS_*`, `*.irx`, `*.pss`, `*.elf`, or any file over 60 MB).
-The one exception is `uncensored/3039C_un.pss` (below), which you add yourself.
+The one exception is `uncensored/3039C_un.pss` (below), which you add yourself; a
+package with it is not for publishing.
 
 ## The uncensored 3039C scene
 
