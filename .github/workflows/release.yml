@@ -74,6 +74,13 @@ jobs:
           name: windows-zip
           path: Xenosaga_Episode_I-windows.zip
           if-no-files-found: error
+      - name: Debug symbols (unstripped xsg.dll, for addr2line on crash/hang logs)
+        run: cd port/build-win32-pkg && zip -9 "$GITHUB_WORKSPACE/xsg-windows-symbols.zip" xsg.dll xsg.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-symbols
+          path: xsg-windows-symbols.zip
+          if-no-files-found: error
 
   release:
     name: Publish release
@@ -103,4 +110,5 @@ jobs:
           - **Windows:** `Xenosaga_Episode_I-windows.zip` — unzip and run `xsg.exe`. Needs Vulkan.
           EOF
           gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "$TAG" --notes-file notes.md \
-            dist/Xenosaga_Episode_I-x86_64.AppImage dist/Xenosaga_Episode_I-windows.zip
+            dist/Xenosaga_Episode_I-x86_64.AppImage dist/Xenosaga_Episode_I-windows.zip \
+            dist/xsg-windows-symbols.zip

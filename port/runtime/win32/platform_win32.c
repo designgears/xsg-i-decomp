@@ -94,7 +94,18 @@ void xsg_w32_map_ps2_memory(void)
     /* The stub's image is the reservation: release it.  Nothing else runs yet
        (the game's threads start later), so the range stays free until the
        views below take it. */
+    /* Windows reads the main image's PE header (PEB->ImageBaseAddress) whenever a
+       thread is created, for the default stack sizes.  With the stub unmapped that
+       page would be EE RAM and every later CreateThread fails with
+       ERROR_BAD_EXE_FORMAT (the sound driver's threads: the game hangs at boot,
+       issue #3; Wine does not look).  Keep a copy of the header page and put it
+       back at the image base, in the EE kernel area (0x10000), which the game
+       does not use. */
+    static unsigned char stub_header[0x1000];
+    int restore_header = 0;
     if (g_stub_base && g_stub_base <= xsg_ram_low && g_stub_end >= PS2_RAM_SIZE) {
+        memcpy(stub_header, (void *)g_stub_base, sizeof stub_header);
+        restore_header = 1;
         NtUnmapViewOfSection_t unmap =
             (NtUnmapViewOfSection_t)(void *)GetProcAddress(GetModuleHandleA("ntdll.dll"), "NtUnmapViewOfSection");
         LONG st = unmap ? unmap(GetCurrentProcess(), (void *)g_stub_base) : -1;
@@ -115,6 +126,8 @@ void xsg_w32_map_ps2_memory(void)
             xsg_logf("[mem] RAM view at 0x%08x not mapped (error %lu)\n", bases[view], GetLastError());
         }
     }
+    if (restore_header)
+        memcpy((void *)g_stub_base, stub_header, sizeof stub_header);
     map_fixed(PS2_EEHW_BASE, PS2_EEHW_SIZE, "EE hardware registers");
     map_fixed(PS2_VU_BASE, PS2_VU_SIZE, "VU0/VU1 micro and data memory");
     map_fixed(PS2_GSPRIV_BASE, PS2_GSPRIV_SIZE, "GS privileged registers");
@@ -261,6 +274,108 @@ void xsg_w32_start_timeout(unsigned seconds, void (*fn)(void))
     g_timeout_s = seconds;
     g_timeout_fn = fn;
     HANDLE h = CreateThread(NULL, 0, timeout_thread, NULL, 0, NULL);
+    if (h)
+        CloseHandle(h);
+}
+
+void xsg_w32_vm_report(void)
+{
+    MEMORY_BASIC_INFORMATION m;
+    uintptr_t a = 0x10000, freeb = 0, big = 0, bigat = 0;
+    while (a < 0xFFFF0000u && VirtualQuery((void *)a, &m, sizeof m)) {
+        uintptr_t n = m.RegionSize;
+        if (m.State == MEM_FREE) {
+            freeb += n;
+            if (n > big) big = n, bigat = a;
+        } else if (n >= (16u << 20))
+            xsg_logf("[vm] 0x%08lx +0x%08lx %s\n", (unsigned long)a, (unsigned long)n,
+                     m.State == MEM_COMMIT ? "commit" : "reserve");
+        if (a + n < a) break;
+        a += n;
+    }
+    xsg_logf("[vm] free %lu MB, largest 0x%lx MB at 0x%08lx, last error %lu\n", (unsigned long)(freeb >> 20),
+             (unsigned long)(big >> 20), (unsigned long)bigat, GetLastError());
+}
+
+/* ---- hang watchdog ------------------------------------------------------ */
+/* When the frame counter stands still for XSG_HANG_S seconds after boot (the setup
+   screen is over by then), log every other thread's eip/esp and the xsg.dll code
+   addresses on its stack, once, so a hang on a machine we cannot reproduce on
+   still says where it is (addr2line -f -e xsg.dll ADDR, on the unstripped DLL of
+   the same build).  The game keeps running. */
+#include <tlhelp32.h>
+#define XSG_HANG_S 20
+
+static void dump_thread(int fd, DWORD tid)
+{
+    HANDLE h = OpenThread(THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION, FALSE, tid);
+    if (!h)
+        return;
+    if (SuspendThread(h) == (DWORD)-1) {
+        CloseHandle(h);
+        return;
+    }
+    CONTEXT c;
+    memset(&c, 0, sizeof c);
+    c.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+    if (GetThreadContext(h, &c)) {
+        char b[128];
+        int n = snprintf(b, sizeof b, "[hang] thread %lu eip 0x%08lx esp 0x%08lx\n", (unsigned long)tid,
+                         (unsigned long)c.Eip, (unsigned long)c.Esp);
+        _write(fd, b, (unsigned)n);
+        MEMORY_BASIC_INFORMATION mbi;
+        if (c.Esp && VirtualQuery((void *)(uintptr_t)c.Esp, &mbi, sizeof mbi) && mbi.State == MEM_COMMIT) {
+            const unsigned long *w = (const unsigned long *)(uintptr_t)c.Esp;
+            const uintptr_t end = (uintptr_t)mbi.BaseAddress + mbi.RegionSize;
+            for (int i = 0, k = 0; i < 2048 && k < 24 && (uintptr_t)(w + i + 1) <= end; i++) {
+                unsigned long v = w[i];
+                if (v >= (unsigned long)(uintptr_t)__executable_start && v < (unsigned long)(uintptr_t)etext) {
+                    fd_hex(fd, "    ", v);
+                    k++;
+                }
+            }
+        }
+    }
+    ResumeThread(h);
+    CloseHandle(h);
+}
+
+static DWORD WINAPI hang_thread(void *arg)
+{
+    (void)arg;
+    unsigned last = xsg_frame, still = 0;
+    for (;;) {
+        Sleep(1000);
+        unsigned f = xsg_frame;
+        if (f != last) {
+            last = f;
+            still = 0;
+            continue;
+        }
+        if (++still < XSG_HANG_S)
+            continue;
+        xsg_logf("[hang] no frame for %d s (frame %u, overlay %d): thread states follow. "
+                 "Please attach this log to a GitHub issue.\n", XSG_HANG_S, f, xsg_active_overlay);
+        fflush(NULL);
+        int fd = _fileno(xsg_log_fp);
+        HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+        THREADENTRY32 te;
+        te.dwSize = sizeof te;
+        if (snap != INVALID_HANDLE_VALUE) {
+            for (BOOL ok = Thread32First(snap, &te); ok; ok = Thread32Next(snap, &te))
+                if (te.th32OwnerProcessID == GetCurrentProcessId() && te.th32ThreadID != GetCurrentThreadId())
+                    dump_thread(fd, te.th32ThreadID);
+            CloseHandle(snap);
+        }
+        fd_hex(fd, "[hang] xsg.dll .text starts at ", (unsigned long)(uintptr_t)__executable_start);
+        _commit(fd);
+        return 0;
+    }
+}
+
+void xsg_w32_start_hang_watchdog(void)
+{
+    HANDLE h = CreateThread(NULL, 0, hang_thread, NULL, 0, NULL);
     if (h)
         CloseHandle(h);
 }

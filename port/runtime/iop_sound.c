@@ -130,6 +130,13 @@ int ssdiop_StartThread(int id, void *arg)
     pthread_attr_setdetachstate(&a, PTHREAD_CREATE_DETACHED);
     pthread_attr_setstacksize(&a, 256 * 1024);
     int r = pthread_create(&TH[id].pt, &a, th_main, (void *)(intptr_t)id);
+    if (r) {
+        xsg_logf("[sound] cannot start IOP thread %d (pthread_create: %d)\n", id, r);
+#ifdef _WIN32
+        void xsg_w32_vm_report(void);
+        xsg_w32_vm_report();
+#endif
+    }
     pthread_attr_destroy(&a);
     return r ? -1 : 0;
 }
@@ -928,9 +935,11 @@ void xsg_sound_start(void)
     }
     if (!use_ring)
         pcm = xsg_alsa_open(RATE, ALSA_BUF_MS * 1000);
+    xsg_logf("[sound] starting the IOP sound driver (output: %s)\n", use_ring ? "xsg-gpu" : pcm ? "ALSA" : "none");
     pthread_mutex_lock(&L);
     ssdiop_sceSdInit(0);
     ssdiop_start();
+    xsg_logf("[sound] driver threads started; waiting for its RPC server\n");
     while (!rpc_fn)
         pthread_cond_wait(&rpc_cv, &L);
     pthread_mutex_unlock(&L);

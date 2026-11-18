@@ -347,6 +347,12 @@ int main(int argc, char **argv)
     /* The disc image first: the setup screen when there is none (it waits for the user),
        then the main image, which may come from the disc. */
     xsg_disc_setup();
+#ifdef _WIN32
+    {
+        void xsg_w32_start_hang_watchdog(void);
+        xsg_w32_start_hang_watchdog();   /* after the setup screen, which waits for the user */
+    }
+#endif
     xsg_disc_init();
     xsg_load_main_image();
     if (xsg_data_fill()) {
