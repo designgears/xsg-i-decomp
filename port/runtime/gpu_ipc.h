@@ -169,7 +169,8 @@ typedef struct {
     /* producer-owned */
     volatile uint32_t wpos;
     volatile uint32_t wpos_waiting; /* consumer sleeps on wpos */
-    uint32_t pad1[14];
+    volatile uint32_t game_vblank; /* the game's latest vblank (xsg-gpu skips presents when behind it) */
+    uint32_t pad1[13];
     /* consumer-owned */
     volatile uint32_t rpos;
     volatile uint32_t rpos_waiting; /* producer sleeps on rpos */

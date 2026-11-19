@@ -427,6 +427,7 @@ void SyncPriv() {
 
 void Vsync(u32 frame, u32 field) {
     SyncPriv();
+    __atomic_store_n(&shm->game_vblank, frame, __ATOMIC_RELEASE);
     Send(GPU_MSG_VSYNC, frame, field, nullptr, 0);
     static u32 n;
     if (++n % 600 == 0)

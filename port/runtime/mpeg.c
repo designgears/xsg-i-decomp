@@ -67,6 +67,7 @@ static struct {
     unsigned char *pic;      /* the picture GetPicture hands out, RGBA */
     size_t pic_cap;
     int in_closed, empty_feeds, ended, over;
+    int have_pic, pic_type;  /* M.pic holds a picture GetPicture has not handed out yet */
     uint32_t sc;             /* last 4 ES bytes: finds sequence_end_code */
     unsigned frames_out;
     unsigned first_vblank;
@@ -130,9 +131,11 @@ static void feed_once(void)
     M.bytes_in += n;
 }
 
-/* Decode until a picture is ready in M.pic: 1, or 0 at the end of the movie. */
-static int next_picture(int *type)
+/* Decode until a picture is ready in M.pic (M.have_pic): 1, or 0 at the end of the movie. */
+static int next_picture(void)
 {
+    if (M.have_pic)
+        return 1;
     if (!M.dec || M.over)
         return 0;
     for (;;) {
@@ -143,9 +146,11 @@ static int next_picture(int *type)
             M.pic = malloc(need);
             M.pic_cap = need;
         }
-        int r = mpeg2dec_picture(M.dec, M.pic, type);
-        if (r > 0)
+        int r = mpeg2dec_picture(M.dec, M.pic, &M.pic_type);
+        if (r > 0) {
+            M.have_pic = 1;
             return 1;
+        }
         if (r < 0) {
             M.over = 1;
             return 0;
@@ -169,7 +174,7 @@ int sceMpegCreate(sceMpeg *mp, void *work, int size)
     memset(M.cb, 0, sizeof M.cb);
     M.sc = 0xffffffffu;
     M.frames_out = 0;
-    M.ended = M.over = 0;
+    M.ended = M.over = M.have_pic = 0;
     M.empty_feeds = 0;
     M.bytes_in = 0;
     M.in_closed = 1;
@@ -215,10 +220,17 @@ int sceMpegAddStrCallback(sceMpeg *mp, int type, int ch, mpeg_cb cb, void *data)
     return 0;
 }
 
+/* The game asks before every picture and treats a failing GetPicture as a disc
+   error ("A seek error has occurred"), so the end must show here first: once the
+   input is closed, look ahead for one more picture. */
 int sceMpegIsEnd(sceMpeg *mp)
 {
     (void)mp;
-    return !M.dec || M.over;
+    if (!M.dec)
+        return 1;
+    if (!M.in_closed)
+        return 0;
+    return !next_picture();
 }
 
 /* Demux whole PSS packets (MPEG-2 program stream); stop before a packet that
@@ -271,12 +283,11 @@ int sceMpegDemuxPss(sceMpeg *mp, unsigned char *buf, int size)
 
 int sceMpegGetPicture(sceMpeg *mp, void *rgb, int mbcount)
 {
-    int type = 1;
     if (!M.dec) {
         STUB_LOG("-> end of stream");
         return -1;
     }
-    if (!next_picture(&type)) {
+    if (!next_picture()) {
         xsg_logf("[mpeg] GetPicture: no more pictures\n");
         return -1;
     }
@@ -284,6 +295,8 @@ int sceMpegGetPicture(sceMpeg *mp, void *rgb, int mbcount)
     if (mbcount < n)
         n = mbcount;
     const unsigned char *f = M.pic;
+    const int type = M.pic_type;
+    M.have_pic = 0;
     unsigned char *dst = (unsigned char *)(uintptr_t)((uintptr_t)rgb & 0x1fffffffu);
     for (int k = 0; k < n; k++) {
         int mx = k / mbh, my = k % mbh;

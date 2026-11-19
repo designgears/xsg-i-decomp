@@ -709,7 +709,7 @@ struct Renderer {
     double worst_ms = 0;
     float game_rect[4] = {0, 0, 0, 0};
     const Vulkan::Image* last_live = nullptr;
-    uint64_t repeats = 0;
+    uint64_t repeats = 0, behind_skips = 0;
     uint32_t worst_at = 0, slow_frames = 0;
 
     void Present(const ScanoutResult& so, bool menu) {
@@ -993,7 +993,14 @@ struct Renderer {
         } else {
             last_live = nullptr;
         }
-        if (!repeat) Present(so, !test);
+        // Behind the game by more than a vblank: process the ring instead of presenting.  A
+        // present can cost a whole display refresh (FIFO, or a compositor that throttles
+        // mailbox, as on Windows), and when that is slower than the game's 60 Hz the ring
+        // backs up and the game waits on it (issue #3).  The display drops a frame instead.
+        const bool behind = !test && !xsgmenu::IsOpen() &&
+                            int32_t(__atomic_load_n(&shm->game_vblank, __ATOMIC_ACQUIRE) - frame) >= 2;
+        if (behind) behind_skips++;
+        else if (!repeat) Present(so, !test);
         else repeats++;
         mark(5);
         if (xsgprof::g_on) {
@@ -1028,9 +1035,9 @@ struct Renderer {
         }
         if (vsyncs % 600 == 0) {
             double s = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-            Log("vsync %u: %.1f vsyncs/s, %.1f MB/s GIF, %llu presents (%llu native); worst %.1f ms at vsync %u, %u over 20 ms, %llu repeats not presented, %u audio underruns", frame,
+            Log("vsync %u: %.1f vsyncs/s, %.1f MB/s GIF, %llu presents (%llu native); worst %.1f ms at vsync %u, %u over 20 ms, %llu repeats not presented, %llu skipped behind the game, %u audio underruns", frame,
                 600.0 / s, gif_bytes / s / 1e6, (unsigned long long)presents, (unsigned long long)native_presents, worst_ms,
-                worst_at, slow_frames, (unsigned long long)repeats, xsgaudio::Underruns());
+                worst_at, slow_frames, (unsigned long long)repeats, (unsigned long long)behind_skips, xsgaudio::Underruns());
             worst_ms = 0;
             slow_frames = 0;
             t0 = std::chrono::steady_clock::now();
