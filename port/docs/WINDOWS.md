@@ -134,8 +134,8 @@ the same counts as the Linux link.
   yield loop for the last millisecond. This drives vblank pacing and the sound clock.
 * `runtime/win32/include/` holds shim headers (`dlfcn.h`, `execinfo.h`, `elf.h`, `fnmatch.h`,
   `spawn.h`, `sys/wait.h`). `platform_win32.c` implements them: `backtrace` via
-  `RtlCaptureStackBackTrace`, `posix_spawn`/`waitpid`/`kill` over `CreateProcess` (used for the
-  ffmpeg pipes), and `fnmatch`.
+  `RtlCaptureStackBackTrace`, `posix_spawn`/`waitpid`/`kill` over `CreateProcess` (used to
+  start xsg-gpu), and `fnmatch`.
 * **EE threads** (`kernel.c`) are fibers instead of ucontexts: 1 MiB reserve,
   `FIBER_FLAG_FLOAT_SWITCH`. The calls go through `platform_win32.c`, because `<windows.h>` clashes
   with the EE kernel's names (`CreateThread`, …).
@@ -161,9 +161,6 @@ the same counts as the Linux link.
 * ALSA output (`audio.c`: sound goes through xsg-gpu and SDL3 anyway);
 * the `[debug] stream` FIFO;
 * DLSS 5 neural rendering.
-
-Movies need a Windows `ffmpeg.exe` on PATH (or `[game] ffmpeg`). Without it, every movie ends at
-once, as on Linux without ffmpeg.
 
 ## Game bug found by this port
 
@@ -214,6 +211,5 @@ folder:
     are never taken by system DLLs under WOW64;
   * Defender may scan the 21 MB DLL;
   * code-signing.
-* **Movies:** bundle or locate an ffmpeg build.
 * **Open:** audit the other `UnduParamInit` callers' local query sizes, and mixed-layout structs
   between game and runtime if any carry `long long`/`double` fields.

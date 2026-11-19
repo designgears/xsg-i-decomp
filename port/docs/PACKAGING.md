@@ -84,15 +84,15 @@ keeps the symbol tables for backtraces). `port/build` keeps `-g`. The AppDir is 
 before stripping and 29 MB after, and the AppImage (zstd squashfs) is about 13 MB.
 
 Vulkan is never bundled: libvulkan, the ICDs and the GPU driver always come from
-the host. Neither is ffmpeg (movies) nor a 32-bit libasound (the game's optional
+the host. Neither is a 32-bit libasound (the game's optional
 ALSA path, normally unused because audio goes through xsg-gpu/SDL3).
 
 ## How it runs
 
 **The game (32-bit).** AppRun runs
 `usr/bin/ld-linux.so.2 --library-path usr/lib32 --argv0 xsg usr/bin/xsg`, so no host
-32-bit library is used and no `LD_LIBRARY_PATH` is set. Its children (xsg-gpu,
-ffmpeg) get the user's environment unchanged. Started this way, `/proc/self/exe` is
+32-bit library is used and no `LD_LIBRARY_PATH` is set. Its child (xsg-gpu)
+gets the user's environment unchanged. Started this way, `/proc/self/exe` is
 the loader, not `xsg`. That's why the loader sits in `usr/bin`:
 `gpu_client.cpp DefaultBin()` resolves `<dir of /proc/self/exe>/gpu/xsg-gpu`, which
 is `usr/bin/gpu/xsg-gpu`. "Restart now" (`Restart()`) `execv`s `/proc/self/exe`

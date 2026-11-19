@@ -604,9 +604,7 @@ void TabGame(float scale) {
                "The game's vblank rate. The game logic runs per vblank, so this is also the game speed: 60 is normal, "
                "uncapped runs as fast as the PC allows (fast-forward). Applied live by the game process.");
     opt_group("MOVIES");
-    opt_toggle("game.movies", "Play movies", "The FMV cutscenes, decoded by ffmpeg. Off skips them.");
-    if (!xsgcfg::GetBool("game.movies")) opt_disable_next("Movies are off.");
-    opt_edit("game.ffmpeg", "ffmpeg program", "The ffmpeg binary that decodes the movies. Empty: ffmpeg on PATH.");
+    opt_toggle("game.movies", "Play movies", "The FMV cutscenes. Off skips them.");
     if (!xsgcfg::GetBool("game.movies")) opt_disable_next("Movies are off.");
     opt_toggle("game.uncensored", "Uncensored 3039C",
                "Censored / uncensored version of the 3039C scene. On plays 3039C_un.pss from the uncensored "

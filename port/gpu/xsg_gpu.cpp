@@ -277,20 +277,44 @@ void PipelineCacheLoad(Vulkan::Device& dev) {
     g_pcache = dev.init_pipeline_cache(data.data(), data.size());   // a stale or corrupt file starts fresh
     if (g_pcache) Log("pipeline cache: %zu KB from %s", data.size() >> 10, path.c_str());
 }
+void PipelineCacheWrite(const std::vector<uint8_t>& data, size_t n);
 void PipelineCacheSave(Vulkan::Device& dev) {
     static size_t saved;
     if (!g_pcache) return;
-    const size_t n = dev.get_pipeline_cache_size();
-    if (!n || n == saved) return;
-    std::vector<uint8_t> data(n);
-    if (!dev.get_pipeline_cache_data(data.data(), n)) return;
+    // paraLLEl-GS compiles on background threads, so the cache can grow between the size query
+    // and the copy (vkGetPipelineCacheData: VK_INCOMPLETE); try again with the new size.
+    size_t n = 0;
+    std::vector<uint8_t> data;
+    for (int tries = 0;; tries++) {
+        n = dev.get_pipeline_cache_size();
+        if (!n || n == saved) return;
+        data.resize(n);
+        if (dev.get_pipeline_cache_data(data.data(), n)) break;
+        if (tries == 3) return;
+    }
+    static std::atomic<bool> writing{false};
+    if (writing.exchange(true)) return;   // the last save is still being written
+    saved = n;
+    std::thread([data = std::move(data), n] {
+        PipelineCacheWrite(data, n);
+        writing = false;
+    }).detach();
+}
+void PipelineCacheWrite(const std::vector<uint8_t>& data, size_t n) {
     const std::string path = PipelineCachePath();
     if (path.empty()) return;
     const std::string tmp = path + ".tmp";
     FILE* f = std::fopen(tmp.c_str(), "wb");
     if (!f) return;
     const bool ok = std::fwrite(data.data(), 1, n, f) == n;
-    if (std::fclose(f) == 0 && ok && std::rename(tmp.c_str(), path.c_str()) == 0) saved = n;
+    if (std::fclose(f) != 0 || !ok) return;
+#ifdef _WIN32
+    // rename() does not replace an existing file on Windows: the cache stayed at its first,
+    // partial save, and every start compiled the rest again (issue #3).
+    MoveFileExA(tmp.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING);
+#else
+    std::rename(tmp.c_str(), path.c_str());
+#endif
 }
 
 struct Renderer {
@@ -996,8 +1020,13 @@ struct Renderer {
             if (ms > worst_ms) { worst_ms = ms; worst_at = frame; }
             slow_frames += ms > 20.0;
         }
+        {   // save the pipeline cache every 10 s while it grows (by time: with a cold cache the
+            // renderer can be slow enough that 600 vsyncs take minutes, issue #3)
+            static auto last_save = std::chrono::steady_clock::now();
+            const auto now = std::chrono::steady_clock::now();
+            if (dev && now - last_save > std::chrono::seconds(10)) { last_save = now; PipelineCacheSave(*dev); }
+        }
         if (vsyncs % 600 == 0) {
-            if (dev) PipelineCacheSave(*dev);
             double s = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
             Log("vsync %u: %.1f vsyncs/s, %.1f MB/s GIF, %llu presents (%llu native); worst %.1f ms at vsync %u, %u over 20 ms, %llu repeats not presented, %u audio underruns", frame,
                 600.0 / s, gif_bytes / s / 1e6, (unsigned long long)presents, (unsigned long long)native_presents, worst_ms,
@@ -1154,6 +1183,14 @@ static LONG CALLBACK OnCrash(EXCEPTION_POINTERS* ep) {
 int main(int argc, char** argv) {
 #ifdef _WIN32
     SetUnhandledExceptionFilter(OnCrash);   /* real crashes only, not first-chance exceptions a driver handles */
+    /* Bandicam installs an implicit Vulkan layer, VK_LAYER_bandicam_helper (bdcamvk64.dll), that
+       loads into every Vulkan app, even with Bandicam closed, and crashes this one at start-up
+       (issue #3).  Keep the loader from loading it: by name (loaders from 1.3.234 on; unless the
+       player set their own filter), and through the disable_environment variables its manifests
+       declare (any loader; the 64-bit and 32-bit manifests name different ones). */
+    if (!std::getenv("VK_LOADER_LAYERS_DISABLE")) _putenv("VK_LOADER_LAYERS_DISABLE=*bandicam*");
+    _putenv("VK_LAYER_bandicam_helper_DEBUG_1=1");
+    _putenv("DISABLE_VK_LAYER_bandicam_helper_1=1");
     /* The game (gpu_client.cpp) passes its file mapping as an inherited handle value in argv[1]
        and its pid as --parent=<pid>; it also puts this process in a kill-on-close job object,
        which ends it with the game (Linux: PR_SET_PDEATHSIG). */

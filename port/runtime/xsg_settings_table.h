@@ -61,8 +61,7 @@ XSG_SETTING("renderer.hires_scanout", "XSG_GPU_HIRES", "0", "0|1", 1, "High-reso
 /* ---- game */
 XSG_SETTING("game.fps_limit", "XSG_FAST", "60", "60|30|120|uncapped", 1,
             "Vblank rate = game speed; uncapped replaces XSG_FAST=1.")
-XSG_SETTING("game.movies", "XSG_MPEG", "1", "0|1", 1, "Play the FMV movies (needs ffmpeg).")
-XSG_SETTING("game.ffmpeg", "XSG_FFMPEG", "", 0, 1, "ffmpeg binary for movies (empty: ffmpeg on PATH).")
+XSG_SETTING("game.movies", "XSG_MPEG", "1", "0|1", 1, "Play the FMV movies.")
 XSG_SETTING("game.uncensored", 0, "0", "0|1", 1, "Uncensored 3039C scene: plays uncensored/3039C_un.pss in place of the disc's 3039C.pss.")
 XSG_SETTING("game.uncensored_subs", 0, "1", "0|1", 1, "English subtitles at the top of the screen in the uncensored 3039C (its picture has the Japanese release's subtitles).")
 XSG_SETTING("game.uncensored_dir", 0, "", 0, 1, "Folder holding 3039C_un.pss (empty: the uncensored folder in the install root, else <game_dir>/uncensored).")

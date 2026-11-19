@@ -1,5 +1,5 @@
 /* Windows port: posix_spawn(p) over CreateProcess (win32/platform_win32.c), enough for
-   mpeg.c's ffmpeg pipes: file actions are dup2s onto 0/1/2 only; the pid is the
+   starting xsg-gpu: file actions are dup2s onto 0/1/2 only; the pid is the
    Windows process id, which waitpid/kill (sys/wait.h) map back to its handle. */
 #ifndef XSG_W32_SPAWN_H
 #define XSG_W32_SPAWN_H

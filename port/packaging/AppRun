@@ -4,7 +4,7 @@
 # The game (usr/bin/xsg) is a 32-bit i386 program.  It runs through the bundled
 # 32-bit loader with --library-path, so it needs no 32-bit (multilib) libraries
 # on the host and no LD_LIBRARY_PATH is set: the environment the game passes on
-# to its children (xsg-gpu, ffmpeg) is the user's own.
+# to its child (xsg-gpu) is the user's own.
 #
 # The loader lives in usr/bin next to xsg on purpose: run this way,
 # /proc/self/exe is the loader, and the game finds its renderer as

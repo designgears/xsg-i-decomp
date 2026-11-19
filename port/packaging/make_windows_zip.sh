@@ -152,9 +152,6 @@ Files
   Screenshots   %USERPROFILE%\Pictures\xsg
   The XSG_CONFIG environment variable points the game at another settings file.
 
-Movies need ffmpeg.exe on PATH (or [game] ffmpeg in settings.ini); without it
-they are skipped.
-
 The game prints its log to the console window; [debug] log_file in
 settings.ini writes it to a file instead.
 EOF

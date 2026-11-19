@@ -1,4 +1,14 @@
-# PC port, Stage 8: the .pss movies (libmpeg through an external ffmpeg)
+# PC port, Stage 8: the .pss movies (libmpeg)
+
+> **Decoder (2026-11-19):** the movies are now decoded in the game's process by
+> `runtime/mpeg2dec.c`, new code written from ISO/IEC 13818-2 (I/P/B frame pictures, frame and
+> field motion, frame and field DCT; everything on the disc). ffmpeg is no longer used or
+> needed, and `[game] ffmpeg` is gone. The ffmpeg child cost a timed wait per slice of input,
+> which Windows rounds up to its timer tick, so the movies stuttered there (issue #3).
+> sceMpegGetPicture now feeds the decoder and takes its pictures directly; the rest of section 2
+> (demux, nodata feeding, macroblock layout, pacing) is unchanged. Checked against ffmpeg on
+> the prologue stream: the same 3952 pictures, every one within 5 levels (PSNR >= 44.8 dB;
+> the IDCT and colour conversion round differently). About 2 ms per picture in the 32-bit game.
 
 > **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
 > `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
@@ -83,8 +93,7 @@ below 0 at 0x800/0x1000 on prologue.pss, and the ALSA device opens.
 
 ## 4. Licence notes
 
-FFmpeg runs as a separate executable over pipes, so nothing from FFmpeg is linked, vendored
-or distributed with the port. Users bring their own `ffmpeg`. libasound is loaded with
+Nothing from FFmpeg is used: mpeg2dec.c is new code (see the note at the top). libasound is loaded with
 `dlopen` at run time (LGPL, not linked). The PSS demuxer, ES scanner and ADPCM decoder are
 new code written from the public format descriptions (ISO/IEC 13818-1/-2 headers, SPU ADPCM
 filter coefficients).
