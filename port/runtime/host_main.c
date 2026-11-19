@@ -315,6 +315,28 @@ int main(int argc, char **argv)
         if (!xsg_log_fp)
             xsg_log_fp = stderr;
     }
+#ifdef _WIN32
+    else {
+        /* Windows: the console closes with the game, taking a crash report with it, so the
+           log goes to xsg.log next to settings.ini (%APPDATA%\xsg) unless [debug] log_file
+           says otherwise.  xsg-gpu writes into it too (gpu_client.cpp). */
+        static char path[1024];
+        snprintf(path, sizeof path, "%s", xsg_cfg_path());
+        char *slash = strrchr(path, '/');
+        if (!slash)
+            slash = strrchr(path, '\\');
+        if (slash) {
+            *slash = 0;
+            mkdir(path, 0755);
+            strcat(path, "/xsg.log");
+            FILE *f = fopen(path, "w");
+            if (f) {
+                fprintf(stderr, "xsg: log file %s\n", path);
+                xsg_log_fp = f;
+            }
+        }
+    }
+#endif
     xsg_cfg_report();
 #ifdef _WIN32
     xsg_w32_install_crash_handler();

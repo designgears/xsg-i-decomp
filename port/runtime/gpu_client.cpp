@@ -195,14 +195,29 @@ bool SpawnGpu(const std::string& bin, HANDLE map, const char* stream) {
     }
     STARTUPINFOA si = {};
     si.cb = sizeof si;
+    // xsg-gpu's messages (and its crash report) go to the game's log file when there is one.
+    HANDLE log_h = nullptr;
+    if (xsg_log_fp && xsg_log_fp != stderr) {
+        std::fflush(xsg_log_fp);
+        HANDLE h = (HANDLE)_get_osfhandle(_fileno(xsg_log_fp));
+        if (h != INVALID_HANDLE_VALUE &&
+            DuplicateHandle(GetCurrentProcess(), h, GetCurrentProcess(), &log_h, 0, TRUE, DUPLICATE_SAME_ACCESS)) {
+            si.dwFlags = STARTF_USESTDHANDLES;
+            si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+            si.hStdOutput = log_h;
+            si.hStdError = log_h;
+        }
+    }
     PROCESS_INFORMATION pi = {};
     std::vector<char> line(cmd.begin(), cmd.end());
     line.push_back(0);
     if (!CreateProcessA(bin.c_str(), line.data(), nullptr, nullptr, TRUE, CREATE_SUSPENDED, nullptr, nullptr, &si, &pi)) {
         xsg_logf("[gpu] cannot start %s: error %lu ([debug] gpu_bin in settings.ini overrides the path)\n", bin.c_str(),
                  GetLastError());
+        if (log_h) CloseHandle(log_h);
         return false;
     }
+    if (log_h) CloseHandle(log_h);
     if (job && !AssignProcessToJobObject(job, pi.hProcess))
         xsg_logf("[gpu] could not put xsg-gpu in a job (error %lu): it may outlive a crashed game\n", GetLastError());
     ResumeThread(pi.hThread);
@@ -264,6 +279,11 @@ bool Start(const char* stream) {
     posix_spawn_file_actions_t fa;
     posix_spawn_file_actions_init(&fa);
     posix_spawn_file_actions_adddup2(&fa, fd, XSG_GPU_FD);
+    if (xsg_log_fp && xsg_log_fp != stderr) {   // xsg-gpu's messages go to the game's log file too
+        std::fflush(xsg_log_fp);
+        posix_spawn_file_actions_adddup2(&fa, fileno(xsg_log_fp), 1);
+        posix_spawn_file_actions_adddup2(&fa, fileno(xsg_log_fp), 2);
+    }
     pid_t pid;
     // DLSS 5 Neural Rendering ([renderer] neural, off by default): the DLSS5VKLayer
     // implicit layer activates only with VKLayer_DLSS5=1, given when the setting is on

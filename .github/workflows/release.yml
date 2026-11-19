@@ -74,8 +74,8 @@ jobs:
           name: windows-zip
           path: Xenosaga_Episode_I-windows.zip
           if-no-files-found: error
-      - name: Debug symbols (unstripped xsg.dll, for addr2line on crash/hang logs)
-        run: cd port/build-win32-pkg && zip -9 "$GITHUB_WORKSPACE/xsg-windows-symbols.zip" xsg.dll xsg.exe
+      - name: Debug symbols (unstripped xsg.dll and xsg-gpu.exe, for addr2line on crash/hang logs)
+        run: cd port/build-win32-pkg && zip -9 "$GITHUB_WORKSPACE/xsg-windows-symbols.zip" xsg.dll xsg.exe gpu/xsg-gpu.exe
       - uses: actions/upload-artifact@v4
         with:
           name: windows-symbols

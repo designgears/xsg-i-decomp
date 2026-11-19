@@ -1089,8 +1089,71 @@ void Renderer::InitMenu() {
 
 }  // namespace
 
+#ifdef _WIN32
+#include <tlhelp32.h>
+/* A crash in xsg-gpu on Windows ends it with only an exit status in the game's log.
+   Log the exception, the module it hit (xsg-gpu.exe or a DLL, with the offset from
+   its base, for addr2line on the unstripped build) and the unwound call stack of the
+   crashing thread, to stderr (the game's console, or wherever its stderr goes). */
+static void CrashModule(uintptr_t a, char* name, size_t n, uintptr_t* base) {
+    HMODULE m = nullptr;
+    name[0] = 0;
+    *base = 0;
+    if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                           reinterpret_cast<LPCSTR>(a), &m) && m) {
+        *base = reinterpret_cast<uintptr_t>(m);
+        char path[MAX_PATH];
+        if (GetModuleFileNameA(m, path, sizeof path)) {
+            const char* b = std::strrchr(path, '\\');
+            std::snprintf(name, n, "%s", b ? b + 1 : path);
+        }
+    }
+}
+
+static void CrashUnwind(CONTEXT c) {
+    char mod[128];
+    uintptr_t base;
+    for (int i = 0; i < 48 && c.Rip; ++i) {
+        CrashModule(uintptr_t(c.Rip), mod, sizeof mod, &base);
+        std::fprintf(stderr, "[xsg-gpu]   #%d %s+0x%llx\n", i, mod[0] ? mod : "?", (unsigned long long)(c.Rip - base));
+        DWORD64 image = 0;
+        PRUNTIME_FUNCTION fn = RtlLookupFunctionEntry(c.Rip, &image, nullptr);
+        if (!fn) {   // leaf function: the return address is at [rsp]
+            c.Rip = *reinterpret_cast<DWORD64*>(c.Rsp);
+            c.Rsp += 8;
+            continue;
+        }
+        void* handler_data = nullptr;
+        DWORD64 frame = 0;
+        RtlVirtualUnwind(UNW_FLAG_NHANDLER, image, c.Rip, fn, &c, &handler_data, &frame, nullptr);
+    }
+}
+
+static LONG CALLBACK OnCrash(EXCEPTION_POINTERS* ep) {
+    const DWORD code = ep->ExceptionRecord->ExceptionCode;
+    static volatile LONG once;
+    if (InterlockedExchange(&once, 1)) return EXCEPTION_CONTINUE_SEARCH;
+    const CONTEXT* c = ep->ContextRecord;
+    char mod[128];
+    uintptr_t base;
+    CrashModule(uintptr_t(c->Rip), mod, sizeof mod, &base);
+    const ULONG_PTR* info = ep->ExceptionRecord->ExceptionInformation;
+    const bool av = code == EXCEPTION_ACCESS_VIOLATION && ep->ExceptionRecord->NumberParameters >= 2;
+    std::fprintf(stderr, "[xsg-gpu] CRASH exception 0x%08lx at %s+0x%llx (thread %lu)", (unsigned long)code,
+                 mod[0] ? mod : "?", (unsigned long long)(c->Rip - base), GetCurrentThreadId());
+    if (av)
+        std::fprintf(stderr, ", %s of address 0x%llx", info[0] == 1 ? "write" : info[0] == 8 ? "execute" : "read",
+                     (unsigned long long)info[1]);
+    std::fprintf(stderr, "\n");
+    if (code != EXCEPTION_STACK_OVERFLOW) CrashUnwind(*c);
+    std::fflush(stderr);
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+#endif
+
 int main(int argc, char** argv) {
 #ifdef _WIN32
+    SetUnhandledExceptionFilter(OnCrash);   /* real crashes only, not first-chance exceptions a driver handles */
     /* The game (gpu_client.cpp) passes its file mapping as an inherited handle value in argv[1]
        and its pid as --parent=<pid>; it also puts this process in a kill-on-close job object,
        which ends it with the game (Linux: PR_SET_PDEATHSIG). */
