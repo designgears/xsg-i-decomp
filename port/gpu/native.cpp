@@ -100,7 +100,22 @@ struct Xfer {
     uint32_t dbp, dbw, psm, x0, y0, w, h, x, y;
     uint64_t pend = 0;   // leftover bits (24-bit pixels straddle bytes)
     int pend_bits = 0;
+    /* The current row's pixels not yet in the mirror: one WriteRun per row (its SSE
+       paths need eight pixels or more), not one per qword.  XferFlush before anything
+       reads the mirror. */
+    uint32_t row[2048];
+    uint32_t rown = 0, rx = 0, ry = 0;
 } g_xfer;
+
+void XferFlush() {
+    Xfer& t = g_xfer;
+    if (!t.rown) return;
+    const uint32_t x = (t.x0 + t.rx) & 2047, y = (t.y0 + t.ry) & 2047;
+    if (x + t.rown <= 2048) g_mem.WriteRun(t.dbp, t.dbw, x, y, t.psm, t.row, t.rown);
+    else
+        for (uint32_t k = 0; k < t.rown; ++k) g_mem.Write(t.dbp, t.dbw, (x + k) & 2047, y, t.psm, t.row[k]);
+    t.rown = 0;
+}
 
 void XferQword(const uint8_t* q) {
     Xfer& t = g_xfer;
@@ -136,13 +151,13 @@ void XferQword(const uint8_t* q) {
     }
     for (int i = 0; i < n && t.on;) {
         const uint32_t run = std::min<uint32_t>(uint32_t(n - i), t.w - t.x);
-        const uint32_t x = (t.x0 + t.x) & 2047, y = (t.y0 + t.y) & 2047;
-        if (x + run <= 2048) g_mem.WriteRun(t.dbp, t.dbw, x, y, t.psm, px + i, run);
-        else
-            for (uint32_t k = 0; k < run; ++k) g_mem.Write(t.dbp, t.dbw, (x + k) & 2047, y, t.psm, px[i + k]);
+        if (!t.rown) { t.rx = t.x; t.ry = t.y; }
+        if (t.rown + run > 2048) { XferFlush(); t.rx = t.x; t.ry = t.y; }
+        std::memcpy(t.row + t.rown, px + i, run * 4);
+        t.rown += run;
         i += int(run);
         t.x += run;
-        if (t.x >= t.w) { t.x = 0; if (++t.y >= t.h) t.on = false; }
+        if (t.x >= t.w) { XferFlush(); t.x = 0; if (++t.y >= t.h) t.on = false; }
     }
 }
 
@@ -296,11 +311,12 @@ void GifQword(PathParse& p, const uint8_t* q) {
         return;
     }
     p.left--;
-    if (p.skip) return;
     if (p.flg >= 2) {   // IMAGE
         XferQword(q);
         return;
     }
+    XferFlush();   // register writes may read the mirror (CLUT loads)
+    if (p.skip) return;
     auto one = [&](uint64_t v, uint64_t hiw, bool packed) {
         const uint32_t d = uint32_t(p.regs >> (4 * p.idx)) & 15;
         p.idx = (p.idx + 1) % p.nreg;
@@ -1469,6 +1485,7 @@ void Apply(ParallelGS::GSInterface& gs) {
     if (!g_ready && !InitResources()) { Log("cannot turn on: resource setup failed"); return; }
     gs.flush();
     const uint8_t* v = static_cast<const uint8_t*>(gs.map_vram_read(0, 4u << 20));
+    XferFlush();
     std::memcpy(g_mem.data(), v, 4u << 20);
     g_upload_gen++;
     for (auto& pg : g_page_gen) pg = g_upload_gen;
@@ -1543,6 +1560,7 @@ void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterfa
     // qword by qword together with the effect parser, so its draws see the uploads before them
     // the GIF state tracker, per qword ahead of the effect parser (a plain function pointer: per 16 bytes)
     xsgfx::Gif(path, data, len, gs, [](void* c, const uint8_t* q) { GifQword(*static_cast<PathParse*>(c), q); }, &p);
+    XferFlush();   // a message of another path may come next
 }
 
 namespace {
@@ -1648,6 +1666,7 @@ void FxNative(const uint32_t* tagw, uint32_t ntags) {
 }  // namespace
 
 void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) {
+    XferFlush();
     xsgprof::Scope ps(xsgprof::Batch);
     if (kind == GPU_NATIVE_OBJECT) {   // the object (actor + 1) of the batches that follow
         g_obj = int(nvert);
@@ -1722,6 +1741,7 @@ void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) 
 }
 
 void Vsync(uint32_t frame, ParallelGS::GSInterface& gs, bool show) {
+    XferFlush();
     g_last_vsync = frame;
     g_obj = 0;   // batches of the next frame carry no object id until a model marks one
     {
@@ -1756,11 +1776,12 @@ const Vulkan::ImageHandle& LiveImage(uint32_t* fb_w, uint32_t* fb_h, uint32_t* m
 int Scale() { return g_scale; }
 
 std::vector<uint32_t> DecodeMirrorTexture(uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h) {
+    XferFlush();
     return DecodeTexture(g_mem.data(), tex0, texa, w, h, g_cbuf.slot);
 }
 uint64_t ClutHash() { return g_cbuf.hash; }
 uint32_t MirrorGen() { return g_upload_gen; }
-const uint8_t* MirrorData() { return g_mem.data(); }
+const uint8_t* MirrorData() { XferFlush(); return g_mem.data(); }
 uint32_t TextureGen(uint64_t tex0) {
     uint32_t p0, np, gen = 0;
     PageRange(Bits(tex0, 0, 14), std::max(1u, Bits(tex0, 14, 6)), Bits(tex0, 20, 6), 1u << std::min(10u, Bits(tex0, 30, 4)), &p0, &np);
