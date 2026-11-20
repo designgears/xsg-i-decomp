@@ -213,6 +213,18 @@ typedef struct ScenarioBatState {
     int phaseTimer;              /* +0x14 */
 } ScenarioBatState;
 extern ScenarioBatState scenarioPtr;
+#ifdef PORT_HOST
+/*
+ * D_00A57B5C/64/68/6C are scenarioPtr.index/source/nextPhase/phaseTimer.
+ * Separate symbols let -O2 assume they don't alias scenarioPtr: scenarioBatEnd
+ * reset the index through D_00A57B5C, then read the stale one through
+ * scenarioDstGet, so no attack ever applied its damage. Use the fields.
+ */
+#define D_00A57B5C (scenarioPtr.index)
+#define D_00A57B64 (*(int *)&scenarioPtr.source)
+#define D_00A57B68 (*(void (**)(int, unsigned char *))&scenarioPtr.nextPhase)
+#define D_00A57B6C ((int *)&scenarioPtr.phaseTimer)
+#endif
 
 extern BattleUnit *pExecUnit;
 extern BattleUnit *pManUnit;
@@ -3084,7 +3096,11 @@ void scenarioBatInit(void)
 
 int scenarioSrcSet(const ScenarioStep *source)
 {
-    extern int D_00A57B64;
+#ifndef PORT_HOST
+    #ifndef PORT_HOST
+extern int D_00A57B64;
+#endif
+#endif
     ScenarioStep *destination = (ScenarioStep *)D_00A57B64;
 
     *destination = *source;
@@ -3107,7 +3123,9 @@ int scenarioDstSet(ScenarioDstRec *src)
  * The scenario source index (data still asm-owned, splat name kept); a
  * different object from the ScenarioBatState record above.
  */
+#ifndef PORT_HOST
 extern int D_00A57B64;
+#endif
 
 int scenarioSrcGet(void)
 {
@@ -3188,7 +3206,9 @@ void scenarioCam(void *arg0, int arg1)
   }
 }
 
+#ifndef PORT_HOST
 extern void (*D_00A57B68)(int, unsigned char *);
+#endif
 void scenarioBatEnd(void);
 
 int scenarioBatExec(void)
@@ -3320,7 +3340,9 @@ void hairWindOff(BattleUnit *unit)
     }
 }
 
+#ifndef PORT_HOST
 extern int D_00A57B6C[];
+#endif
 void scenarioBatExecPhase20();
 void scenarioCam(void *, int);
 extern void statEffOff(ObjectTask *unit);
@@ -4945,7 +4967,9 @@ int scenarioSrcEndChk(int *exec, int unused, int dflt)
     return ret != 0;
 }
 
+#ifndef PORT_HOST
 extern int D_00A57B5C;
+#endif
 extern char D_00A44168[];
 extern int calcIdol2Chk(ObjectTask *unit);
 extern int calcUseItem(ObjectTask *a, ObjectTask *b, int c);
