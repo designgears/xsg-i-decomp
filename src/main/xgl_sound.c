@@ -964,6 +964,25 @@ void xglMakeSePacket(short command, ...)
     SoundArgumentSlot *slot;
     int remaining;
 
+#ifdef PORT_HOST
+    /* The PS2 reads the variadic words from its 8-byte register save slots;
+     * on i386 they are 4 bytes apart, so every argument after the first was
+     * garbage: a stop (mode = its source) never matched the effect it meant
+     * to stop, and looping sounds (the battle results' EXP tally) never
+     * ended. */
+    (void)args; (void)arguments; (void)slot; (void)remaining;
+    if (work->packet_count < 65) {
+        __builtin_va_list ap;
+        int i;
+        __builtin_va_start(ap, command);
+        packet = &queue->packets[work->packet_count];
+        packet->command = command;
+        for (i = 0; i < 4; i++)
+            packet->arguments[i] = __builtin_va_arg(ap, int);
+        __builtin_va_end(ap);
+        SoundWork.packet_count++;
+    }
+#else
     if (work->packet_count < 65) {
         SOUND_ARGUMENT_START(args, command);
         packet = &queue->packets[work->packet_count];
@@ -978,6 +997,7 @@ void xglMakeSePacket(short command, ...)
         } while (remaining >= 0);
         SoundWork.packet_count++;
     }
+#endif
 }
 
 void SsdSendFuncPacket(void *packets, int count);
