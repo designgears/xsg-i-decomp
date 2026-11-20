@@ -777,3 +777,8 @@ int kill(pid_t pid, int sig)
 }
 
 #endif /* _WIN32 */
+
+/* Hybrid CPUs: the performance cores, no power throttling (win32/xsg_pcores.h). */
+#include "xsg_pcores.h"
+static void pcores_log(const char *msg) { xsg_logf("[win32] %s\n", msg); }
+void xsg_w32_pcores(void) { xsg_w32_prefer_pcores(pcores_log); }

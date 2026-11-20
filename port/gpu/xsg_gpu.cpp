@@ -47,6 +47,9 @@ const uint32_t kCrtFrag[] = {
 #include "context.hpp"
 #include "device.hpp"
 #include "wsi.hpp"
+#ifdef _WIN32
+#include "../runtime/win32/xsg_pcores.h"
+#endif
 #include "gs_interface.hpp"
 #include "ps2host/gs.h"
 
@@ -196,6 +199,7 @@ struct SdlPlatform final : Vulkan::WSIPlatform {
     SDL_Window* win = nullptr;
     bool is_alive = true;
     bool fullscreen = false;
+    bool minimized = false;   // no presents (SDL_EVENT_WINDOW_MINIMIZED .. RESTORED)
     uint32_t w = 1024, h = 896;
 
     VkSurfaceKHR create_surface(VkInstance instance, VkPhysicalDevice) override {
@@ -229,6 +233,11 @@ struct SdlPlatform final : Vulkan::WSIPlatform {
             if (xsgmenu::Event(e)) continue;   // F1 / Esc / F10, and everything while the menu is open
             if (xsginput::Event(e)) continue;
             if (e.type == SDL_EVENT_QUIT || e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) is_alive = false;
+            if (e.type == SDL_EVENT_WINDOW_MINIMIZED) minimized = true;
+            if (e.type == SDL_EVENT_WINDOW_RESTORED || e.type == SDL_EVENT_WINDOW_MAXIMIZED || e.type == SDL_EVENT_WINDOW_SHOWN) {
+                if (minimized) resize = true;   // a fresh swapchain for the restored window
+                minimized = false;
+            }
             if (e.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
                 w = uint32_t(e.window.data1 > 0 ? e.window.data1 : 1);
                 h = uint32_t(e.window.data2 > 0 ? e.window.data2 : 1);
@@ -719,6 +728,9 @@ struct Renderer {
             Log("window closed");
             std::_Exit(0);   // the game sees the process go and exits too
         }
+        // Minimized: no present.  Granite's WSI blocks inside begin_frame until the window
+        // comes back, and with it the ring stopped draining and the game froze (#3).
+        if (platform->minimized || (SDL_GetWindowFlags(platform->win) & SDL_WINDOW_MINIMIZED)) return;
         if (!wsi->begin_frame()) return;
         auto cmd = dev->request_command_buffer();
         auto& bb = dev->get_swapchain_view().get_image();
@@ -1212,6 +1224,7 @@ int main(int argc, char** argv) {
     void* m = hmap ? MapViewOfFile(HANDLE(uintptr_t(hmap)), FILE_MAP_ALL_ACCESS, 0, 0, XSG_GPU_SHM_SIZE) : nullptr;
     if (!m) { Log("mapping of handle %llu failed (xsg-gpu is started by the game)", hmap); return 1; }
     xsg_w32_ipc_init(m, g_parent);
+    xsg_w32_prefer_pcores([](const char* msg) { Log("%s", msg); });
     if (stream && *stream) { Log("[debug] stream is not supported on Windows"); stream = nullptr; }
 #else
     std::signal(SIGPIPE, SIG_IGN);

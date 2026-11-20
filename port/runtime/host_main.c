@@ -230,6 +230,7 @@ static void on_alarm(int sig)
 void xsg_w32_install_crash_handler(void);
 void xsg_w32_start_timeout(unsigned seconds, void (*fn)(void));
 void xsg_w32_start_sampler(void);
+void xsg_w32_pcores(void);
 static void on_timeout(void) { on_alarm(0); }
 #else
 /* Async-signal-safe hex line: "<label>0x%08x\n" via write(2). */
@@ -341,6 +342,7 @@ int main(int argc, char **argv)
     xsg_cfg_report();
 #ifdef _WIN32
     xsg_w32_install_crash_handler();
+    xsg_w32_pcores();
     if (xsg_cfg("debug.timeout"))
         xsg_w32_start_timeout((unsigned)atoi(xsg_cfg("debug.timeout")), on_timeout);
     if (xsg_cfg("debug.sample") && atoi(xsg_cfg("debug.sample")))
