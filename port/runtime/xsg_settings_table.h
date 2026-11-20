@@ -54,6 +54,8 @@ XSG_SETTING("renderer.shadows", "XSG_GPU_SHADOWS", "0", "0..100", 1, "Real shado
 XSG_SETTING("renderer.shadow_angle", "XSG_GPU_SHADOW_ANGLE", "40", "0..85", 1, "Shadow light lean from the game's overhead light (degrees).")
 XSG_SETTING("renderer.shadow_azimuth", "XSG_GPU_SHADOW_AZIMUTH", "135", "0..359", 1, "Shadow light direction around the vertical (degrees, world space): one sun for the whole scene.")
 XSG_SETTING("renderer.neural", "XSG_GPU_NEURAL", "0", "0|1", 0, "DLSS 5 Neural Rendering via DLSS5VKLayer (off by default; needs the layer + nvngx_dlssnr.dll; on takes a restart).")
+XSG_SETTING("renderer.neural_helper", "XSG_GPU_NEURAL_HELPER", "", 0, 0, "Windows: path of dlssnr_helper.exe (default: dlssnr\\ next to xsg-gpu.exe, then %LOCALAPPDATA%\\xsg\\dlssnr).")
+XSG_SETTING("renderer.neural_bins", "XSG_GPU_NEURAL_BINS", "", 0, 0, "Windows: folder holding nvngx_dlssnr.dll (default: the helper's folder or its binaries\\).")
 XSG_SETTING("renderer.ssaa", "XSG_GPU_SSAA", "1", "1|2|4|8|16", 1, "paraLLEl-GS super-sampling.")
 XSG_SETTING("renderer.ssaa_textures", "XSG_GPU_SSAA_TEX", "0", "0|1", 1, "Super-sampled textures (SSAA >= 2).")
 XSG_SETTING("renderer.hires_scanout", "XSG_GPU_HIRES", "0", "0|1", 1, "High-resolution scanout (SSAA >= 4).")

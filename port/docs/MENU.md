@@ -46,7 +46,7 @@ held while a field is open.
 | Display | Fullscreen, Window size, Present mode, Aspect ratio, Scaling, Filter | `[display]` all | live (present: swapchain recreated) |
 | Renderer | GS backend | `[renderer] gs` | restart |
 | | Renderer (paraLLEl-GS / native), Native internal scale, Super-sampling, Super-sampled textures, High-resolution scanout | `[renderer] native, native_scale, ssaa, ssaa_textures, hires_scanout` | live |
-| | DLSS / frame generation | — (disabled, "coming soon") | — |
+| | DLSS 5 Neural Rendering | `[renderer] neural` | Linux: restart; Windows: live |
 | Game | FPS limit | `[game] fps_limit` | live (game process) |
 | | Play movies, Uncensored 3039C, English subtitles (3039C), Uncensored folder | `[game] movies, uncensored, uncensored_subs, uncensored_dir` | restart (uncensored: live, from the next time 3039C plays) |
 | | Audio, Sound driver | `[audio] enabled` (live), `sound_driver` (restart) | |
@@ -186,7 +186,9 @@ environment variable the setting took over; it is no longer read.
 | `[renderer] gs` | `gpu` | gpu, soft, both | restart | `XSG_GS` | GS backend: gpu (xsg-gpu, the menu), soft (software GS, no window/menu), both (compare). |
 | `[renderer] native` | `0` | 0, 1 | live | `XSG_GPU_NATIVE` | Native Vulkan renderer (NATIVE_RENDERER.md). |
 | `[renderer] native_scale` | `2` | 1..8 | live | `XSG_GPU_NATIVE_SCALE` | Native renderer internal scale. |
-| `[renderer] neural` | `0` | 0, 1 | restart | `XSG_GPU_NEURAL` | DLSS 5 Neural Rendering via DLSS5VKLayer, off by default (the layer only loads when this is on at start). |
+| `[renderer] neural` | `0` | 0, 1 | restart | `XSG_GPU_NEURAL` | DLSS 5 Neural Rendering via DLSS5VKLayer, off by default. Linux: its Vulkan layer, loaded only when this is on at start. Windows: xsg-gpu starts the layer's helper (`dlssnr_helper.exe`) itself and exchanges frames with it (`gpu/neural_win.cpp`). |
+| `[renderer] neural_helper` | (empty) | path | restart | `XSG_GPU_NEURAL_HELPER` | Windows: `dlssnr_helper.exe` (default: `dlssnr\` next to `xsg-gpu.exe`, then `%LOCALAPPDATA%\xsg\dlssnr\`). |
+| `[renderer] neural_bins` | (empty) | path | restart | `XSG_GPU_NEURAL_BINS` | Windows: the folder with `nvngx_dlssnr.dll` (default: the helper's folder or its `binaries\`). |
 | `[renderer] ssaa` | `1` | 1, 2, 4, 8, 16 | live | `XSG_GPU_SSAA` | paraLLEl-GS super-sampling. |
 | `[renderer] ssaa_textures` | `0` | 0, 1 | live | `XSG_GPU_SSAA_TEX` | Super-sampled textures (SSAA >= 2). |
 | `[renderer] hires_scanout` | `0` | 0, 1 | live | `XSG_GPU_HIRES` | High-resolution scanout (SSAA >= 4). |

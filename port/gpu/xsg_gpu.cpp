@@ -48,6 +48,7 @@ const uint32_t kCrtFrag[] = {
 #include "device.hpp"
 #include "wsi.hpp"
 #ifdef _WIN32
+#include "neural_win.h"
 #include "../runtime/win32/xsg_pcores.h"
 #endif
 #include "gs_interface.hpp"
@@ -635,8 +636,73 @@ struct Renderer {
         cmd.draw(3);
     }
 
+#ifdef _WIN32
+    /* DLSS 5 on Windows (neural_win.cpp): the game image at the size it is shown (at most the
+       source's), read back, run through the helper's model, and uploaded again.  Synchronous: the
+       readback waits for the GPU and the exchange for the helper.  Null: show the source. */
+    Vulkan::ImageHandle nr_in, nr_out;
+    Vulkan::BufferHandle nr_rb, nr_up;
+    std::vector<uint8_t> nr_answer;
+    const Vulkan::Image* NeuralImage(Vulkan::CommandBuffer& cmd, const Vulkan::Image& src, int sx0, int sy0, int sw,
+                                     int sh, int dw, int dh, int* ow, int* oh) {
+        if (!xsgneural::Active()) return nullptr;
+        const int mw = std::min(sw, dw), mh = std::min(sh, dh);
+        if (mw < 64 || mh < 64) return nullptr;
+        if (!nr_in || int(nr_in->get_width()) != mw || int(nr_in->get_height()) != mh) {
+            auto ci = Vulkan::ImageCreateInfo::immutable_2d_image(uint32_t(mw), uint32_t(mh), VK_FORMAT_R8G8B8A8_UNORM);
+            ci.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+            ci.initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+            ci.layout = Vulkan::ImageLayout::General;
+            nr_in = dev->create_image(ci);
+            nr_out = dev->create_image(ci);
+            Vulkan::BufferCreateInfo bi = {};
+            bi.size = VkDeviceSize(mw) * mh * 4;
+            bi.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            bi.domain = Vulkan::BufferDomain::CachedHost;
+            nr_rb = dev->create_buffer(bi);
+            bi.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            bi.domain = Vulkan::BufferDomain::Host;
+            nr_up = dev->create_buffer(bi);
+            nr_answer.resize(size_t(mw) * mh * 4);
+            auto c0 = dev->request_command_buffer();
+            for (auto* im : {nr_in.get(), nr_out.get()})
+                c0->image_barrier(*im, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_2_NONE, 0,
+                                  VK_PIPELINE_STAGE_2_BLIT_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
+            dev->submit(c0);
+        }
+        // 1. the source at the model's size, to the host (its own command buffer: waited for)
+        auto rc = dev->request_command_buffer();
+        rc->blit_image(*nr_in, src, {0, 0, 0}, {mw, mh, 1}, {sx0, sy0, 0}, {sw, sh, 1}, 0, 0, 0, 0, 1,
+                       (mw == sw && mh == sh) ? VK_FILTER_NEAREST : VK_FILTER_LINEAR);
+        rc->barrier(VK_PIPELINE_STAGE_2_BLIT_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_COPY_BIT,
+                    VK_ACCESS_2_TRANSFER_READ_BIT);
+        rc->copy_image_to_buffer(*nr_rb, *nr_in, 0, {}, {uint32_t(mw), uint32_t(mh), 1}, 0, 0, {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1});
+        rc->barrier(VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                    VK_ACCESS_HOST_READ_BIT);
+        Vulkan::Fence fence;
+        dev->submit(rc, &fence);
+        fence->wait();
+        const uint8_t* px = static_cast<const uint8_t*>(dev->map_host_buffer(*nr_rb, Vulkan::MEMORY_ACCESS_READ_BIT));
+        const bool ok = xsgneural::Process(px, uint32_t(mw), uint32_t(mh), nr_answer.data());
+        dev->unmap_host_buffer(*nr_rb, Vulkan::MEMORY_ACCESS_READ_BIT);
+        if (!ok) return nullptr;
+        // 2. the answer back, in the frame's command buffer
+        void* up = dev->map_host_buffer(*nr_up, Vulkan::MEMORY_ACCESS_WRITE_BIT);
+        std::memcpy(up, nr_answer.data(), nr_answer.size());
+        dev->unmap_host_buffer(*nr_up, Vulkan::MEMORY_ACCESS_WRITE_BIT);
+        cmd.barrier(VK_PIPELINE_STAGE_2_BLIT_BIT, VK_ACCESS_2_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_2_COPY_BIT,
+                    VK_ACCESS_2_TRANSFER_WRITE_BIT);
+        cmd.copy_buffer_to_image(*nr_out, *nr_up, 0, {}, {uint32_t(mw), uint32_t(mh), 1}, 0, 0, {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1});
+        cmd.barrier(VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_BLIT_BIT,
+                    VK_ACCESS_2_TRANSFER_READ_BIT);
+        *ow = mw;
+        *oh = mh;
+        return nr_out.get();
+    }
+#endif
+
     void BlitGame(Vulkan::CommandBuffer& cmd, const Vulkan::Image& bb, const ScanoutResult& so, bool fit, bool* native,
-                  bool crt = false) {
+                  bool crt = false, bool neural = false) {
         VkClearValue clear = {};
         cmd.clear_image(bb, clear);
         int sx0, sy0, sw, sh, src_h;
@@ -659,6 +725,19 @@ struct Renderer {
         game_rect[0] = float(cx0); game_rect[1] = float(y0); game_rect[2] = float(cw); game_rect[3] = float(dh);
         last_image_w = uint32_t(sw);
         last_image_h = uint32_t(sh);
+#ifdef _WIN32
+        if (neural) {
+            int ow, oh;
+            if (const Vulkan::Image* n = NeuralImage(cmd, *src, sx0, sy0, sw, sh, dw, dh, &ow, &oh)) {
+                src = n;
+                sx0 = sy0 = 0;
+                sw = ow;
+                sh = oh;
+            }
+        }
+#else
+        (void)neural;
+#endif
         // A source larger than the target (the native layer at 4-8x in a window) is
         // brought down by 2x linear halvings, each a 2x2 box filter, until it is within
         // 2x of the target.  One nearest (or even linear) blit from 4x+ skips most source
@@ -744,7 +823,7 @@ struct Renderer {
         bool native = false;
         const bool crt = CrtOn();
         if (!crt) crt_src.reset();
-        BlitGame(*cmd, bb, so, true, &native, crt);
+        BlitGame(*cmd, bb, so, true, &native, crt, true);
         native_presents += native;
         // The in-game menu / overlay (menu/menu.cpp) is drawn over the game image.
         const bool draw_menu = (menu && xsgmenu::Visible()) || crt;
@@ -901,14 +980,20 @@ struct Renderer {
        it is not running. */
     int neural_state = -1;
     void Neural(bool on) {
+#ifdef _WIN32
+        // Windows: no layer; xsg-gpu starts the helper itself and exchanges frames with it
+        // (neural_win.cpp, BlitGame).  Live both ways.
+        if (int(on) == neural_state) return;
+        neural_state = on;
+        if (on) xsgneural::Start();
+        xsgneural::SetEnabled(on);
+        Log("DLSS 5 Neural Rendering %s", on ? "on" : "off");
+#else
         // Only the instance the layer is attached to (VKLayer_DLSS5=1) drives the helper; it
         // always syncs it at start, so a model left on by another run cannot linger.
         const char* layer = getenv("VKLayer_DLSS5");
         if (!layer || std::strcmp(layer, "1") != 0 || int(on) == neural_state) return;
         neural_state = on;
-#ifdef _WIN32
-        Log("DLSS 5 Neural Rendering is not supported on Windows");
-#else
         const std::string shm = "/tmp/dlssnr-" + std::to_string(getuid()) + "/shm.bin";
         auto run = [](std::vector<std::string> a) {
             std::vector<char*> argv;
