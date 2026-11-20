@@ -568,7 +568,7 @@ void TabRenderer(float scale) {
     if (!xsgcfg::GetBool("renderer.native")) opt_disable_next("Only with the native renderer.");
     opt_toggle("renderer.native_edge_fx", "Sharp character edges",
                "The game draws a soft-edge pass over every character that reads back the frame. On: it is redrawn at "
-               "native resolution, so characters stay sharp (and DLSS 5 gets a clean image). Off: it runs on the PS2 "
+               "native resolution, so characters stay sharp. Off: it runs on the PS2 "
                "GS, which leaves blocky 1x pixels across the characters but keeps the soft contact shadow under "
                "some of them.");
     if (!xsgcfg::GetBool("renderer.native")) opt_disable_next("Only with the native renderer.");
@@ -592,12 +592,6 @@ void TabRenderer(float scale) {
     if (xsgcfg::GetInt("renderer.ssaa") < 4) opt_disable_next("Needs super-sampling 4x or more.");
     opt_toggle("renderer.hires_scanout", "High-resolution scanout",
                "Scans out the super-sampled frame at full resolution instead of resolving it to 512 x 448.");
-    opt_group("NEURAL RENDERING");
-    opt_toggle("renderer.neural", "DLSS 5 Neural Rendering",
-               "Re-renders every presented frame with NVIDIA's DLSS 5 neural model for a high-fidelity look "
-               "(through the DLSS5VKLayer Vulkan layer and its Wine/Proton helper). Needs the layer installed and "
-               "nvngx_dlssnr.dll imported (dlssnr-helper import-binaries); without them frames pass through unchanged. "
-               "Style and strength are set in dlssnr-gui (or dlssnr-shmctl). Off by default; turning it on takes a restart.");
     if (RestartPending()) opt_text("Renderer changes apply after a restart: use Restart now below.", true);
     opt_end();
 }

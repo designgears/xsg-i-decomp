@@ -293,35 +293,8 @@ bool Start(const char* stream) {
         posix_spawn_file_actions_adddup2(&fa, fileno(xsg_log_fp), 2);
     }
     pid_t pid;
-    // DLSS 5 Neural Rendering ([renderer] neural, off by default): the DLSS5VKLayer
-    // implicit layer activates only with VKLayer_DLSS5=1, given when the setting is on
-    // at start and the layer is installed (turning it on later takes a restart; off
-    // again is live, through the helper's shared settings).
     std::vector<char*> env;
-    for (char** e = environ; *e; ++e)
-        if (std::strncmp(*e, "VKLayer_DLSS5=", 14)) env.push_back(*e);
-    static char neural_on[] = "VKLayer_DLSS5=1";
-    bool layer = false;
-    {
-        const char* home = getenv("HOME");
-        const char* xdg = getenv("XDG_DATA_HOME");
-        const std::string m = "/vulkan/implicit_layer.d/VK_LAYER_NV_dlssnr.x86_64.json";
-        for (const std::string& d : {std::string(xdg && *xdg ? xdg : std::string(home ? home : "") + "/.local/share"),
-                                     std::string("/usr/share"), std::string("/usr/local/share"), std::string("/etc")})
-            layer |= access((d + m).c_str(), R_OK) == 0;
-    }
-    // VKLayer_DLSS5=0 already in the environment keeps the layer out (a second instance,
-    // e.g. a test run, would otherwise attach to the one helper the main game uses).
-    const char* forced = getenv("VKLayer_DLSS5");
-    if (forced && std::strcmp(forced, "0") == 0) layer = false;
-    {
-        const char* nr = xsg_cfg("renderer.neural");
-        if (!(nr && std::atoi(nr))) layer = false;   // off: no layer in the present path at all
-    }
-    if (layer) {
-        env.push_back(neural_on);
-        xsg_logf("[gpu] DLSS 5 Neural Rendering on: DLSS5VKLayer loaded\n");
-    }
+    for (char** e = environ; *e; ++e) env.push_back(*e);
     env.push_back(nullptr);
     int rc = posix_spawn(&pid, bin.c_str(), &fa, nullptr, argv, env.data());
     posix_spawn_file_actions_destroy(&fa);

@@ -161,16 +161,6 @@ the same counts as the Linux link.
 * ALSA output (`audio.c`: sound goes through xsg-gpu and SDL3 anyway);
 * the `[debug] stream` FIFO.
 
-### DLSS 5 Neural Rendering on Windows
-
-Linux uses the DLSS5VKLayer Vulkan layer. Windows has no such layer, so with `[renderer] neural = 1`
-xsg-gpu plays its part (`gpu/neural_win.cpp`): it starts the layer project's helper
-(`dlssnr_helper.exe`, AGPL-3.0, installed by the player, never linked in), exchanges each frame with
-it through the helper's shared-memory file (`%TEMP%\\xsg-dlssnr\\shm.bin`, protocol v20), and shows
-the model's answer; on any failure the game's own frame. The helper needs `nvngx_dlssnr.dll`
-(`[renderer] neural_bins`) and must accept a Windows path in `DLSSNR_SHM`. Its log is
-`%APPDATA%\\xsg\\dlssnr_helper.log`. The exchange is synchronous (a readback per presented frame).
-
 ## Game bug found by this port
 
 `InitUwamono` (`src/main/init_uwamono_sys.c`) passes a 0x3C-byte local `InitUwamonoQuery` to
