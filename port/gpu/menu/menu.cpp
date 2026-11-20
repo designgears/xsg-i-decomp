@@ -566,6 +566,12 @@ void TabRenderer(float scale) {
                "Per pixel: the same lights, colours and specular evaluated for every pixel from the interpolated "
                "normal: smoother shading on characters, the same look otherwise.");
     if (!xsgcfg::GetBool("renderer.native")) opt_disable_next("Only with the native renderer.");
+    opt_toggle("renderer.native_edge_fx", "Sharp character edges",
+               "The game draws a soft-edge pass over every character that reads back the frame. On: it is redrawn at "
+               "native resolution, so characters stay sharp (and DLSS 5 gets a clean image). Off: it runs on the PS2 "
+               "GS, which leaves blocky 1x pixels across the characters but keeps the soft contact shadow under "
+               "some of them.");
+    if (!xsgcfg::GetBool("renderer.native")) opt_disable_next("Only with the native renderer.");
     opt_slider("renderer.shadows", "Real shadows", 0, 100, 5, "%d%%",
                "Characters cast real shadows (a shadow map from the scene's key light) onto the floor, each other "
                "and themselves; the game's round blob shadows are turned off. 0: off (the game's blobs).");

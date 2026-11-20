@@ -49,6 +49,7 @@ XSG_SETTING("renderer.gs", "XSG_GS", "gpu", "gpu|soft|both", 0,
             "GS backend: gpu (xsg-gpu, the menu), soft (software GS, no window/menu), both (compare).")
 XSG_SETTING("renderer.native", "XSG_GPU_NATIVE", "0", "0|1", 1, "Native Vulkan renderer (NATIVE_RENDERER.md).")
 XSG_SETTING("renderer.native_scale", "XSG_GPU_NATIVE_SCALE", "2", "1..8", 1, "Native renderer internal scale.")
+XSG_SETTING("renderer.native_edge_fx", "XSG_GPU_NATIVE_EDGE_FX", "1", "0|1", 1, "Native renderer: the characters' soft-edge pass at native resolution (0: on the PS2 GS, blocky character edges but its contact shadows).")
 XSG_SETTING("renderer.lighting", "XSG_GPU_LIGHTING", "ps2", "ps2|perpixel", 1, "Character lighting: the PS2's per-vertex, or the same lights per pixel (native renderer).")
 XSG_SETTING("renderer.shadows", "XSG_GPU_SHADOWS", "0", "0..100", 1, "Real shadows from the scene's key light (native renderer, shadow map): strength in percent, 0 = off.")
 XSG_SETTING("renderer.shadow_angle", "XSG_GPU_SHADOW_ANGLE", "40", "0..85", 1, "Shadow light lean from the game's overhead light (degrees).")

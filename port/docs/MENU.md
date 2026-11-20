@@ -46,7 +46,8 @@ held while a field is open.
 | Display | Fullscreen, Window size, Present mode, Aspect ratio, Scaling, Filter | `[display]` all | live (present: swapchain recreated) |
 | Renderer | GS backend | `[renderer] gs` | restart |
 | | Renderer (paraLLEl-GS / native), Native internal scale, Super-sampling, Super-sampled textures, High-resolution scanout | `[renderer] native, native_scale, ssaa, ssaa_textures, hires_scanout` | live |
-| | DLSS 5 Neural Rendering | `[renderer] neural` | Linux: restart; Windows: live |
+| | DLSS 5 Neural Rendering | `[renderer] native_edge_fx` | `1` | 0, 1 | live | `XSG_GPU_NATIVE_EDGE_FX` | The characters' frame-reading soft-edge pass replayed at native resolution (sharp characters); 0 leaves it on the GS (blocky 1x pixels on characters, but the soft contact shadows under some of them). |
+| `[renderer] neural` | Linux: restart; Windows: live |
 | Game | FPS limit | `[game] fps_limit` | live (game process) |
 | | Play movies, Uncensored 3039C, English subtitles (3039C), Uncensored folder | `[game] movies, uncensored, uncensored_subs, uncensored_dir` | restart (uncensored: live, from the next time 3039C plays) |
 | | Audio, Sound driver | `[audio] enabled` (live), `sound_driver` (restart) | |

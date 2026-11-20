@@ -463,22 +463,34 @@ bool Veto(uint32_t fbp, const Vtx* v, int n) {
     return false;
 }
 
+/* [renderer] native_edge_fx (default 1): the characters' frame-reading soft-edge pass replayed at
+   native scale.  Live. */
+bool EdgeFx() {
+    const char* v = xsgcfg::CStr("renderer.native_edge_fx");
+    return !(v && *v == '0');
+}
+
 /* Defer this primitive (see g_ov)?  Records it when so. */
 bool Defer(const Vtx* v, int n, uint32_t type) {
     static const bool on = !(xsgcfg::CStr("debug.fx_defer") && std::atoi(xsgcfg::CStr("debug.fx_defer")) == 0);
     if (!on || g_in_native || !g_own) return false;
     const uint64_t prim = g.reg[0x00];
-    if (!Bits(prim, 6, 1)) return false;      // opaque: the ownership plane handles it
     const int c = Bits(prim, 9, 1);
     const uint64_t frame = g.reg[0x4c + c];
+    // an alpha-only triangle (the mask half of a frame-reading pair, below) is replayed even unblended
+    const bool alpha_mark = EdgeFx() && (Bits(frame, 32, 32) & 0x00ffffffu) == 0x00ffffffu && type >= 3 && type <= 5;
+    if (!Bits(prim, 6, 1) && !alpha_mark) return false;      // opaque: the ownership plane handles it
     if (Bits(frame, 32, 32) == 0xffffffffu) return false;
     const uint32_t fbp = Bits(frame, 0, 9);
     auto it = g_post.find(fbp);
     if (it == g_post.end() || it->second.nat_frame != g_frame || it->second.active) return false;
     // masked colour writes (the afterimage's alpha-bit marks) and destination-alpha tests depend on
     // exactly what the ownership GS has drawn: they stay on the GS (a pure alpha mark changes no colour)
-    if ((Bits(frame, 32, 32) & 0x00ffffffu) == 0x00ffffffu) return false;
-    if (Bits(frame, 32, 32) & 0x00ffffffu) { g_nrefuse[4]++; return Veto(fbp, v, n); }
+    // ...except triangles, which may be the mask half of a pair whose other half reads the frame
+    // (the characters' soft-edge pass): replayed in order, so the mark is in the native frame when
+    // the textured half tests it.
+    if ((Bits(frame, 32, 32) & 0x00ffffffu) == 0x00ffffffu && !alpha_mark) return false;
+    if ((Bits(frame, 32, 32) & 0x00ffffffu) && (Bits(frame, 32, 32) & 0x00ffffffu) != 0x00ffffffu) { g_nrefuse[4]++; return Veto(fbp, v, n); }
     if (Bits(g.reg[0x47 + c], 14, 1)) { g_nrefuse[4]++; return Veto(fbp, v, n); }
     if (!g_kick_rw) { g_nrefuse[0]++; return Veto(fbp, v, n); }
     if (type < 3 || type > 6) { g_nrefuse[1]++; return Veto(fbp, v, n); }   // points / lines stay on the GS
@@ -489,8 +501,24 @@ bool Defer(const Vtx* v, int n, uint32_t type) {
         const uint32_t tblocks = std::max(1u, (1u << tw) * (1u << th) * 4 / 256);
         // a render target's pages only when an upload replaced them since the GS last drew there
         const uint32_t tgen = xsgnative::TextureGenMin(tex0);
+        // The frame itself, exactly (its base, width and a 24/32-bit format): a frame read, which the
+        // replay does at native resolution (Record, kind 2) -- the characters' soft-edge pass draws
+        // their triangles again textured from the frame, and on the GS it left every character pixel
+        // it touched as blocky 1x pixels in the composite.
+        const uint32_t tpsm = Bits(tex0, 20, 6), tbw = Bits(tex0, 14, 6);
+        // Triangles only: the full-screen soft-focus sprites that read the frame stay on the GS as before
+        // (the replay leaves the frame-sized feedback out, and with it the floor shadows' tone).
+        // [renderer] native_edge_fx = 0 keeps them on the GS (blocky character edges, but the soft
+        // contact shadows under some characters, which the native-scale replay loses for now).
+        const bool frame_read = EdgeFx() && type >= 3 && type <= 5 && tbp == fbp * 32 && (tpsm == 0 || tpsm == 1) &&
+                                tbw == std::max(1u, Bits(frame, 16, 6));
+        // (its declared size, 512x512, reaches past the 448 rows into the next buffer; only the frame
+        // is sampled, so a frame read skips the overlap checks)
         for (uint32_t d : g_rendered)
-            if (Overlaps(tbp, tblocks, d * 32) && (d == fbp || tgen <= g_rt_gen[d])) { g_nrefuse[2]++; return Veto(fbp, v, n); }
+            if (!frame_read && Overlaps(tbp, tblocks, d * 32) && (d == fbp || tgen <= g_rt_gen[d])) {
+                g_nrefuse[2]++;
+                return Veto(fbp, v, n);
+            }
         if (Overlaps(tbp, tblocks, Bits(g.reg[0x4e + c], 0, 9) * 32)) { g_nrefuse[2]++; return Veto(fbp, v, n); }
     }
     PostFrame& ov = g_ov[fbp];
