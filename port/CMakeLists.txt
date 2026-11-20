@@ -80,12 +80,39 @@ execute_process(COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/script
 if(NOT XSG_ALIAS_RC EQUAL 0)
   message(FATAL_ERROR "unguarded alias views (wrap them in XSG_VIEW):\n${XSG_ALIAS_OUT}")
 endif()
+option(XSG_VU0_RUNS "Compile runs of VU0 macro ops to SSE (scripts/vu0_runs.py)" ON)
+set(XSG_VU0_RUN_SRCS "")
 foreach(unit IN LISTS XSG_UNITS)
   file(GLOB_RECURSE srcs CONFIGURE_DEPENDS "${XSG_ROOT}/src/${unit}/*.c")
   # src/main/nml_packet_add/ is an unreferenced work copy of a function that
   # nml_packet_add.c already defines; the PS2 build does not compile it.
   list(FILTER srcs EXCLUDE REGEX "/src/main/nml_packet_add/")
   list(SORT srcs)
+  # VU0 op runs compiled to SSE (scripts/vu0_runs.py): files with runs of VU0
+  # macro ops are built from a copy with each run replaced by one call into
+  # the generated vu0_runs.c; the source tree is not touched.
+  if(XSG_VU0_RUNS)
+    execute_process(COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/vu0_runs.py scan ${srcs}
+                    OUTPUT_VARIABLE run_srcs OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
+    string(REPLACE "\n" ";" run_srcs "${run_srcs}")
+    foreach(f IN LISTS run_srcs)
+      file(RELATIVE_PATH rel "${XSG_ROOT}" "${f}")
+      set(gen "${CMAKE_CURRENT_BINARY_DIR}/vu0gen/${rel}")
+      get_filename_component(gdir "${gen}" DIRECTORY)
+      get_filename_component(fdir "${f}" DIRECTORY)
+      file(MAKE_DIRECTORY "${gdir}")
+      add_custom_command(OUTPUT "${gen}"
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/vu0_runs.py rewrite "${f}" "${gen}"
+        DEPENDS "${f}" ${CMAKE_CURRENT_SOURCE_DIR}/scripts/vu0_runs.py VERBATIM)
+      set_source_files_properties("${gen}" PROPERTIES COMPILE_OPTIONS "-iquote;${fdir}")
+      list(TRANSFORM srcs REPLACE "^${f}$" "${gen}")
+      # link_xsg.py links every object in the unit's directory: drop the original's
+      file(REMOVE "${CMAKE_BINARY_DIR}/CMakeFiles/xsg_${unit}.dir${f}.o" "${CMAKE_BINARY_DIR}/CMakeFiles/xsg_${unit}.dir${f}.obj")
+      list(APPEND XSG_VU0_RUN_SRCS "${f}")
+    endforeach()
+  else()
+    file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/CMakeFiles/xsg_${unit}.dir/vu0gen")
+  endif()
   # Bisection aid: -DXSG_O0_REGEX=<regex> builds matching files at -O0.
   foreach(f IN LISTS srcs)
     if(XSG_O0_REGEX AND f MATCHES "${XSG_O0_REGEX}")
@@ -132,10 +159,18 @@ endif()
 # XSG_GPU_NATIVE fast path (gs_bridge.cpp): set-0 strip batches run the VU1 C
 # reference in place instead of the interpreter.  Same float rules as vu1.cpp.
 file(GLOB XSG_VU1REF_FAST CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/render/vu1_ref/*.c")
-add_library(xsg_runtime OBJECT ${XSG_RUNTIME_SRCS} ${XSG_DATA_DIR}/vu0_microcode.c ${XSG_VU1REF_FAST})
+set(XSG_VU0_RUNS_C "")
+if(XSG_VU0_RUNS)
+  set(XSG_VU0_RUNS_C "${CMAKE_CURRENT_BINARY_DIR}/vu0gen/vu0_runs.c")
+  add_custom_command(OUTPUT "${XSG_VU0_RUNS_C}"
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/vu0_runs.py runs "${XSG_VU0_RUNS_C}" ${XSG_VU0_RUN_SRCS}
+    DEPENDS ${XSG_VU0_RUN_SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/vu0_runs.py VERBATIM)
+  set_source_files_properties("${XSG_VU0_RUNS_C}" PROPERTIES COMPILE_OPTIONS "-O2;-msse2;-mfpmath=sse")
+endif()
+add_library(xsg_runtime OBJECT ${XSG_RUNTIME_SRCS} ${XSG_DATA_DIR}/vu0_microcode.c ${XSG_VU1REF_FAST} ${XSG_VU0_RUNS_C})
 target_include_directories(xsg_runtime PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/runtime")
-set_source_files_properties(${XSG_VU1REF_FAST} PROPERTIES COMPILE_OPTIONS "-O2;-msse2;-mfpmath=sse;-ffp-contract=off")
-set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c" PROPERTIES COMPILE_OPTIONS "-msse2;-mfpmath=sse")
+set_source_files_properties(${XSG_VU1REF_FAST} PROPERTIES COMPILE_OPTIONS "-O3;-msse2;-mfpmath=sse;-ffp-contract=off")
+set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c" PROPERTIES COMPILE_OPTIONS "-O2;-msse2;-mfpmath=sse")
 # Movie and IPU decoders: SSE float math with -fno-math-errno makes lrintf one cvtss2si.
 # Otherwise every rounded pixel is a call into the C library, and Windows' ucrtbase
 # lrintf is slow enough to hold the logo and the movies far below 60 fps (#3).

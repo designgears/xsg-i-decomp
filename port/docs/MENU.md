@@ -249,7 +249,7 @@ environment variable the setting took over; it is no longer read.
 | `[debug] mpg_trace` | `0` | 0, 1 | restart | `XSG_MPG_TRACE` | Trace MPEG uploads. |
 | `[debug] ipu_log` | (empty) | text | restart | `XSG_IPU_LOG` | IPU log level. |
 | `[debug] vu1` | (empty) | text | restart | `XSG_VU1` | 0 disables VU1 microprograms. |
-| `[debug] vu_fast` | (empty) | text | restart | `XSG_VU_FAST` | 0: reference VU1 interpreter instead of the fast path. |
+| `[debug] vu_fast` | (empty) | text | restart | `XSG_VU_FAST` | 0: reference VU interpreter instead of the fast path (VU1 and VU0 microprograms). |
 | `[debug] vu_flaglat` | (empty) | text | restart | `XSG_VU_FLAGLAT` | VU flag latency model. |
 | `[debug] vu_hist` | (empty) | text | restart | `XSG_VU_HIST` | VU1 opcode histogram. |
 | `[debug] vu_trace` | (empty) | text | restart | `XSG_VU_TRACE` | Trace N VU1 runs. |
@@ -275,6 +275,10 @@ environment variable the setting took over; it is no longer read.
 | `[debug] mv_view` | (empty) | text | restart | `XSG_GPU_MV_VIEW` | Motion vector view. |
 | `[debug] gpu_prof` | (empty) | text | restart | `XSG_GPU_PROF` | xsg-gpu profiler. |
 | `[debug] sample` | (empty) | text | restart | `XSG_SAMPLE` | Windows: log where the game thread spends its time. |
+| `[debug] vu0_ref` | (empty) | text | restart | `XSG_VU0_REF` | 0: run the VU0 sin/cos program on the VU interpreter instead of its C version. |
+| `[debug] vu0_ref_check` | (empty) | text | restart | `XSG_VU0_REF_CHECK` | 1: run the VU0 C program and the interpreter, log differences. |
+| `[debug] vu1_ref_check` | (empty) | text | restart | `XSG_VU1_REF_CHECK` | 1: run the VU1 C programs and the interpreter on the same input, log differences. |
+| `[debug] vu0_runs_check` | (empty) | text | restart | `XSG_VU0_RUNS_CHECK` | 1: run each compiled VU0 op run and its ops, log differences. |
 | `[debug] input_test` | (empty) | text | restart | `XSG_GPU_INPUT_TEST` | Synthetic SDL input events (STAGE10_INPUT.md). |
 | `[debug] menu_test` | (empty) | text | restart | `XSG_GPU_MENU_TEST` | Menu screenshot tour: at:per:WxH. |
 | `[debug] menu_test_dir` | (empty) | text | restart | `XSG_GPU_MENU_TEST_DIR` | Menu tour output folder. |

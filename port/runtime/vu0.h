@@ -136,6 +136,30 @@ XSG_MMI_DECL(pcpyh) XSG_MMI_DECL(pextlb) XSG_MMI_DECL(paddh) XSG_MMI_DECL(psubh)
 /* Coverage counter for translated blocks (XSG_VU0_STATS=1 prints at exit). */
 extern unsigned long long xsg_vu0_blocks;
 
+/* vu0_arith with constant operands (every translated call site): the op and
+   the vector/broadcast choice fold away here, leaving a direct call to an SSE
+   variant built in vu0.c (vu0_inline.h).  The game files themselves have no
+   SSE (-mno-sse).  vu0.c keeps the generic reference. */
+#if !defined(XSG_VU0_NO_INLINE) && !defined(__cplusplus)
+#define XSG_VU0_DECL(n) void xsg_vu0_##n##_v(int dest, int fd, int fs, int ft); \
+                        void xsg_vu0_##n##_b(int dest, int fd, int fs, int ft, int bc);
+XSG_VU0_DECL(add) XSG_VU0_DECL(sub) XSG_VU0_DECL(mul) XSG_VU0_DECL(madd)
+XSG_VU0_DECL(msub) XSG_VU0_DECL(max) XSG_VU0_DECL(mini)
+#undef XSG_VU0_DECL
+static __inline__ __attribute__((always_inline)) void xsg_vu0_arith_call(int op, int dest, int fd, int fs, int ft, int bc)
+{
+#define XSG_VU0_CASE(o, n) case o: if (bc == VU0_VEC) xsg_vu0_##n##_v(dest, fd, fs, ft); \
+                                    else xsg_vu0_##n##_b(dest, fd, fs, ft, bc); break;
+    switch (op) {
+    XSG_VU0_CASE(VU0_ADD, add) XSG_VU0_CASE(VU0_SUB, sub) XSG_VU0_CASE(VU0_MUL, mul)
+    XSG_VU0_CASE(VU0_MADD, madd) XSG_VU0_CASE(VU0_MSUB, msub) XSG_VU0_CASE(VU0_MAX, max)
+    default: if (bc == VU0_VEC) xsg_vu0_mini_v(dest, fd, fs, ft); else xsg_vu0_mini_b(dest, fd, fs, ft, bc); break;
+    }
+#undef XSG_VU0_CASE
+}
+#define vu0_arith(op, dest, fd, fs, ft, bc) xsg_vu0_arith_call(op, dest, fd, fs, ft, bc)
+#endif
+
 #ifdef __cplusplus
 }
 #endif

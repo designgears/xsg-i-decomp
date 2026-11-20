@@ -813,7 +813,7 @@ u32 PairSlow(const DP& d) {
 }
 
 /* --- lower */
-inline u8* QA(u32 q) { return reinterpret_cast<u8*>(uintptr_t(PS2_VU_BASE + 0xC000)) + ((q & 0x3ff) << 4); }
+inline u8* QA(u32 q) { return reinterpret_cast<u8*>(uintptr_t(PS2_VU_BASE + g_data_off)) + ((q & g_q_mask) << 4); }
 inline void LoadQV(const DP& d, u32 q) {
     Blend(d.ldst, _mm_loadu_si128(reinterpret_cast<const __m128i*>(QA(q))), d.ldmask);
 }
@@ -872,8 +872,8 @@ __attribute__((always_inline)) inline u32 LoMTIR(const DP& d) { SetVi(d.lit, s.v
 __attribute__((always_inline)) inline u32 LoMFP(const DP& d) { Blend(d.ldst, Bits(s.P), d.ldmask); return kNoBr; }
 __attribute__((always_inline)) inline u32 LoB(const DP& d) { return d.limm; }
 __attribute__((always_inline)) inline u32 LoBAL(const DP& d) { SetVi(d.lit, (d.pc + 16) / 8); return d.limm; }
-__attribute__((always_inline)) inline u32 LoJR(const DP& d) { return (u32(s.vi[d.lis]) * 8) & 0x3ff8; }
-__attribute__((always_inline)) inline u32 LoJALR(const DP& d) { const u32 t = (u32(s.vi[d.lis]) * 8) & 0x3ff8; SetVi(d.lit, (d.pc + 16) / 8); return t; }
+__attribute__((always_inline)) inline u32 LoJR(const DP& d) { return (u32(s.vi[d.lis]) * 8) & g_pc_mask; }
+__attribute__((always_inline)) inline u32 LoJALR(const DP& d) { const u32 t = (u32(s.vi[d.lis]) * 8) & g_pc_mask; SetVi(d.lit, (d.pc + 16) / 8); return t; }
 __attribute__((always_inline)) inline u32 LoIBEQ(const DP& d) { return s.vi[d.lit] == s.vi[d.lis] ? d.limm : kNoBr; }
 __attribute__((always_inline)) inline u32 LoIBNE(const DP& d) { return s.vi[d.lit] != s.vi[d.lis] ? d.limm : kNoBr; }
 __attribute__((always_inline)) inline u32 LoIBLTZ(const DP& d) { return std::int16_t(s.vi[d.lis]) < 0 ? d.limm : kNoBr; }
@@ -984,7 +984,7 @@ void DecodeLower(DP& d, u32 w, u32 pc, u8* vf, bool* slow, bool* event) {
     d.lilane = 0;
     for (int l = 0; l < 4; ++l) if (Lane(dest, l)) { d.lilane = u8(l); break; }
     const u32 imm11 = u32(Imm11(w));
-    const u32 btgt = (pc + 8 + imm11 * 8) & 0x3ff8;
+    const u32 btgt = (pc + 8 + imm11 * 8) & g_pc_mask;
     d.lo = LoSlow;
     *slow = false; *event = false;
     auto rd = [&](u32 r) { vf[r] |= kRd; };
@@ -1162,25 +1162,26 @@ void Decode(Prog& p, const u8* micro) {
     }
     for (u32 i = 0; i < 2048; ++i) AssignIds(p.dp[i]);
     // control may leave after a branch's delay slot and after the pair that follows an E bit
-    for (u32 i = 0; i < 2048; ++i) {
-        if (p.dp[i].is_branch || p.dp[i].ebit) p.dp[(i + 1) & 2047].leave = 1;
+    const u32 pm = g_pc_mask >> 3;   // pairs - 1 of this unit (VU1 2047, VU0 511)
+    for (u32 i = 0; i <= pm; ++i) {
+        if (p.dp[i].is_branch || p.dp[i].ebit) p.dp[(i + 1) & pm].leave = 1;
     }
     /* Liveness: the flag write at p is dead if the next write q follows in
        straight-line code (no leave in [p, q+lat-2]) and no event lands in
        [p+lat, q+lat-1]. Slow pairs always push (reference Commit). */
     const int lat = flag_latency;
-    for (u32 i = 0; i < 2048; ++i) {
+    for (u32 i = 0; i <= pm; ++i) {
         DP& d = p.dp[i];
         if (!d.is_push) continue;
         d.push = 1;
         if (d.lo == PairSlow) continue;
         for (int k = 1; k < 32; ++k) {
-            if (p.dp[(i + u32(k) - 1) & 2047].leave) break;   // control may not reach offset k
-            if (!p.dp[(i + u32(k)) & 2047].is_push) continue;
+            if (p.dp[(i + u32(k) - 1) & pm].leave) break;   // control may not reach offset k
+            if (!p.dp[(i + u32(k)) & pm].is_push) continue;
             // the next write q is at offset k
             bool ok = true;
-            for (int j = 0; j <= k + lat - 2 && ok; ++j) if (p.dp[(i + u32(j)) & 2047].leave) ok = false;
-            for (int j = lat; j <= k + lat - 1 && ok; ++j) if (p.dp[(i + u32(j)) & 2047].is_event) ok = false;
+            for (int j = 0; j <= k + lat - 2 && ok; ++j) if (p.dp[(i + u32(j)) & pm].leave) ok = false;
+            for (int j = lat; j <= k + lat - 1 && ok; ++j) if (p.dp[(i + u32(j)) & pm].is_event) ok = false;
             if (ok) d.push = 0;
             break;
         }
@@ -1188,7 +1189,7 @@ void Decode(Prog& p, const u8* micro) {
 }
 
 std::map<u64, Prog*> g_progs;
-Prog* g_prog = nullptr;
+Prog* g_prog_unit[2] = {nullptr, nullptr};   // the decoded program last run on VU1 [0] / VU0 [1]
 
 u64 HashMicro(const u8* m) {
     u64 h = 1469598103934665603ull;
@@ -1205,7 +1206,11 @@ Prog* Lookup(const u8* micro) {
         Decode(*it->second, micro);   // collision: re-decode in place
         return it->second;
     }
-    if (g_progs.size() >= 64) { for (auto& kv : g_progs) delete kv.second; g_progs.clear(); }
+    if (g_progs.size() >= 64) {
+        for (auto& kv : g_progs) delete kv.second;
+        g_progs.clear();
+        g_prog_unit[0] = g_prog_unit[1] = nullptr;   // the caller re-points its own
+    }
     Prog* p = new Prog;
     Decode(*p, micro);
     g_progs[h] = p;
@@ -1215,6 +1220,8 @@ Prog* Lookup(const u8* micro) {
 u64 RunFast(u32& pc) {
     const u8* micro = Micro();
     const u32* mw = reinterpret_cast<const u32*>(micro);
+    Prog*& g_prog = g_prog_unit[g_data_off != 0xC000];
+    const u32 pcm = g_pc_mask;
     if (!g_prog) g_prog = Lookup(micro);
     const DP* P = g_prog->dp;
     s.vf[0].u[0] = s.vf[0].u[1] = s.vf[0].u[2] = 0; s.vf[0].f[3] = 1.0f;
@@ -1231,7 +1238,7 @@ u64 RunFast(u32& pc) {
         }
         s.cycle++;
         if (s.q_busy | s.p_busy) LandQP(false);
-        pc = (pc + 8) & 0x3ff8;
+        pc = (pc + 8) & pcm;
         const bool take_branch = branch;
         const u32 target = btarget;
         if (d->pre) {
@@ -1334,7 +1341,7 @@ u64 Run(u32 pc, u32 top, u32 itop) {
     const bool fast_on = g_fast;
     u64 n = 0;
     const u64 limit = g_limit;
-    if (fast_on && g_data_off == 0xC000 && flag_latency >= 1 && lazy_flags && !trace_left && !hist_on) {
+    if (fast_on && flag_latency >= 1 && lazy_flags && !trace_left && !hist_on) {
         n = RunFast(pc);
     } else {
     bool branch = false, ending = false;

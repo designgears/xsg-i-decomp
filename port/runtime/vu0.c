@@ -8,6 +8,7 @@
  * results can differ in the last bit).  Macro mode has no pipeline: Q is
  * written at once, vwaitq is a no-op.
  */
+#define XSG_VU0_NO_INLINE   /* the out-of-line reference */
 #include "vu0.h"
 #include "xsg_settings.h"
 
@@ -362,10 +363,64 @@ static void load_micro(void)
     micro_loaded = 1;
 }
 
+int vu0_ref_callms(unsigned byte_addr);   /* render/vu1_ref/vu0_ref.c */
+
 void vu0_callms(unsigned int byte_addr)
 {
+    static int ref = -1, check;
     if (!micro_loaded) load_micro();
     callms_count++;
+    if (ref < 0) {
+        ref = !xsg_cfg("debug.vu0_ref") || atoi(xsg_cfg("debug.vu0_ref"));
+        check = xsg_cfg("debug.vu0_ref_check") && atoi(xsg_cfg("debug.vu0_ref_check"));
+    }
+    if (ref && !check) {
+        if (vu0_ref_callms(byte_addr)) return;   /* the C version of the program */
+    } else if (ref && check) {
+        /* both, compared: the interpreter's result is kept */
+        static unsigned long long n, bad;
+        static int swept;
+        if (!swept) {   /* first call: a sweep of inputs through both entries */
+            static const unsigned sp[] = {0, 0x80000000u, 1, 0x80000001u, 0x7f800000u, 0xff800000u, 0x7fc00000u,
+                                          0x7f7fffffu, 0xff7fffffu, 0x4f000000u, 0xcf000000u, 0x4b800000u};
+            const XsgVu0 save = V;
+            unsigned r = 1, sb = 0;
+            swept = 1;
+            for (int i = 0; i < 200000; ++i) {
+                r = r * 1103515245u + 12345u;
+                const unsigned x = i < 12 ? sp[i] : (i & 1) ? (r ^ (r << 7)) : (0x3f000000u + (r & 0x03ffffffu)) ^ (r & 0x80000000u);
+                for (unsigned e = 0x20; e <= 0xe8; e += 0xc8) {
+                    XsgVu0 c;
+                    V = save; V.vf[4].u[0] = x; V.status = r & 0xfff; V.mac = r >> 16;
+                    const XsgVu0 in = V;
+                    vu0_ref_callms(e);
+                    c = V;
+                    V = in;
+                    xsg_vu1_run_vu0(e);
+                    if (memcmp(&c, &V, sizeof c) && sb++ < 10)
+                        xsg_logf("[vu0] sweep 0x%x: vf4.x %08x -> vf1.x %08x / %08x vi1 %x / %x mac %04x / %04x status %03x / %03x\n",
+                                 e, x, c.vf[1].u[0], V.vf[1].u[0], c.vi[1], V.vi[1], c.mac, V.mac, c.status, V.status);
+                }
+            }
+            xsg_logf("[vu0] C program sweep: 400000 runs, %u differ\n", sb);
+            V = save;
+        }
+        const XsgVu0 in = V;
+        if (vu0_ref_callms(byte_addr)) {
+            const XsgVu0 c = V;
+            V = in;
+            xsg_vu1_run_vu0(byte_addr);
+            n++;
+            if (memcmp(&c, &V, sizeof c)) {
+                if (bad++ < 20)
+                    xsg_logf("[vu0] C program 0x%x differs: vf4.x %08x -> vf1.x %08x / %08x, vi1 %x / %x, mac %04x / %04x, "
+                             "status %03x / %03x, I %08x / %08x\n", byte_addr, in.vf[4].u[0], c.vf[1].u[0], V.vf[1].u[0],
+                             c.vi[1], V.vi[1], c.mac, V.mac, c.status, V.status, c.I, V.I);
+            }
+            if (n % 100000 == 0) xsg_logf("[vu0] C programs checked: %llu, %llu differ\n", n, bad);
+            return;
+        }
+    }
     xsg_vu1_run_vu0(byte_addr);
 }
 
@@ -403,3 +458,12 @@ static void __attribute__((destructor)) vu0_stats(void)
     if (e && atoi(e))
         fprintf(stderr, "[vu0] translated asm blocks run: %llu, vcallms: %llu\n", xsg_vu0_blocks, callms_count);
 }
+
+/* The per-op SSE variants vu0.h calls (vu0_inline.h): op and the vector or
+   broadcast operand fixed, so the decode and the lane loop are gone. */
+#include "vu0_inline.h"
+#define XSG_VU0_DEF(o, n) \
+    void xsg_vu0_##n##_v(int dest, int fd, int fs, int ft) { vu0_arith_inline(o, dest, fd, fs, ft, VU0_VEC); } \
+    void xsg_vu0_##n##_b(int dest, int fd, int fs, int ft, int bc) { vu0_arith_inline(o, dest, fd, fs, ft, bc); }
+XSG_VU0_DEF(VU0_ADD, add) XSG_VU0_DEF(VU0_SUB, sub) XSG_VU0_DEF(VU0_MUL, mul) XSG_VU0_DEF(VU0_MADD, madd)
+XSG_VU0_DEF(VU0_MSUB, msub) XSG_VU0_DEF(VU0_MAX, max) XSG_VU0_DEF(VU0_MINI, mini)

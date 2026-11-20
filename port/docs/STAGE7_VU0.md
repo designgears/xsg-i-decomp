@@ -179,3 +179,34 @@ There is no PS2-trace comparison yet.
    * the matrix stack being read before `Vu0CallMatrixStackUnit` ran.
 2. Hand-port `m_cam.c:326`.
 3. Bit-exact VU rounding (round toward zero) if a PS2 trace comparison shows drift.
+
+## Native VU0 (2026-11-20, #3)
+
+A battle-effect profile (the ST9001 tutorial battle, `native = 1`) had the game thread spend
+about a quarter of its time emulating VU0. None of it is emulated now:
+
+* **Microprograms.** The game runs only two VU0 entries, `vu0_callms(32)` (sin, micro 0x0020)
+  and `vu0_callms(232)` (cos, 0x00e8). Both are C in `render/vu1_ref/vu0_ref.c`, with the
+  interpreter's float rules and everything the program leaves behind (vf1-vf4.x, ACC.x, I,
+  vi1/vi2/vi15, MAC, status with the sticky bits). `[debug] vu0_ref = 0` uses the interpreter;
+  `[debug] vu0_ref_check = 1` runs both on every call (after a 400,000-input sweep) and logs any
+  difference. Any other entry still runs on the interpreter, now on its decoded fast path
+  (`RunFast` no longer assumes VU1's memory layout; each unit keeps its own decoded program).
+* **Macro op runs.** `scripts/vu0_runs.py` (CMake option `XSG_VU0_RUNS`, on) finds every run of
+  two or more consecutive `vu0_arith` / `vu0_move` / `vu0_mr32` calls in `src/` (225 runs, 143
+  distinct, 1148 of the 1318 `vu0_arith` call sites) and compiles each distinct run to one SSE
+  function in `build/vu0gen/vu0_runs.c`: registers stay in xmm registers, only what the run
+  changes is written back, with the final MAC and status. The affected game files are built from
+  copies in `build/vu0gen/` with each run replaced by one call (line numbers kept, `#line` to
+  the original); `src/` is not touched. `[debug] vu0_runs_check = 1` runs every run both ways and
+  logs any difference (165 million runs in a battle: none).
+* **Single ops.** A `vu0_arith` outside a run calls a per-op SSE variant (`xsg_vu0_<op>_v/_b`,
+  `vu0_inline.h`) chosen at compile time from its constant operands; the game files stay
+  without SSE (`-mno-sse`, see Stage 6). `tests/test_vu0_inline.c` checks the variants against
+  the generic `vu0_arith`, bit for bit.
+
+The VU1 C references (`render/vu1_ref`) use branchless float helpers, so the compiler vectorises
+their per-lane loops (`-O3`), and set 0's strip loop is written with the 4-lane helpers
+(`vu_float.h`, `*4`). `[debug] vu1_ref_check = 1` runs every covered VU1 program on both the
+reference and the interpreter and compares the GIF output and VU1 data memory (62 million runs
+over the opening cutscene and a battle: none differ).

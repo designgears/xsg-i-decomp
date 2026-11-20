@@ -188,27 +188,30 @@ static void strip_loop(Vu1Ref* r, int facing) {
     vu_f eye[4];
     memcpy(eye, VF(8), 16);
     if (n == 0) n = 0x10000;
+    /* Four lanes at a time (vu_float.h *4): the scalar steps, lane for lane. */
+    const vu_v4 m28 = vu_ld4(VF(28)), m29 = vu_ld4(VF(29)), m30 = vu_ld4(VF(30)), m31 = vu_ld4(VF(31));
+    const vu_v4 v24 = vu_ld4(VF(24)), v26 = vu_ld4(VF(26)), v27 = vu_ld4(VF(27));
+    const vu_v4 one4 = vu_bc4(ONE), f2554 = vu_bc4(F255);
+    const vu_v4 acc27 = vu_mul4(v27, one4);
     for (uint32_t i = 0; i < n; ++i) {
-        Q4 P = ld(r, p + i), T = ld(r, t + i), C = ld(r, c + i);
+        Q4 P = ld(r, p + i), T = ld(r, t + i);
         /* colour */
-        vu_f col[4];
-        int32_t coli[4];
-        for (int l = 0; l < 4; ++l) { col[l] = vu_min(vu_mul(C.v[l], VF(24)[l]), F255); coli[l] = vu_ftoi(col[l], 0); }
+        const vu_v4 coli = vu_ftoi4(vu_min4(vu_mul4(vu_ld4(vu1_ref_qw(r, c + i)), v24), f2554), 0);
         /* STQ source */
-        vu_f s4[3];
+        vu_f s4[4];
         s4[2] = vu_add(0, ONE);
         s4[1] = vu_add(0, T.v[3]);
         s4[0] = vu_add(0, P.v[3]);
         s4[0] = vu_add(s4[0], uv[0]);
         s4[1] = vu_add(s4[1], uv[1]);
+        s4[3] = 0;
         /* transform */
+        vu_v4 acc = vu_mul4(m28, vu_bc4(P.v[0]));
+        acc = vu_madd4(acc, m29, vu_bc4(P.v[1]));
+        acc = vu_madd4(acc, m30, vu_bc4(P.v[2]));
+        const vu_v4 clip4 = vu_madd4(acc, m31, one4);
         vu_f clip[4];
-        for (int l = 0; l < 4; ++l) {
-            vu_f acc = vu_mul(VF(28)[l], P.v[0]);
-            acc = vu_madd(acc, VF(29)[l], P.v[1]);
-            acc = vu_madd(acc, VF(30)[l], P.v[2]);
-            clip[l] = vu_madd(acc, VF(31)[l], ONE);
-        }
+        vu_st4(clip, clip4);
         uint32_t cj = vu_clip(clip);
         vu_f q = vu_div(ONE, clip[3]);
         uint32_t face = 0;
@@ -226,25 +229,25 @@ static void strip_loop(Vu1Ref* r, int facing) {
             fogf = vu_mul(fogv[3], q);
             fogf = vu_add(fogf, fogv[2]);
         } else {
-            vu_f acc = vu_mul(vu_mul(ONE, fogv[2]), ONE);   /* mulz.w vf3 = vf0*vf9z ; mula.w acc = vf3*vf0 */
-            fogf = vu_madd(acc, fogv[3], q);
+            vu_f acc1 = vu_mul(vu_mul(ONE, fogv[2]), ONE);   /* mulz.w vf3 = vf0*vf9z ; mula.w acc = vf3*vf0 */
+            fogf = vu_madd(acc1, fogv[3], q);
         }
         fogf = vu_max(fogf, fogv[0]);
         fogf = vu_min(fogf, fogv[1]);
-        vu_f scr[4];
-        clip[3] = ONE;   /* move.w vf1, vf0 */
-        for (int l = 0; l < 4; ++l) {
-            vu_f acc = vu_mul(VF(27)[l], ONE);
-            scr[l] = vu_madd(acc, vu_mul(clip[l], q), VF(26)[l]);
-        }
-        vu_f stq[3];
-        for (int l = 0; l < 3; ++l) stq[l] = vu_mul(s4[l], q);
+        /* move.w vf1, vf0 ; scr = (vf27 * 1) + (clip * q) * vf26 */
+        clip[3] = ONE;
+        const vu_v4 q4 = vu_bc4(q);
+        const vu_v4 scr4 = vu_madd4(acc27, vu_mul4(vu_ld4(clip), q4), v26);
+        const vu_v4 stq4 = vu_mul4(vu_ld4(s4), q4);
         vi5 = ((vi5 | face | clipw) << 1) & 0xffff;
         vu_f xyzf[4];
-        for (int l = 0; l < 3; ++l) xyzf[l] = (vu_f)vu_ftoi(scr[l], 4);
+        vu_st4(xyzf, vu_ftoi4(scr4, 4));
         xyzf[3] = xyzf_w(vu_ftoi(fogf, 4), vi5);
+        vu_f stq[4], colv[4];
+        vu_st4(stq, stq4);
+        vu_st4(colv, coli);
         st(r, o, stq, 14);
-        st(r, o + 1, (vu_f*)coli, 15);
+        st(r, o + 1, colv, 15);
         st(r, o + 2, xyzf, 15);
         o += 3;
     }
