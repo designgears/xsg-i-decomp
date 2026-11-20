@@ -9,6 +9,7 @@
 namespace xsgprof {
 bool g_on;
 uint64_t g_ns[kStages];
+double g_ns_per_tick = 1.0;
 double g_gpu_ms[4];
 uint64_t g_gpu_n;
 
@@ -21,7 +22,14 @@ uint64_t g_last;
 void Init() {
     const char* e = xsgcfg::CStr("debug.gpu_prof");
     g_on = e && *e && std::strcmp(e, "0") != 0;
-    if (g_on) g_last = Now();
+    if (g_on) {
+        /* TSC rate over 20 ms of steady_clock (an invariant TSC on any CPU this runs on) */
+        const uint64_t n0 = SteadyNs(), t0 = __rdtsc();
+        while (SteadyNs() - n0 < 20000000ull) {}
+        const uint64_t n1 = SteadyNs(), t1 = __rdtsc();
+        if (t1 > t0) g_ns_per_tick = double(n1 - n0) / double(t1 - t0);
+        g_last = Now();
+    }
 }
 
 void Vsync(uint32_t frame) {

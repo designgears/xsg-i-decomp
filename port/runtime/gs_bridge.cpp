@@ -651,6 +651,77 @@ bool NativeSet0Lit(u32 pc, u32 top, u32 itop) {
     return true;
 }
 
+/* [debug] vu1_ref_check = 1: every VU1 run the C references cover also runs on
+   the interpreter; the GIF output, the registers and VU1 data memory are
+   compared (the interpreter's result is used).  For checking changes to
+   render/vu1_ref. */
+bool RefCheck(u32 pc, u32 top, u32 itop) {
+    static Vu1Ref* R = static_cast<Vu1Ref*>(std::calloc(1, sizeof(Vu1Ref)));
+    static u8* copy = static_cast<u8*>(std::malloc(16384));
+    static u32 gen = 0;
+    static int set = -1;
+    static unsigned long long n, bad;
+    if (gen != g_micro_gen) {
+        gen = g_micro_gen;
+        set = (Crc(Vu1Micro(), 0x2458, 0xffffffffu) ^ 0xffffffffu) == 0x9dc1acd8u ? 0
+            : (Crc(Vu1Micro(), 0x3a68, 0xffffffffu) ^ 0xffffffffu) == 0x9d68d149u ? 2 : -1;
+    }
+    if (set < 0) return false;
+    xsgvu::SaveRegs(R->regs);
+    const Vu1CapRegs in = R->regs;
+    std::memcpy(copy, Vu1Data(), 16384);
+    R->memp = copy;
+    R->set = set;
+    R->pc = pc;
+    R->top = top;
+    R->itop = itop;
+    const unsigned csr = vu_ref_fpu_enter();
+    const int rc = vu1_ref_run(R, nullptr);
+    vu_ref_fpu_leave(csr);
+    if (rc != VU1REF_OK) return false;
+    std::vector<u8> ref;
+    for (u32 k = 0; k < R->nkick; ++k) ref.insert(ref.end(), R->kick[k].qw, R->kick[k].qw + R->kick[k].nqw * 16);
+    /* the interpreter, its kicks captured and passed on */
+    static std::vector<u8>* sink;
+    std::vector<u8> got;
+    sink = &got;
+    xsgvu::LoadRegs(in);
+    xsgvu::SetKick([](const u8* data, u32 q) {
+        const u32 q0 = q;
+        for (u32 guard = 0; guard < 1024; ++guard) {
+            u64 lo;
+            std::memcpy(&lo, data + (q & 0x3ff) * 16, 8);
+            const u32 nloop = u32(lo & 0x7fff), eop = u32(lo >> 15) & 1, flg = u32(lo >> 58) & 3;
+            u32 nreg = u32(lo >> 60) & 15;
+            if (!nreg) nreg = 16;
+            const u32 body = flg == 0 ? nloop * nreg : flg == 1 ? (nloop * nreg + 1) / 2 : nloop;
+            if (body > 1024) break;
+            for (u32 i = 0; i <= body; ++i, ++q) sink->insert(sink->end(), data + (q & 0x3ff) * 16, data + (q & 0x3ff) * 16 + 16);
+            if (eop) break;
+        }
+        Path1Kick(data, q0);
+    });
+    xsgvu::Run(pc, top, itop);
+    xsgvu::SetKick(Path1Kick);
+    Vu1CapRegs out;
+    xsgvu::SaveRegs(out);
+    n++;
+    const bool kdiff = ref != got;
+    const bool mdiff = std::memcmp(copy, Vu1Data(), 16384) != 0;
+    const bool rdiff = std::memcmp(out.vf, R->regs.vf, sizeof out.vf) || std::memcmp(out.vi, R->regs.vi, sizeof out.vi);
+    /* the references keep the microcode's temporaries only as far as later runs read them:
+       registers are reported with a difference, not counted as one */
+    if ((kdiff || mdiff) && bad++ < 20) {
+        size_t at = 0;
+        while (at < std::min(ref.size(), got.size()) && ref[at] == got[at]) ++at;
+        xsg_logf("[vu1ref] set %d pc 0x%x loop 0x%x: kicks %s (%zu / %zu bytes, first at %zu), memory %s, regs %s\n", set, pc,
+                 (in.vi[15] & 0xffff) * 8, kdiff ? "differ" : "same", ref.size(), got.size(), at, mdiff ? "differs" : "same",
+                 rdiff ? "differ" : "same");
+    }
+    if (n % 100000 == 0) xsg_logf("[vu1ref] checked %llu runs, %llu differ\n", n, bad);
+    return true;
+}
+
 void RunVu1(u32 pc) {
     // TOP/ITOP as VIF1 hands them over; then the double buffer flips.
     const u32 top = vif.tops, itop = vif.itops;
@@ -659,6 +730,8 @@ void RunVu1(u32 pc) {
     static bool init = false;
     if (!init) { init = true; xsgvu::SetKick(Path1Kick); }
     static const bool off = xsg_cfg("debug.vu1") && !std::atoi(xsg_cfg("debug.vu1"));
+    static const bool ref_check = xsg_cfg("debug.vu1_ref_check") && std::atoi(xsg_cfg("debug.vu1_ref_check"));
+    if (!off && ref_check && RefCheck(pc, top, itop)) return;
     g_native_msgs = g_mode == Mode::Gpu && NativeOn();
     if (!off && (NativeStrip(pc, top, itop) || NativeSkin(pc, top, itop) || NativeSet0Lit(pc, top, itop))) return;
     if (!off) xsgvu::Run(pc, top, itop);
@@ -775,6 +848,17 @@ void VifCode(u32 w) {
    consumed (0 = take the word-by-word path). */
 u32 VifBulk(const u8* p, u32 words) {
     u32 n = std::min(words, vif.want);
+    if (vif.kind == 1) {
+        /* DIRECT/DIRECTHL: whole quadwords to the GIF in one block (most of the
+           VIF stream in battle effects; word by word it was the game thread's
+           top function).  A partial quadword keeps the per-word path. */
+        if (vif.gif_n != 0 || n < 4) return 0;
+        const u32 q = n / 4;
+        GifSend(2, p, q);
+        st.direct_qw += q;
+        vif.want -= q * 4;
+        return q * 4;
+    }
     if (vif.kind == 2) {
         u8* m = Vu1Micro();
         for (u32 i = 0; i < n; ++i) { std::memcpy(m + (vif.addr & 0x3ffc), p + 4 * i, 4); vif.addr += 4; }
@@ -815,7 +899,7 @@ u32 VifBulk(const u8* p, u32 words) {
 void VifWords(const u8* p, u32 words) {
     for (u32 i = 0; i < words;) {
         if (vif.want) {
-            if (vif.kind == 2 || vif.kind == 3) {
+            if (vif.kind >= 1 && vif.kind <= 3) {
                 const u32 n = VifBulk(p + i * 4, words - i);
                 if (n) { i += n; continue; }
             }

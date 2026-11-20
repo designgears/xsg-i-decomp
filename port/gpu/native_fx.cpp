@@ -977,7 +977,7 @@ void SeedOwn(const uint8_t* vram) {
 }
 
 void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterface& gs,
-         const std::function<void(const uint8_t*)>& pre) {
+         void (*pre)(void* ctx, const uint8_t* q), void* ctx) {
     path &= 3;
     PathParse& p = g_path[path];
     OwnPath(path);
@@ -987,7 +987,7 @@ void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterfa
     if (g_obuf.capacity() < g_obuf.size() + len)   // one qword out per qword in: no growth inside the loop
         g_obuf.reserve(std::max(g_obuf.capacity() * 2, g_obuf.size() + len + (256u << 10)));
     for (uint32_t i = 0; i + 16 <= len; i += 16) {
-        if (pre) pre(data + i);
+        if (pre) pre(ctx, data + i);
         Qword(path, p, data + i, oq);
         if (g_snap_req) {
             g_snap_req = false;

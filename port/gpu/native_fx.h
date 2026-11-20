@@ -41,7 +41,7 @@ bool Init(Vulkan::Device* dev);
    mirror), so a draw recorded mid-message sees the textures uploaded before it in that message,
    not the last upload of the message (one texture area is reloaded many times per message). */
 void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterface& gs,
-         const std::function<void(const uint8_t*)>& pre = nullptr);
+         void (*pre)(void* ctx, const uint8_t* q) = nullptr, void* ctx = nullptr);
 /* GPU_MSG_NATIVE arrived: the next `ntags` PATH1 GIF tags are that batch's
    output (set 0: one; set-2 two-pass programs: both tags of their packet). */
 void NativeNext(uint32_t ntags = 1);

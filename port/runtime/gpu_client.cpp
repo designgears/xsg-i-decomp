@@ -98,7 +98,14 @@ void CheckChild() {
 }
 #endif
 
-void Publish() {
+/* Make the ring up to wpos visible to xsg-gpu.  A full (fenced) publish per
+   message was ~3% of the game thread: GIF chunks and native messages publish
+   lazily, every 64 KB or at once when the renderer is waiting for data;
+   control messages and a full ring publish at once (force). */
+u32 published;
+void Publish(bool force = false) {
+    if (!force && wpos - published < 65536u && !__atomic_load_n(&shm->wpos_waiting, __ATOMIC_RELAXED)) return;
+    published = wpos;
     __atomic_store_n(&shm->wpos, wpos, __ATOMIC_SEQ_CST);
     if (__atomic_load_n(&shm->wpos_waiting, __ATOMIC_SEQ_CST)) Futex(&shm->wpos, FUTEX_WAKE, 1, nullptr);
 }
@@ -112,6 +119,7 @@ void Reserve(u32 n) {
         u32 rpos = __atomic_load_n(&shm->rpos, __ATOMIC_ACQUIRE);
         if (XSG_GPU_RING - (wpos - rpos) >= need) break;
         stalls++;
+        Publish(true);   // the renderer must see what is queued to make room
         __atomic_store_n(&shm->rpos_waiting, 1u, __ATOMIC_SEQ_CST);
         rpos = __atomic_load_n(&shm->rpos, __ATOMIC_SEQ_CST);
         if (XSG_GPU_RING - (wpos - rpos) < need) {
@@ -146,7 +154,7 @@ void Send(u32 type, u32 a, u32 b, const void* payload, u32 len) {
     std::memcpy(ring + (wpos & kMask), &h, sizeof h);
     if (len) std::memcpy(ring + ((wpos + 16) & kMask), payload, len);
     wpos += 16 + padded;
-    Publish();
+    Publish(type != GPU_MSG_NATIVE);
 }
 
 void WaitReply(u32 s) {
@@ -457,7 +465,7 @@ void ReadFifo(void* dst, u32 qwords) {
     }
 }
 
-void Flush() { Close(); }
+void Flush() { Close(); Publish(true); }
 
 void Native(u32 kind, u32 nvert, const void* payload, u32 len) { Send(GPU_MSG_NATIVE, kind, nvert, payload, len); }
 

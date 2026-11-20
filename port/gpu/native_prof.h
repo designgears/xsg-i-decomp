@@ -9,6 +9,11 @@
 
 #include <chrono>
 #include <cstdint>
+#ifdef _MSC_VER
+#include <intrin.h>
+#else
+#include <x86intrin.h>
+#endif
 
 namespace xsgprof {
 
@@ -37,10 +42,15 @@ extern uint64_t g_ns[kStages];
 extern double g_gpu_ms[4];   // live pass GPU time, summed: Sx render, 1x render (colour rule only), composite+replay+mv
 extern uint64_t g_gpu_n;
 
-inline uint64_t Now() {
+/* Nanoseconds from the CPU's time-stamp counter (a few cycles; the profile
+   scopes run per message, and steady_clock was ~8% of xsg-gpu with the
+   profiler on).  g_ns_per_tick is calibrated against steady_clock by Init. */
+extern double g_ns_per_tick;
+inline uint64_t SteadyNs() {
     return uint64_t(std::chrono::duration_cast<std::chrono::nanoseconds>(
                         std::chrono::steady_clock::now().time_since_epoch()).count());
 }
+inline uint64_t Now() { return uint64_t(double(__rdtsc()) * g_ns_per_tick); }
 
 struct Scope {
     Stage s;

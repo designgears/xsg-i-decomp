@@ -182,13 +182,35 @@ void ClutLoad(uint64_t tex0) {
     const bool c32 = fmt == PSMCT32 || fmt == PSMCT24;
     const uint32_t count = eight ? 256 : 16;
     const uint32_t base = eight ? 0 : (c32 ? (csa & 15) : csa) * 16;
+    /* The palette's entries as read from the mirror, cached while its pages
+       saw no upload: most loads re-read an unchanged palette, and the swizzled
+       reads were ~6% of xsg-gpu's thread in battle effects. */
+    struct ClutRaw { uint64_t key = ~0ull; uint32_t gen = 0; uint32_t raw[256]; };
+    static ClutRaw cache[64];
+    const uint64_t key = uint64_t(cbp) | uint64_t(fmt) << 14 | uint64_t(eight) << 20;
+    const uint32_t cp = cbp / 32;
+    const uint32_t gen = std::max(g_page_gen[cp & 511], g_page_gen[(cp + 1) & 511]);
+    /* The same palette into the same slots as the load before: nothing changes. */
+    static uint64_t last_key = ~0ull;
+    static uint32_t last_gen, last_base;
+    if (key == last_key && gen == last_gen && base == last_base && !g_xfer.on) return;
+    last_key = key;
+    last_gen = gen;
+    last_base = base;
+    ClutRaw& c = cache[(key * 0x9E3779B97F4A7C15ull) >> 58];
+    if (c.key != key || c.gen != gen || g_xfer.on) {   // (an upload in progress: its pages are still changing)
+        for (uint32_t i = 0; i < count; ++i) {
+            uint32_t x, y, nib = 0;
+            if (eight) { const uint32_t p = (i & 0xE7) | ((i & 0x08) << 1) | ((i & 0x10) >> 1); x = p % 16; y = p / 16; }
+            else { x = i % 8; y = i / 8; }
+            const uint32_t ad = Memory::Address(cbp, 1, x, y, fmt, &nib) & 0x3fffff;
+            std::memcpy(&c.raw[i], g_mem.data() + ad, 4);
+        }
+        c.key = key;
+        c.gen = gen;
+    }
     for (uint32_t i = 0; i < count; ++i) {
-        uint32_t x, y, nib = 0;
-        if (eight) { const uint32_t p = (i & 0xE7) | ((i & 0x08) << 1) | ((i & 0x10) >> 1); x = p % 16; y = p / 16; }
-        else { x = i % 8; y = i / 8; }
-        const uint32_t ad = Memory::Address(cbp, 1, x, y, fmt, &nib) & 0x3fffff;
-        uint32_t raw;
-        std::memcpy(&raw, g_mem.data() + ad, 4);
+        const uint32_t raw = c.raw[i];
         const uint32_t b = (base + i) & 511;
         if (c32) {
             g_cbuf.slot[b & 255] = uint16_t(raw);
@@ -1507,7 +1529,8 @@ bool On() { return g_on; }
 void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterface& gs) {
     PathParse& p = g_path[path & 3];
     // qword by qword together with the effect parser, so its draws see the uploads before them
-    xsgfx::Gif(path, data, len, gs, [&p](const uint8_t* q) { GifQword(p, q); });
+    // the GIF state tracker, per qword ahead of the effect parser (a plain function pointer: per 16 bytes)
+    xsgfx::Gif(path, data, len, gs, [](void* c, const uint8_t* q) { GifQword(*static_cast<PathParse*>(c), q); }, &p);
 }
 
 namespace {
