@@ -1406,6 +1406,8 @@ void OverlayColour(const Surface& sf, std::vector<uint32_t>& gs) {
     const uint32_t mask = c16 ? 0xf8f8f8u : 0xffffffu;
     static std::vector<uint8_t> veto;
     veto.assign(size_t(sf.w) * sf.h, 0);
+    const size_t n = size_t(sf.w) * sf.h;
+    const bool zplane = gs.size() >= 2 * n;   // DecodeGs: colour, then Z
     if (std::getenv("XSG_FX_OVLOG")) {
         static int n;
         if (n++ % 120 == 0) {
@@ -1428,6 +1430,11 @@ void OverlayColour(const Surface& sf, std::vector<uint32_t>& gs) {
                 const uint32_t c = GsPixel(v, sf.fbp, sf.fbw, sf.psm, uint32_t(x), uint32_t(y));
                 if ((c & mask) == (m & mask) || (c & mask) == (m2 & mask)) continue;   // native: the composite's anyway
                 gs[size_t(y) * sf.w + x] = c;
+                // and its depth: the main GS's Z holds the deferred draws' own Z, so a replayed
+                // draw failed its own Z test against it (menu text: each glyph is drawn with Z
+                // one above its shadow, GREATER; the glyph failed and the 1x text showed through,
+                // dark under the replayed shadows)
+                if (zplane) gs[n + size_t(y) * sf.w + x] = GsZ(v, sf.zbp, sf.fbw, sf.zpsm, uint32_t(x), uint32_t(y));
             }
     }
 }
