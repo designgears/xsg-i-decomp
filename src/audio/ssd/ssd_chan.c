@@ -666,8 +666,17 @@ void SsdKeyonChannelWave(SsdChannel *channel, SsdMidiEvent *event)
 {
     SsdWave *wave = channel->wave_data;
     SsdWaveBank *bank = channel->bank_data;
-    unsigned int sample_address = wave->sample_address;
-    SsdVoice *voice = SsdGetKeyonVoice(channel, &channel->voice_range);
+    unsigned int sample_address;
+    SsdVoice *voice;
+
+#ifdef PORT_HOST
+    /* A reset channel is wave type with no wave chosen yet. A note on it read
+     * IOP address 0 on the PS2 (harmless); on the host it is a null pointer. */
+    if (wave == 0 || bank == 0)
+        return;
+#endif
+    sample_address = wave->sample_address;
+    voice = SsdGetKeyonVoice(channel, &channel->voice_range);
 
     if (voice != 0) {
         if ((channel->flags & 2) == 0) {
