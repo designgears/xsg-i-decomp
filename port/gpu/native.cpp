@@ -150,7 +150,17 @@ struct PathParse {
     uint32_t left = 0;      // qwords (PACKED/REGLIST) or IMAGE qwords still to come
     uint32_t flg = 0, nreg = 0, idx = 0;
     uint64_t regs = 0;
+    bool skip = false;      // the tag writes no register tracked here (vertex data): its qwords are skipped
 };
+/* A PACKED / REGLIST tag reaches a register this tracker reads: PRIM (0), TEX0 (6, 7),
+   CLAMP (8, 9); PACKED also A+D (0xe).  Others only set vertex registers nothing reads. */
+bool TagTracked(uint32_t flg, uint32_t nreg, uint64_t regs) {
+    for (uint32_t k = 0; k < nreg; ++k) {
+        const uint32_t d = uint32_t(regs >> (4 * k)) & 15;
+        if (d == 0 || (d >= 6 && d <= 9) || (flg == 0 && d == 0xe)) return true;
+    }
+    return false;
+}
 PathParse g_path[4];
 
 /* The GS's CLUT buffer: 512 halfword slots (a 32-bit entry: low half at slot b, high at
@@ -282,9 +292,11 @@ void GifQword(PathParse& p, const uint8_t* q) {
         if (p.flg == 0) p.left = nloop * p.nreg;
         else if (p.flg == 1) p.left = (nloop * p.nreg + 1) / 2;
         else p.left = nloop;
+        p.skip = p.flg < 2 && !TagTracked(p.flg, p.nreg, p.regs);
         return;
     }
     p.left--;
+    if (p.skip) return;
     if (p.flg >= 2) {   // IMAGE
         XferQword(q);
         return;

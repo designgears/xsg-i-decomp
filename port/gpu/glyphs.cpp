@@ -36,6 +36,7 @@ uint32_t Bits(uint64_t v, int lo, int n) { return uint32_t((v >> lo) & ((1ull <<
 struct Path {
     uint32_t left = 0, nreg = 0, idx = 0, flg = 0;
     uint64_t regs = 0;
+    bool skip = false;   // a tag with nothing for this parser (no log: no A+D)
 } g_path[4];
 uint64_t g_bitbltbuf, g_trxpos, g_trxreg;
 uint64_t g_prim, g_tex0[2], g_uv, g_texa;
@@ -230,6 +231,20 @@ void Feed(uint32_t path, const uint8_t* data, uint32_t len, std::vector<uint8_t>
             p.regs = hi;
             p.idx = 0;
             p.left = p.flg == 0 ? nloop * p.nreg : p.flg == 1 ? (nloop * p.nreg + 1) / 2 : nloop;
+            /* Without the log only A+D writes (the transfer registers) matter: a REGLIST
+               tag cannot reach them, a PACKED one only through an A+D slot. */
+            p.skip = false;
+            if (!g_log && p.flg < 2) {
+                bool ad = false;
+                for (uint32_t k = 0; k < p.nreg && !ad; ++k) ad = p.flg == 0 && ((p.regs >> (4 * k)) & 15) == 0xe;
+                p.skip = !ad;
+            }
+            continue;
+        }
+        if (p.skip) {   // its whole body at once
+            const uint32_t n = std::min<uint32_t>(p.left, (len - i) / 16);
+            p.left -= n;
+            i += (n - 1) * 16;
             continue;
         }
         if (p.flg >= 2 && !g_x.on) {   // IMAGE nobody captures: skip it whole (most of the stream's bytes)
