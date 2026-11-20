@@ -309,6 +309,11 @@ void NativeKey(u32* key, u32* occ) {
 void KickRef(const Vu1Ref* R, u32 k) {
     const Vu1RefKick& kk = R->kick[k];
     st.p1_packets++;
+    if (!g_soft) {   // gpu: one ring append for the packet, as Path1Kick does
+        if (kk.nqw) xsggpu::GifBlock(1, kk.qw, kk.nqw);
+        st.p1_qw += kk.nqw;
+        return;
+    }
     for (u32 i = 0; i < kk.nqw; ++i) {
         u64 lo, hi;
         std::memcpy(&lo, kk.qw + 16 * i, 8);
@@ -317,6 +322,11 @@ void KickRef(const Vu1Ref* R, u32 k) {
     }
     st.p1_qw += kk.nqw;
 }
+
+/* The C references (render/vu1_ref, bit-exact with the interpreter) run the VU1
+   programs they cover whatever the renderer; the native renderer's messages go
+   out only when it is on (g_native_msgs, set per run by RunVu1). */
+bool g_native_msgs = false;
 
 int NativeOn() {   /* live: re-read after each settings.ini reload */
     static unsigned gen = ~0u;
@@ -388,6 +398,10 @@ bool NativeStrip(u32 pc, u32 top, u32 itop) {
         xsgvu::GetStats().runs++;
     }
 
+    if (!g_native_msgs) {
+        for (u32 k = 0; k < R->nkick; ++k) KickRef(R, k);
+        return true;
+    }
     static std::vector<u8> buf;
     buf.resize(sizeof(GpuNativeBatch) + n * sizeof(GpuNativeVertex));
     GpuNativeBatch* b = reinterpret_cast<GpuNativeBatch*>(buf.data());
@@ -472,7 +486,7 @@ bool NativeSkin(u32 pc, u32 top, u32 itop) {
     xsgvu::LoadRegs(R->regs);
     xsgvu::GetStats().runs++;
     const bool env = loop == 0x1268 || loop == 0x2378 || loop == 0x3550;
-    if (vb) {
+    if (vb && g_native_msgs) {
         static u8 pal[GPU_SKIN_PAL_NQW * 16];
         static u32 palseq;
         if (!palseq || std::memcmp(pal, pal_in, sizeof pal)) {
@@ -529,7 +543,7 @@ bool NativeSkin(u32 pc, u32 top, u32 itop) {
         xsggpu::Native(GPU_NATIVE_SET2, n, buf.data(), u32(buf.size()));
     }
     for (u32 k = 0; k < R->nkick; ++k) {
-        if (vb && env && k == 3 && R->nkick == 6) xsggpu::Native(GPU_NATIVE_SET2_ENV, 0, nullptr, 0);
+        if (vb && g_native_msgs && env && k == 3 && R->nkick == 6) xsggpu::Native(GPU_NATIVE_SET2_ENV, 0, nullptr, 0);
         KickRef(R, k);
     }
     return true;
@@ -579,7 +593,7 @@ bool NativeSet0Lit(u32 pc, u32 top, u32 itop) {
     xsgvu::LoadRegs(R->regs);
     xsgvu::GetStats().runs++;
     const bool env = loop == 0x1fa0;
-    if (vb) {
+    if (vb && g_native_msgs) {
         const u32 n = hx & 0x7fff;
         static std::vector<u8> buf;
         const u32 nbits = (n + 31) / 32;
@@ -631,7 +645,7 @@ bool NativeSet0Lit(u32 pc, u32 top, u32 itop) {
         xsggpu::Native(GPU_NATIVE_SET0_LIT, n, buf.data(), u32(buf.size()));
     }
     for (u32 k = 0; k < R->nkick; ++k) {
-        if (vb && env && k == 3 && R->nkick == 6) xsggpu::Native(GPU_NATIVE_SET2_ENV, 0, nullptr, 0);
+        if (vb && g_native_msgs && env && k == 3 && R->nkick == 6) xsggpu::Native(GPU_NATIVE_SET2_ENV, 0, nullptr, 0);
         KickRef(R, k);
     }
     return true;
@@ -645,8 +659,8 @@ void RunVu1(u32 pc) {
     static bool init = false;
     if (!init) { init = true; xsgvu::SetKick(Path1Kick); }
     static const bool off = xsg_cfg("debug.vu1") && !std::atoi(xsg_cfg("debug.vu1"));
-    if (!off && g_mode == Mode::Gpu && NativeOn() && (NativeStrip(pc, top, itop) || NativeSkin(pc, top, itop) ||
-                                                        NativeSet0Lit(pc, top, itop))) return;
+    g_native_msgs = g_mode == Mode::Gpu && NativeOn();
+    if (!off && (NativeStrip(pc, top, itop) || NativeSkin(pc, top, itop) || NativeSet0Lit(pc, top, itop))) return;
     if (!off) xsgvu::Run(pc, top, itop);
 }
 
