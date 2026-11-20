@@ -598,6 +598,16 @@ extern int sceCdLayerSearchFile(CdFilePosition *position, signed char *name, uns
 extern int sceOpen(const char *path, int flags, ...);
 extern int xglHddCheck(void);
 
+/* An archive entry the lookup may use.  PORT_HOST: there is no PS2 hard disk, so
+   archives a loaded save marks as installed on it (state 2: PCSX2 saves made with
+   the HDD install on) are read from the disc instead; on the PS2 a failing
+   xglHddCheck retries the lookup, which here would recurse forever (#3). */
+#ifdef PORT_HOST
+#define ARC_USABLE(e) ((e)->state != 0xff && (e)->state != 2)
+#else
+#define ARC_USABLE(e) ((e)->state != 0xff)
+#endif
+
 static int xglCdGetFilePos(CdFilePosition *file_position, const char *name,
                                        void (*callback)(int event, int value))
 {
@@ -626,25 +636,25 @@ static int xglCdGetFilePos(CdFilePosition *file_position, const char *name,
     }
     for (;;) {
         entry = (CdArcView *)&ArcHeader[0];
-        if (entry->state != 0xff && xglCdGetFilePosSub((CdPathPos *)entry, (signed char *)name) != 0) {
+        if (ARC_USABLE(entry) && xglCdGetFilePosSub((CdPathPos *)entry, (signed char *)name) != 0) {
             name = arcname_1;
             position->source = entry->state;
             break;
         }
         entry = (CdArcView *)&D_0093DC58;
-        if (entry->state != 0xff && xglCdGetFilePosSub((CdPathPos *)entry, (signed char *)name) != 0) {
+        if (ARC_USABLE(entry) && xglCdGetFilePosSub((CdPathPos *)entry, (signed char *)name) != 0) {
             name = arcname_2;
             position->source = entry->state;
             goto resolved;
         }
         entry++;
-        if (entry->state != 0xff && xglCdGetFilePosSub((CdPathPos *)entry, (signed char *)name) != 0) {
+        if (ARC_USABLE(entry) && xglCdGetFilePosSub((CdPathPos *)entry, (signed char *)name) != 0) {
             name = arcname_3;
             position->source = entry->state;
             goto resolved;
         }
         entry++;
-        if (entry->state != 0xff && xglCdGetFilePosSub((CdPathPos *)entry, (signed char *)name) != 0) {
+        if (ARC_USABLE(entry) && xglCdGetFilePosSub((CdPathPos *)entry, (signed char *)name) != 0) {
             name = arcname_4;
             position->source = entry->state;
             goto resolved;

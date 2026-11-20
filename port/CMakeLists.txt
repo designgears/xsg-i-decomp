@@ -136,6 +136,10 @@ add_library(xsg_runtime OBJECT ${XSG_RUNTIME_SRCS} ${XSG_DATA_DIR}/vu0_microcode
 target_include_directories(xsg_runtime PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/runtime")
 set_source_files_properties(${XSG_VU1REF_FAST} PROPERTIES COMPILE_OPTIONS "-O2;-msse2;-mfpmath=sse;-ffp-contract=off")
 set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c" PROPERTIES COMPILE_OPTIONS "-msse2;-mfpmath=sse")
+# Movie and IPU decoders: SSE float math with -fno-math-errno makes lrintf one cvtss2si.
+# Otherwise every rounded pixel is a call into the C library, and Windows' ucrtbase
+# lrintf is slow enough to hold the logo and the movies far below 60 fps (#3).
+set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/runtime/mpeg2dec.c" PROPERTIES COMPILE_OPTIONS "-O2;-msse2;-mfpmath=sse;-fno-math-errno")
 target_compile_options(xsg_runtime PRIVATE -m32 -std=gnu11 -D_FILE_OFFSET_BITS=64 -O1 -g -Wall -Wno-unused-parameter
   -fno-pic -fno-stack-protector -fno-omit-frame-pointer)
 # XSG_PACKAGED (port/packaging): no source/build-tree paths compiled in.  XSG_GAME_DIR is then
@@ -161,6 +165,7 @@ file(GLOB XSG_GS_SRCS CONFIGURE_DEPENDS "${XSG_GS_DIR}/src/*.cpp" "${CMAKE_CURRE
 add_library(xsg_gs OBJECT ${XSG_GS_SRCS})
 target_compile_options(xsg_gs PRIVATE -m32 -std=c++17 -O2 -g -msse4.1 -fno-pic -fno-stack-protector -w)
 set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu1.cpp" PROPERTIES COMPILE_OPTIONS "-mfpmath=sse;-msse2")
+set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/runtime/ipu.cpp" PROPERTIES COMPILE_OPTIONS "-mfpmath=sse;-msse2;-fno-math-errno")
 target_include_directories(xsg_gs PRIVATE "${XSG_GS_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/runtime")
 target_compile_definitions(xsg_gs PRIVATE "XSG_DEFAULT_SHOT_DIR=\"${XSG_RUNTIME_SHOT_DIR}\"")
 if(WIN32)

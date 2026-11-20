@@ -274,6 +274,7 @@ environment variable the setting took over; it is no longer read.
 | `[debug] fx_trace` | (empty) | text | restart | `XSG_GPU_FX_TRACE` | Native FX trace. |
 | `[debug] mv_view` | (empty) | text | restart | `XSG_GPU_MV_VIEW` | Motion vector view. |
 | `[debug] gpu_prof` | (empty) | text | restart | `XSG_GPU_PROF` | xsg-gpu profiler. |
+| `[debug] sample` | (empty) | text | restart | `XSG_SAMPLE` | Windows: log where the game thread spends its time. |
 | `[debug] input_test` | (empty) | text | restart | `XSG_GPU_INPUT_TEST` | Synthetic SDL input events (STAGE10_INPUT.md). |
 | `[debug] menu_test` | (empty) | text | restart | `XSG_GPU_MENU_TEST` | Menu screenshot tour: at:per:WxH. |
 | `[debug] menu_test_dir` | (empty) | text | restart | `XSG_GPU_MENU_TEST_DIR` | Menu tour output folder. |

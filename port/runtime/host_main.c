@@ -229,6 +229,7 @@ static void on_alarm(int sig)
    exception handler (win32/platform_win32.c). */
 void xsg_w32_install_crash_handler(void);
 void xsg_w32_start_timeout(unsigned seconds, void (*fn)(void));
+void xsg_w32_start_sampler(void);
 static void on_timeout(void) { on_alarm(0); }
 #else
 /* Async-signal-safe hex line: "<label>0x%08x\n" via write(2). */
@@ -342,6 +343,8 @@ int main(int argc, char **argv)
     xsg_w32_install_crash_handler();
     if (xsg_cfg("debug.timeout"))
         xsg_w32_start_timeout((unsigned)atoi(xsg_cfg("debug.timeout")), on_timeout);
+    if (xsg_cfg("debug.sample") && atoi(xsg_cfg("debug.sample")))
+        xsg_w32_start_sampler();
 #else
     struct sigaction sa;
     memset(&sa, 0, sizeof sa);

@@ -175,6 +175,7 @@ XSG_SETTING("debug.owner_thread", "XSG_GPU_OWNER_THREAD", "", 0, 0, "Native FX o
 XSG_SETTING("debug.fx_trace", "XSG_GPU_FX_TRACE", "", 0, 0, "Native FX trace.")
 XSG_SETTING("debug.mv_view", "XSG_GPU_MV_VIEW", "", 0, 0, "Motion vector view.")
 XSG_SETTING("debug.gpu_prof", "XSG_GPU_PROF", "", 0, 0, "xsg-gpu profiler.")
+XSG_SETTING("debug.sample", "XSG_SAMPLE", "", 0, 0, "Windows: log where the game thread spends its time.")
 /* ---- debug: test hooks (xsg-gpu) */
 XSG_SETTING("debug.input_test", "XSG_GPU_INPUT_TEST", "", 0, 0, "Synthetic SDL input events (STAGE10_INPUT.md).")
 XSG_SETTING("debug.menu_test", "XSG_GPU_MENU_TEST", "", 0, 0, "Menu screenshot tour: at:per:WxH.")

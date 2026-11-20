@@ -380,6 +380,130 @@ void xsg_w32_start_hang_watchdog(void)
         CloseHandle(h);
 }
 
+/* ---- [debug] sample: where the game thread spends its time ------------- */
+/* A thread stops the game thread about 1000 times a second and counts its eip
+   (and, outside xsg.dll, the first xsg.dll code address on its stack: the
+   caller).  Every 600 vblanks the busiest addresses go to the log as
+   module+offset (addr2line -f -e xsg.dll 0x<base+offset> or nm on the same
+   build), for slowdowns that only happen on machines we cannot run. */
+#define SAMPLE_SLOTS 8192
+static struct sample_slot { uintptr_t eip, caller; unsigned n; } g_samples[SAMPLE_SLOTS];
+static HANDLE g_sample_thread;
+
+static void module_of(uintptr_t a, char *name, size_t cap, uintptr_t *base)
+{
+    HMODULE m = NULL;
+    *base = 0;
+    snprintf(name, cap, "?");
+    if (!GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                            (LPCSTR)a, &m) || !m)
+        return;
+    char path[MAX_PATH];
+    DWORD n = GetModuleFileNameA(m, path, sizeof path);
+    if (!n)
+        return;
+    const char *s = path + n;
+    while (s > path && s[-1] != '\\' && s[-1] != '/')
+        s--;
+    snprintf(name, cap, "%s", s);
+    *base = (uintptr_t)m;
+}
+
+static int sample_cmp(const void *a, const void *b)
+{
+    const struct sample_slot *x = a, *y = b;
+    return x->n < y->n ? 1 : x->n > y->n ? -1 : 0;
+}
+
+static void sample_dump(unsigned frame, unsigned total)
+{
+    static struct sample_slot s[SAMPLE_SLOTS];
+    int k = 0;
+    for (int i = 0; i < SAMPLE_SLOTS; i++)
+        if (g_samples[i].n)
+            s[k++] = g_samples[i];
+    memset(g_samples, 0, sizeof g_samples);
+    qsort(s, (size_t)k, sizeof s[0], sample_cmp);
+    unsigned in_dll = 0;
+    for (int i = 0; i < k; i++)
+        if (!s[i].caller)
+            in_dll += s[i].n;
+    xsg_logf("[sample] vblank %u: %u samples, %u in xsg.dll (base 0x%08lx), top addresses:\n", frame, total, in_dll,
+             (unsigned long)(uintptr_t)__executable_start);
+    for (int i = 0; i < k && i < 40; i++) {
+        char m[64], cm[64];
+        uintptr_t b, cb;
+        module_of(s[i].eip, m, sizeof m, &b);
+        if (s[i].caller) {
+            module_of(s[i].caller, cm, sizeof cm, &cb);
+            xsg_logf("[sample]   %5u %s+0x%lx <- %s+0x%lx\n", s[i].n, m, (unsigned long)(s[i].eip - b), cm,
+                     (unsigned long)(s[i].caller - cb));
+        } else
+            xsg_logf("[sample]   %5u %s+0x%lx\n", s[i].n, m, (unsigned long)(s[i].eip - b));
+    }
+}
+
+static DWORD WINAPI sample_thread(void *arg)
+{
+    (void)arg;
+    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+    const uintptr_t lo = (uintptr_t)__executable_start, hi = (uintptr_t)etext;
+    unsigned total = 0, next = (xsg_frame / 600 + 1) * 600;
+    for (;;) {
+        Sleep(1);
+        if (SuspendThread(g_sample_thread) == (DWORD)-1)
+            return 0;
+        CONTEXT c;
+        memset(&c, 0, sizeof c);
+        c.ContextFlags = CONTEXT_CONTROL;
+        uintptr_t eip = 0, caller = 0;
+        if (GetThreadContext(g_sample_thread, &c)) {
+            eip = c.Eip;
+            MEMORY_BASIC_INFORMATION mbi;
+            if ((eip < lo || eip >= hi) && c.Esp && VirtualQuery((void *)(uintptr_t)c.Esp, &mbi, sizeof mbi) &&
+                mbi.State == MEM_COMMIT) {
+                const uintptr_t *w = (const uintptr_t *)(uintptr_t)c.Esp;
+                const uintptr_t end = (uintptr_t)mbi.BaseAddress + mbi.RegionSize;
+                caller = 1; /* outside xsg.dll, no xsg.dll caller found */
+                for (int i = 0; i < 1024 && (uintptr_t)(w + i + 1) <= end; i++)
+                    if (w[i] >= lo && w[i] < hi) {
+                        caller = w[i];
+                        break;
+                    }
+            }
+        }
+        ResumeThread(g_sample_thread);
+        if (eip) {
+            unsigned h = (unsigned)((eip * 2654435761u) ^ (caller * 40503u)) & (SAMPLE_SLOTS - 1);
+            for (int i = 0; i < SAMPLE_SLOTS; i++, h = (h + 1) & (SAMPLE_SLOTS - 1))
+                if (!g_samples[h].n || (g_samples[h].eip == eip && g_samples[h].caller == caller)) {
+                    g_samples[h].eip = eip;
+                    g_samples[h].caller = caller;
+                    g_samples[h].n++;
+                    break;
+                }
+            total++;
+        }
+        if (xsg_frame >= next) {
+            sample_dump(xsg_frame, total);
+            total = 0;
+            next = (xsg_frame / 600 + 1) * 600;
+        }
+    }
+}
+
+/* Called on the game thread. */
+void xsg_w32_start_sampler(void)
+{
+    if (!DuplicateHandle(GetCurrentProcess(), GetCurrentThread(), GetCurrentProcess(), &g_sample_thread,
+                         THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION, FALSE, 0))
+        return;
+    HANDLE h = CreateThread(NULL, 0, sample_thread, NULL, 0, NULL);
+    if (h)
+        CloseHandle(h);
+    xsg_logf("[sample] sampling the game thread, a summary every 600 vblanks\n");
+}
+
 /* ---- clock_nanosleep with sub-millisecond precision ------------------- */
 /* Vblank pacing (kernel.c) and the sound clock (iop_sound.c) sleep to absolute
    CLOCK_MONOTONIC deadlines.  A high-resolution waitable timer gets within a
