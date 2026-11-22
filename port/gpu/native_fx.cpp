@@ -1199,12 +1199,11 @@ void ReplayList(Vulkan::CommandBuffer& cmd, uint32_t fbp, PostFrame& pf, int s, 
     static Vulkan::ImageHandle white;
     if (!white) { const uint32_t px = 0xffffffffu; white = Storage(1, 1, VK_FORMAT_R8G8B8A8_UNORM, &px); }
     cmd.set_program(g_prog);
-    // Rectangles written since the last barrier: a primitive waits for the earlier ones
-    // only where it overlaps them (GS order).  Effects of thousands of small sprites
-    // (particles, the battle transition's 8000 strips) mostly do not overlap, and a
-    // barrier after every dispatch serialised them (30-45 ms frames).
+    // Rectangles written since the last barrier: a segment waits for the earlier ones only
+    // where it overlaps them (GS order).  A barrier after every dispatch serialised effects of
+    // thousands of small sprites (the battle transition's 8000 strips: 30-45 ms frames).
     struct Rect { int x0, y0, x1, y1; size_t prim; };
-    // [debug] fx_batch = 0: one dispatch per primitive, boxes only (the old path, for A/B checks).
+    // [debug] fx_batch = 0: one dispatch and a barrier per primitive (for A/B checks).
     // Exact overlap of two primitives' areas (1x space), separating axes: shapes that only touch
     // (a mesh's triangles sharing an edge; the top-left rule gives each edge pixel to one) do not.
     auto shape = [&](const GpuPrim& q, float (*v)[2]) -> int {
@@ -1242,57 +1241,130 @@ void ReplayList(Vulkan::CommandBuffer& cmd, uint32_t fbp, PostFrame& pf, int s, 
     };
     static std::vector<Rect> pending;
     pending.clear();
-    // Batches of small primitives with the same source: one dispatch, workgroup z picks the primitive.
-    struct BatchE { uint32_t prim, ox, oy, zmax; };
-    static std::vector<BatchE> bat;
-    bat.clear();
-    // One table for the whole replay, written through its mapping as batches form (each batch passes
-    // its first entry's index).  Per-batch buffers created with initial data read back as zeros.
-    Vulkan::BufferCreateInfo tb = {};
-    tb.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    tb.domain = Vulkan::BufferDomain::Host;
-    tb.size = std::max<size_t>(1, pf.prims.size()) * sizeof(BatchE);
-    auto tbl = dev.create_buffer(tb, nullptr);
-    auto* tbl_map = static_cast<BatchE*>(dev.map_host_buffer(*tbl, Vulkan::MEMORY_ACCESS_WRITE_BIT));
-    uint32_t tbl_used = 0;
-    const Vulkan::Image* bat_src = nullptr;
-    int bat_gx = 0, bat_gy = 0;
-    size_t bat_groups = 0;
-    size_t prof_frame = 0, prof_tex = 0, prof_disp = 0, prof_batches = 0;
-    auto flush_batch = [&] {
-        if (bat.empty()) return;
-        prof_disp++;
-        prof_batches += bat.size() > 1;
-        cmd.set_storage_buffer(0, 4, *tbl);
-        if (bat.size() == 1) {
-            const BatchE& e = bat[0];
-            struct { int32_t prim, s, w, h, ox, oy, mx, pad1; uint32_t pmode, bg, zmax, pad2; } pc = {
-                int32_t(e.prim), s, int32_t(w), int32_t(h), int32_t(e.ox), int32_t(e.oy), int32_t(mx), 0, 0, 0, e.zmax, 0};
-            cmd.push_constants(&pc, 0, sizeof pc);
-            cmd.dispatch(uint32_t(bat_gx), uint32_t(bat_gy), 1);
-        } else {
-            std::memcpy(tbl_map + tbl_used, bat.data(), bat.size() * sizeof(BatchE));
-            struct { int32_t prim, s, w, h, ox, oy, mx, pad1; uint32_t pmode, bg, zmax, pad2; } pc = {
-                -2, s, int32_t(w), int32_t(h), int32_t(tbl_used), 0, int32_t(mx), 0, 0, 0, 0, 0};
-            cmd.push_constants(&pc, 0, sizeof pc);
-            cmd.dispatch(uint32_t(bat_gx), uint32_t(bat_gy), uint32_t(bat.size()));
-            tbl_used += uint32_t(bat.size());
-        }
-        bat.clear();
-        bat_src = nullptr;
-        bat_gx = bat_gy = 0;
-        bat_groups = 0;
-    };
-    auto flush_pending = [&] {
-        flush_batch();
-        if (pending.empty()) return;
+    // A segment: consecutive primitives with the same source, drawn by one binned dispatch (mode -3):
+    // the surface in 64x64 bins, each 8x8 tile's workgroup running its samples through every
+    // primitive whose box touches it in GS order, so overlap inside a segment needs no barrier.  Splitting at every
+    // overlap (one dispatch and a barrier each) made a cutscene's 1200 overlapping primitives 1150
+    // serialised dispatches (#3).  Between segments a barrier only where they overlap.
+    struct SegE { uint32_t prim; int x0, y0, x1, y1; uint32_t zmax; };
+    static std::vector<SegE> seg;
+    seg.clear();
+    const Vulkan::Image* seg_src = nullptr;
+    bool seg_ov = false;   // primitives of the segment overlap each other
+    const int W = int((w + 2 * mx) * s), H = int(h * s);
+    const int ntx = (W + 63) / 64, nty = (H + 63) / 64;
+    static std::vector<uint32_t> tcount, tfirst, touched;
+    tcount.assign(size_t(ntx) * nty, 0);
+    tfirst.resize(size_t(ntx) * nty);
+    static std::vector<uint32_t> rows;   // uvec4s: bin headers, then the lists
+    size_t prof_frame = 0, prof_tex = 0, prof_disp = 0, prof_barriers = 0;
+    auto barrier = [&] {
         cmd.barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                     VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                     VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT);
         pending.clear();
+        prof_barriers++;
     };
+    auto bind = [&](const Vulkan::Image* src) {
+        cmd.set_storage_buffer(0, 0, *buf);
+        cmd.set_storage_texture(0, 1, color.get_view());
+        cmd.set_storage_texture(0, 2, z.get_view());
+        cmd.set_texture(0, 3, src->get_view(), Vulkan::StockSampler::NearestClamp);
+    };
+    struct PC { int32_t prim, s, w, h, ox, oy, mx, pad1; uint32_t pmode, bg, zmax, pad2; };
+    // one binned dispatch of seg[b, e): the lists per 64x64 bin (native_fx.comp, mode -3)
+    auto draw_binned = [&](size_t b, size_t e) {
+        constexpr int T = 64;
+        const int ntx = (W + T - 1) / T;
+        touched.clear();
+        size_t n = 0;
+        for (size_t k = b; k < e; ++k) {
+            const SegE& q = seg[k];
+            for (int ty = q.y0 / T; ty <= (q.y1 - 1) / T; ++ty)
+                for (int tx = q.x0 / T; tx <= (q.x1 - 1) / T; ++tx) {
+                    uint32_t& c = tcount[size_t(ty) * ntx + tx];
+                    if (!c++) touched.push_back(uint32_t(ty * ntx + tx));
+                    n++;
+                }
+        }
+        rows.resize((touched.size() + n) * 4);
+        uint32_t at = uint32_t(touched.size());
+        for (size_t i = 0; i < touched.size(); ++i) {
+            const uint32_t t = touched[i];
+            uint32_t* r = &rows[i * 4];
+            r[0] = (t % ntx) * T; r[1] = (t / ntx) * T; r[2] = at; r[3] = tcount[t];
+            tfirst[t] = at;
+            at += tcount[t];
+            tcount[t] = 0;
+        }
+        for (size_t k = b; k < e; ++k) {
+            const SegE& q = seg[k];
+            const uint32_t b0 = uint32_t(q.x0) | uint32_t(q.y0) << 16, b1 = uint32_t(q.x1) | uint32_t(q.y1) << 16;
+            for (int ty = q.y0 / T; ty <= (q.y1 - 1) / T; ++ty)
+                for (int tx = q.x0 / T; tx <= (q.x1 - 1) / T; ++tx) {
+                    uint32_t* r = &rows[size_t(tfirst[size_t(ty) * ntx + tx]++) * 4];
+                    r[0] = q.prim; r[1] = b0; r[2] = b1; r[3] = q.zmax;
+                }
+        }
+        Vulkan::BufferCreateInfo tb = {};
+        tb.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+        tb.domain = Vulkan::BufferDomain::Host;
+        tb.size = rows.size() * 4;
+        auto tbl = dev.create_buffer(tb, nullptr);
+        std::memcpy(dev.map_host_buffer(*tbl, Vulkan::MEMORY_ACCESS_WRITE_BIT), rows.data(), tb.size);
+        dev.unmap_host_buffer(*tbl, Vulkan::MEMORY_ACCESS_WRITE_BIT);
+        cmd.set_storage_buffer(0, 4, *tbl);
+        const uint32_t nb = uint32_t(touched.size()), nt = nb * 64;
+        const PC pc = {-3, s, int32_t(w), int32_t(h), 0, int32_t(nb), int32_t(mx), 0, 0, 0, 0, 0};
+        cmd.push_constants(&pc, 0, sizeof pc);
+        cmd.dispatch(std::min(nt, 65535u), (nt + 65534) / 65535, 1);
+        prof_disp++;
+    };
+    auto draw_one = [&](const SegE& q) {
+        static Vulkan::BufferHandle dummy;
+        if (!dummy) {
+            Vulkan::BufferCreateInfo tb = {};
+            tb.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+            tb.domain = Vulkan::BufferDomain::Device;
+            tb.size = 16;
+            dummy = dev.create_buffer(tb, nullptr);
+        }
+        cmd.set_storage_buffer(0, 4, *dummy);
+        const PC pc = {int32_t(q.prim), s, int32_t(w), int32_t(h), q.x0, q.y0, int32_t(mx), 0, 0, 0, q.zmax, 0};
+        cmd.push_constants(&pc, 0, sizeof pc);
+        cmd.dispatch(uint32_t(q.x1 - q.x0 + 7) / 8, uint32_t(q.y1 - q.y0 + 7) / 8, 1);
+        prof_disp++;
+    };
+    auto flush_seg = [&] {
+        if (seg.empty()) return;
+        // a barrier first when the segment overlaps what was drawn since the last one
+        bool hit = pending.size() * seg.size() > 400000;
+        for (size_t k = 0; k < seg.size() && !hit; ++k) {
+            const SegE& a = seg[k];
+            for (const Rect& q : pending)
+                if (a.x0 < q.x1 && q.x0 < a.x1 && a.y0 < q.y1 && q.y0 < a.y1 && overlaps(prims[a.prim], prims[q.prim])) { hit = true; break; }
+        }
+        if (hit) barrier();
+        bind(seg_src);
+        if (!batch_on) {   // [debug] fx_batch = 0: a dispatch and a barrier per primitive
+            for (size_t k = 0; k < seg.size(); ++k) {
+                if (k) barrier();
+                draw_one(seg[k]);
+            }
+        } else if (!seg_ov && seg.size() <= 32) {
+            for (const SegE& q : seg) draw_one(q);
+        } else {
+            draw_binned(0, seg.size());
+        }
+        for (const SegE& q : seg) pending.push_back({q.x0, q.y0, q.x1, q.y1, q.prim});
+        if (pending.size() > 2048) barrier();
+        seg.clear();
+        seg_src = nullptr;
+        seg_ov = false;
+    };
+    cmd.set_program(g_prog);
     // what `copy` lacks of `color`: everything at first, then what was drawn since the last copy
-    int dirty[4] = {0, 0, int((w + 2 * mx) * s), int(h * s)};
+    int dirty[4] = {0, 0, W, H};
     for (size_t i = 0; i < pf.prims.size(); ++i) {
         const GpuPrim& p = prims[i];
         const Vulkan::Image* src = white.get();
@@ -1306,11 +1378,27 @@ void ReplayList(Vulkan::CommandBuffer& cmd, uint32_t fbp, PostFrame& pf, int s, 
                 std::fabs(rh / th - 1.0f) < 0.05f)
                 continue;
         }
+        // Bounding box in s x samples: the samples it can write lie in [bx0, bx1) x [by0, by1) (a
+        // conservative box); whether two primitives whose boxes meet really overlap is decided on
+        // their shapes (overlaps())
+        float x0 = 1e9f, y0 = 1e9f, x1 = -1e9f, y1 = -1e9f;
+        const int nv = p.kind[0] == 6 ? 2 : 3;
+        for (int k = 0; k < nv; ++k) {
+            x0 = std::min(x0, p.xy[k][0]); y0 = std::min(y0, p.xy[k][1]);
+            x1 = std::max(x1, p.xy[k][0]); y1 = std::max(y1, p.xy[k][1]);
+        }
+        x0 += float(mx);
+        x1 += float(mx);
+        const int bx0 = std::max(0, int(std::floor(x0 * s)) - 1), by0 = std::max(0, int(std::floor(y0 * s)) - 1);
+        const int bx1 = std::min(W, int(std::ceil(x1 * s)) + s + 1);
+        const int by1 = std::min(H, int(std::ceil(y1 * s)) + s + 1);
+        if (bx1 <= bx0 || by1 <= by0) continue;
+        const uint32_t zmax = p.fb[3] == 0 ? 0xffffffffu : (p.fb[3] == 1 ? 0xffffffu : 0xffffu);
+        const SegE q = {uint32_t(i), bx0, by0, bx1, by1, zmax};
         prof_frame += p.kind[2] == 2;
         prof_tex += p.kind[2] == 1;
         if (p.kind[2] == 2) {
-            flush_batch();
-            pending.clear();   // the copy's barrier below orders everything before it
+            flush_seg();
             cmd.barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                         VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
             // The copy mirrors the frame; only what was drawn since the last copy is copied again
@@ -1326,8 +1414,8 @@ void ReplayList(Vulkan::CommandBuffer& cmd, uint32_t fbp, PostFrame& pf, int s, 
             dirty[2] = dirty[3] = INT32_MIN;
             cmd.barrier(VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                         VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
+            pending.clear();
             src = copy.get();
-            cmd.set_program(g_prog);
         } else if (p.kind[2] == 1 && pf.texs[i]) {
             Tex& t = *pf.texs[i];
             if (t.from_snap && t.px.empty() && pf.snapped) {
@@ -1340,55 +1428,22 @@ void ReplayList(Vulkan::CommandBuffer& cmd, uint32_t fbp, PostFrame& pf, int s, 
             if (!t.img) t.img = Storage(t.w, t.h, VK_FORMAT_R8G8B8A8_UNORM, t.px.data());
             src = t.img.get();
         }
-        // Bounding box in s x samples.
-        float x0 = 1e9f, y0 = 1e9f, x1 = -1e9f, y1 = -1e9f;
-        const int nv = p.kind[0] == 6 ? 2 : 3;
-        for (int k = 0; k < nv; ++k) {
-            x0 = std::min(x0, p.xy[k][0]); y0 = std::min(y0, p.xy[k][1]);
-            x1 = std::max(x1, p.xy[k][0]); y1 = std::max(y1, p.xy[k][1]);
-        }
-        x0 += float(mx);
-        x1 += float(mx);
-        const int bx0 = std::max(0, int(std::floor(x0 * s)) - 1), by0 = std::max(0, int(std::floor(y0 * s)) - 1);
-        const int bx1 = std::min(int((w + 2 * mx) * s), int(std::ceil(x1 * s)) + s + 1);
-        const int by1 = std::min(int(h * s), int(std::ceil(y1 * s)) + s + 1);
-        if (bx1 <= bx0 || by1 <= by0) continue;
-        const uint32_t zmax = p.fb[3] == 0 ? 0xffffffffu : (p.fb[3] == 1 ? 0xffffffu : 0xffffu);
-        // the samples it can write lie in [bx0, bx1) x [by0, by1) (a conservative box); whether two
-        // primitives whose boxes meet really overlap is decided on their shapes (overlaps())
-        const Rect r = {bx0, by0, bx1, by1, i};
         dirty[0] = std::min(dirty[0], bx0); dirty[1] = std::min(dirty[1], by0);
         dirty[2] = std::max(dirty[2], bx1); dirty[3] = std::max(dirty[3], by1);
-        bool hit = pending.size() >= 512;
-        for (const Rect& q : pending)
-            if (!hit && r.x0 < q.x1 && q.x0 < r.x1 && r.y0 < q.y1 && q.y0 < r.y1 && overlaps(p, prims[q.prim])) hit = true;
-        if (hit) flush_pending();
-        const int gx = (bx1 - bx0 + 7) / 8, gy = (by1 - by0 + 7) / 8;
-        // joins the batch when the source is the same and the batch's grid (the largest member's)
-        // wastes little: at most twice the groups the members need, plus a margin
-        if (!bat.empty()) {
-            const int ngx = std::max(bat_gx, gx), ngy = std::max(bat_gy, gy);
-            const size_t need = bat_groups + size_t(gx) * gy;
-            if (src != bat_src || size_t(ngx) * ngy * (bat.size() + 1) > 2 * need + 64 || bat.size() >= 4096 || !batch_on) flush_batch();
+        if (src != seg_src) flush_seg();
+        seg_src = src;
+        // (only decides between separate dispatches and binning, which a segment past 32 gets anyway)
+        for (size_t k = 0; k < seg.size() && !seg_ov && seg.size() < 32; ++k) {
+            const SegE& a = seg[k];
+            seg_ov = a.x0 < q.x1 && q.x0 < a.x1 && a.y0 < q.y1 && q.y0 < a.y1 && overlaps(p, prims[a.prim]);
         }
-        if (bat.empty()) {
-            bat_src = src;
-            cmd.set_storage_buffer(0, 0, *buf);
-            cmd.set_storage_texture(0, 1, color.get_view());
-            cmd.set_storage_texture(0, 2, z.get_view());
-            cmd.set_texture(0, 3, src->get_view(), Vulkan::StockSampler::NearestClamp);
-        }
-        bat.push_back({uint32_t(i), uint32_t(bx0), uint32_t(by0), zmax});
-        bat_gx = std::max(bat_gx, gx);
-        bat_gy = std::max(bat_gy, gy);
-        bat_groups += size_t(gx) * gy;
-        pending.push_back(r);
+        seg.push_back(q);
+        if (p.kind[2] == 2) flush_seg();   // the next frame read needs it in the copy
     }
-    flush_pending();
-    dev.unmap_host_buffer(*tbl, Vulkan::MEMORY_ACCESS_WRITE_BIT);
+    flush_seg();
     if (xsgprof::g_on && pf.prims.size() >= 500)
-        Log("[prof] replay fbp %u: %zu prims (frame-read %zu, textured %zu), %zu dispatches (%zu batches)", fbp, pf.prims.size(),
-            prof_frame, prof_tex, prof_disp, prof_batches);
+        Log("[prof] replay fbp %u: %zu prims (frame-read %zu, textured %zu), %zu dispatches, %zu barriers", fbp, pf.prims.size(),
+            prof_frame, prof_tex, prof_disp, prof_barriers);
 }
 }  // namespace
 

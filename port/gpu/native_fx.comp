@@ -26,8 +26,8 @@ layout(std430, set = 0, binding = 0) readonly buffer Prims { Prim prims[]; };
 layout(rgba8, set = 0, binding = 1) uniform image2D o_col;
 layout(r32ui, set = 0, binding = 2) uniform uimage2D o_z;
 layout(set = 0, binding = 3) uniform sampler2D src;    // texture (1x texels) or the surface copy (s x)
-// Batch mode (p.prim == -2): workgroup z draws batch[p.ox + z] = (prim, ox, oy, zmax): many small primitives
-// with the same source and no overlap in one dispatch (per-dispatch cost dominated 8000-strip effects).
+// Binned mode (p.prim == -3): many primitives with the same source in one dispatch, the bins' lists here
+// (main).  Per-dispatch cost dominated 8000-strip effects, and a barrier per overlap a cutscene's 1200 sprites.
 layout(std430, set = 0, binding = 4) readonly buffer Batch { uvec4 batch[]; };
 layout(push_constant) uniform P {
     int prim, s, w, h;          // w, h: surface at 1x
@@ -111,25 +111,47 @@ void PmodePass(ivec2 o) {
     imageStore(o_col, o, vec4(r, c1.a) / 255.0);
 }
 
+void Draw(const uint pi, const ivec2 o, uint zmax);
+
 void main() {
     int prim_i = p.prim;
     ivec2 org = ivec2(p.ox, p.oy);
     uint zmax = p.zmax;
-    if (prim_i == -2) {
-        const uvec4 e = batch[uint(p.ox) + gl_WorkGroupID.z];   // p.ox: the batch's first entry
-        prim_i = int(e.x);
-        org = ivec2(e.yz);
-        zmax = e.w;
+    if (prim_i == -3) {
+        // Binned mode: the surface in 64x64 bins; batch[p.ox + bin] = (ox, oy, first, count), then
+        // batch[first..] = (prim, x0 | y0 << 16, x1 | y1 << 16, zmax) for every primitive whose box
+        // touches the bin, in GS order.  64 workgroups per bin, one per 8x8 tile; each invocation
+        // runs its sample through all of them in turn (skipping those whose box misses the tile), so
+        // overlapping primitives keep their order without a barrier between them (a cutscene's 1200
+        // overlapping primitives were 1150 dispatches, each waiting for the last).
+        const uint t = gl_WorkGroupID.y * 65535u + gl_WorkGroupID.x;
+        if (t >= uint(p.oy) * 64u) return;
+        const uvec4 hd = batch[uint(p.ox) + t / 64u];
+        const ivec2 tile = ivec2(hd.xy) + 8 * ivec2(t % 8u, (t / 8u) % 8u);
+        const ivec2 o = tile + ivec2(gl_LocalInvocationID.xy);
+        const bool in_surf = o.x < (p.w + 2 * p.mx) * p.s && o.y < p.h * p.s;
+        for (uint k = 0u; k < hd.w; ++k) {
+            const uvec4 e = batch[hd.z + k];
+            const ivec2 b0 = ivec2(e.y & 0xffffu, e.y >> 16), b1 = ivec2(e.z & 0xffffu, e.z >> 16);
+            if (b0.x >= tile.x + 8 || b0.y >= tile.y + 8 || b1.x <= tile.x || b1.y <= tile.y) continue;
+            if (in_surf) Draw(e.x, o, e.w);
+        }
+        return;
     }
     ivec2 o = ivec2(gl_GlobalInvocationID.xy) + org;
     if (o.x >= (p.w + 2 * p.mx) * p.s || o.y >= p.h * p.s) return;
     if (prim_i < 0) { PmodePass(o); return; }
-    Prim r = prims[prim_i];
+    Draw(uint(prim_i), o, zmax);
+}
+
+// The primitive is read field by field from the buffer: a Prim passed by value (240 bytes) made
+// the shader five times slower.
+void Draw(const uint pi, const ivec2 o, uint zmax) {
     // Sample point in 1x pixel space: pixel X samples at X.0 (the GS corner).
     vec2 pt = (vec2(o) + 0.5) / float(p.s) - 0.5 - vec2(float(p.mx), 0.0);
-    if (pt.x < float(r.sc.x) - 0.5 / p.s || pt.y < float(r.sc.y) - 0.5 / p.s ||
-        pt.x > float(r.sc.z) + 0.5 - 0.5 / p.s || pt.y > float(r.sc.w) + 0.5 - 0.5 / p.s) return;
-    const uint type = r.kind.x, prim = r.kind.y;
+    if (pt.x < float(prims[pi].sc.x) - 0.5 / p.s || pt.y < float(prims[pi].sc.y) - 0.5 / p.s ||
+        pt.x > float(prims[pi].sc.z) + 0.5 - 0.5 / p.s || pt.y > float(prims[pi].sc.w) + 0.5 - 0.5 / p.s) return;
+    const uint type = prims[pi].kind.x, prim = prims[pi].kind.y;
     vec3 bc;                    // barycentrics (triangle) or (fx, fy) (sprite)
     vec4 col;
     vec2 uv;
@@ -140,10 +162,10 @@ void main() {
     // Texture coordinates of a nearest-sampled texture are taken inside the 1x
     // pixel's [X, X+1) footprint (so the s x samples of pixel X all fetch the
     // texel the GS fetches at X.0); bilinear keeps the sample point.
-    const float ush = Bits(r.st.x, 5, 1) != 0u ? 0.0 : 0.5 - 0.5 / float(p.s);
+    const float ush = Bits(prims[pi].st.x, 5, 1) != 0u ? 0.0 : 0.5 - 0.5 / float(p.s);
     const vec2 ptu = pt + vec2(ush);
     if (type == 6u) {
-        vec2 a = r.xy[0].xy, b = r.xy[1].xy;
+        vec2 a = prims[pi].xy[0].xy, b = prims[pi].xy[1].xy;
         vec2 mn = min(a, b), mx = max(a, b);
         // Coverage by the 1x pixel the sample belongs to (its X.0 corner), so a
         // sprite covers exactly the GS's pixels: 2D art (the dialog arrow) showed
@@ -151,22 +173,22 @@ void main() {
         const vec2 pc = floor(pt + 0.5);
         if (pc.x < mn.x || pc.y < mn.y || pc.x >= mx.x || pc.y >= mx.y) return;
         vec2 f = (pt - a) / (b - a);
-        uv = mix(r.xy[0].zw, r.xy[1].zw, (ptu - a) / (b - a));
+        uv = mix(prims[pi].xy[0].zw, prims[pi].xy[1].zw, (ptu - a) / (b - a));
         // Nearest: the sub-samples of the last pixel column/row of a magnified sprite reached
         // past its UV end into the next texel, which the GS (sampling at X.0) never reads; it
         // showed as a stray line on the right and bottom of 2D art (the menu cursor arrow).
-        if (Bits(r.st.x, 5, 1) == 0u) {
-            const vec2 u0 = min(r.xy[0].zw, r.xy[1].zw), u1 = max(r.xy[0].zw, r.xy[1].zw);
+        if (Bits(prims[pi].st.x, 5, 1) == 0u) {
+            const vec2 u0 = min(prims[pi].xy[0].zw, prims[pi].xy[1].zw), u1 = max(prims[pi].xy[0].zw, prims[pi].xy[1].zw);
             const vec2 last = max(u0, u1 - (fst ? vec2(1.0 / 16.0) : (u1 - u0) / max(abs(b - a) * 16.0, vec2(1.0))));
             uv = clamp(uv, u0, last);
         }
-        q = r.q.y;
-        col = r.col[1];
-        fo = r.fog.y;
-        z = r.z.y;
+        q = prims[pi].q.y;
+        col = prims[pi].col[1];
+        fo = prims[pi].fog.y;
+        z = prims[pi].z.y;
         if (!fst) uv /= q;
     } else if (type == 3u) {
-        vec2 a = r.xy[0].xy, b = r.xy[1].xy, c = r.xy[2].xy;
+        vec2 a = prims[pi].xy[0].xy, b = prims[pi].xy[1].xy, c = prims[pi].xy[2].xy;
         float area = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
         if (area == 0.0) return;
         float sg = area > 0.0 ? 1.0 : -1.0;
@@ -181,29 +203,29 @@ void main() {
             if (e[k] < 0.0 || (e[k] == 0.0 && !tl[k])) return;
         bc = e / abs(area);
         const bool iip = Bits(prim, 3, 1) != 0u;
-        col = iip ? r.col[0] * bc.x + r.col[1] * bc.y + r.col[2] * bc.z : r.col[2];
+        col = iip ? prims[pi].col[0] * bc.x + prims[pi].col[1] * bc.y + prims[pi].col[2] * bc.z : prims[pi].col[2];
         // Truncate like the GS's fixed-point Gouraud, but a float barycentric sum of
         // equal vertex colours lands a hair under the value (alpha 1 -> 0.99999 -> 0
         // failed the dialog box's alpha-test pass that sets the text's blend alpha).
         col = floor(col + 1.0 / 64.0);
-        fo = iip ? floor(r.fog.x * bc.x + r.fog.y * bc.y + r.fog.z * bc.z) : r.fog.z;
-        z = uint(clamp(float(r.z.x) * bc.x + float(r.z.y) * bc.y + float(r.z.z) * bc.z, 0.0, 4294967040.0));
+        fo = iip ? floor(prims[pi].fog.x * bc.x + prims[pi].fog.y * bc.y + prims[pi].fog.z * bc.z) : prims[pi].fog.z;
+        z = uint(clamp(float(prims[pi].z.x) * bc.x + float(prims[pi].z.y) * bc.y + float(prims[pi].z.z) * bc.z, 0.0, 4294967040.0));
         vec3 bu = vec3((c.x - b.x) * (ptu.y - b.y) - (c.y - b.y) * (ptu.x - b.x),
                        (a.x - c.x) * (ptu.y - c.y) - (a.y - c.y) * (ptu.x - c.x),
                        (b.x - a.x) * (ptu.y - a.y) - (b.y - a.y) * (ptu.x - a.x)) * sg / abs(area);
-        uv = r.xy[0].zw * bu.x + r.xy[1].zw * bu.y + r.xy[2].zw * bu.z;
-        if (!fst) { q = r.q.x * bu.x + r.q.y * bu.y + r.q.z * bu.z; uv /= q; }
+        uv = prims[pi].xy[0].zw * bu.x + prims[pi].xy[1].zw * bu.y + prims[pi].xy[2].zw * bu.z;
+        if (!fst) { q = prims[pi].q.x * bu.x + prims[pi].q.y * bu.y + prims[pi].q.z * bu.z; uv /= q; }
     } else {
         return;
     }
     z = min(z, zmax);
     // STQ: s/q is normalised; to texels.
-    if (!fst) uv *= vec2(r.tsz.xy);
+    if (!fst) uv *= vec2(prims[pi].tsz.xy);
     ivec4 c = ivec4(col);
     // Texture function.
-    if (Bits(prim, 4, 1) != 0u && r.kind.z != 0u) {
-        ivec4 t = Sample(uv, r);
-        const uint tfx = Bits(r.tex.y, 3, 2), tcc = Bits(r.tex.y, 2, 1);
+    if (Bits(prim, 4, 1) != 0u && prims[pi].kind.z != 0u) {
+        ivec4 t = Sample(uv, prims[pi]);
+        const uint tfx = Bits(prims[pi].tex.y, 3, 2), tcc = Bits(prims[pi].tex.y, 2, 1);
         ivec4 f = c;
         if (tfx == 0u) { c.rgb = min((t.rgb * f.rgb) >> 7, ivec3(255)); c.a = tcc != 0u ? min((t.a * f.a) >> 7, 255) : f.a; }
         else if (tfx == 1u) { c.rgb = t.rgb; c.a = tcc != 0u ? t.a : f.a; }
@@ -212,14 +234,14 @@ void main() {
     }
     // Fog: (F * C + (255 - F) * FOGCOL) >> 8.
     if (Bits(prim, 5, 1) != 0u) {
-        uint fcb = floatBitsToUint(r.fog.w);
+        uint fcb = floatBitsToUint(prims[pi].fog.w);
         ivec3 fc = ivec3(Bits(fcb, 0, 8), Bits(fcb, 8, 8), Bits(fcb, 16, 8));
         int f = int(fo);
         c.rgb = (f * c.rgb + (255 - f) * fc) >> 8;
     }
     // Alpha test.
-    const uint test = r.st.w;
-    bool wfb = true, wz = Bits(r.fb.y, 0, 1) == 0u, wa = true;
+    const uint test = prims[pi].st.w;
+    bool wfb = true, wz = Bits(prims[pi].fb.y, 0, 1) == 0u, wa = true;
     if (Bits(test, 0, 1) != 0u && !Atst(Bits(test, 1, 3), c.a, int(Bits(test, 4, 8)))) {
         uint afail = Bits(test, 12, 2);
         if (afail == 0u) return;
@@ -240,21 +262,21 @@ void main() {
         if (zt == 3u && z <= zb) return;
     }
     // Blend.
-    const bool colclamp = (r.fb.z & 4u) != 0u;
+    const bool colclamp = (prims[pi].fb.z & 4u) != 0u;
     ivec3 res = c.rgb;
-    if (Bits(prim, 6, 1) != 0u && !((r.fb.z & 2u) != 0u && c.a < 128)) {
-        const uint al = r.st.y;
+    if (Bits(prim, 6, 1) != 0u && !((prims[pi].fb.z & 2u) != 0u && c.a < 128)) {
+        const uint al = prims[pi].st.y;
         uint A = Bits(al, 0, 2), B = Bits(al, 2, 2), C = Bits(al, 4, 2), D = Bits(al, 6, 2);
         ivec3 va = A == 0u ? c.rgb : A == 1u ? d.rgb : ivec3(0);
         ivec3 vb = B == 0u ? c.rgb : B == 1u ? d.rgb : ivec3(0);
         ivec3 vd = D == 0u ? c.rgb : D == 1u ? d.rgb : ivec3(0);
-        int vc = C == 0u ? c.a : C == 1u ? d.a : int(Bits(r.st.z, 0, 8));
+        int vc = C == 0u ? c.a : C == 1u ? d.a : int(Bits(prims[pi].st.z, 0, 8));
         res = (((va - vb) * vc) >> 7) + vd;
     }
     res = colclamp ? clamp(res, ivec3(0), ivec3(255)) : (res & 255);
-    int oa = c.a | ((r.fb.z & 1u) != 0u ? 128 : 0);
+    int oa = c.a | ((prims[pi].fb.z & 1u) != 0u ? 128 : 0);
     if (wfb) {
-        uint msk = r.fb.x;
+        uint msk = prims[pi].fb.x;
         uint nv = uint(res.r) | uint(res.g) << 8 | uint(res.b) << 16 | uint(wa ? oa : d.a) << 24;
         uint ov = uint(d.r) | uint(d.g) << 8 | uint(d.b) << 16 | uint(d.a) << 24;
         uint v = (nv & ~msk) | (ov & msk);
