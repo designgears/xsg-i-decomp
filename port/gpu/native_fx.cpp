@@ -1291,6 +1291,8 @@ void ReplayList(Vulkan::CommandBuffer& cmd, uint32_t fbp, PostFrame& pf, int s, 
                     VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT);
         pending.clear();
     };
+    // what `copy` lacks of `color`: everything at first, then what was drawn since the last copy
+    int dirty[4] = {0, 0, int((w + 2 * mx) * s), int(h * s)};
     for (size_t i = 0; i < pf.prims.size(); ++i) {
         const GpuPrim& p = prims[i];
         const Vulkan::Image* src = white.get();
@@ -1311,7 +1313,17 @@ void ReplayList(Vulkan::CommandBuffer& cmd, uint32_t fbp, PostFrame& pf, int s, 
             pending.clear();   // the copy's barrier below orders everything before it
             cmd.barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                         VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
-            cmd.copy_image(*copy, color);
+            // The copy mirrors the frame; only what was drawn since the last copy is copied again
+            // (the union of those primitives' boxes).  The characters' soft-edge pass has dozens of
+            // frame reads per frame, and a whole-frame copy each (2736 x 1792 at 4x) held the
+            // renderer below 60 vsyncs/s, so it never presented again (#3).
+            if (dirty[2] > dirty[0] && dirty[3] > dirty[1]) {
+                const VkImageSubresourceLayers sub = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+                cmd.copy_image(*copy, color, {dirty[0], dirty[1], 0}, {dirty[0], dirty[1], 0},
+                               {uint32_t(dirty[2] - dirty[0]), uint32_t(dirty[3] - dirty[1]), 1}, sub, sub);
+            }
+            dirty[0] = dirty[1] = INT32_MAX;
+            dirty[2] = dirty[3] = INT32_MIN;
             cmd.barrier(VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                         VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
             src = copy.get();
@@ -1345,6 +1357,8 @@ void ReplayList(Vulkan::CommandBuffer& cmd, uint32_t fbp, PostFrame& pf, int s, 
         // the samples it can write lie in [bx0, bx1) x [by0, by1) (a conservative box); whether two
         // primitives whose boxes meet really overlap is decided on their shapes (overlaps())
         const Rect r = {bx0, by0, bx1, by1, i};
+        dirty[0] = std::min(dirty[0], bx0); dirty[1] = std::min(dirty[1], by0);
+        dirty[2] = std::max(dirty[2], bx1); dirty[3] = std::max(dirty[3], by1);
         bool hit = pending.size() >= 512;
         for (const Rect& q : pending)
             if (!hit && r.x0 < q.x1 && q.x0 < r.x1 && r.y0 < q.y1 && q.y0 < r.y1 && overlaps(p, prims[q.prim])) hit = true;

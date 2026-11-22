@@ -720,6 +720,7 @@ struct Renderer {
     float game_rect[4] = {0, 0, 0, 0};
     const Vulkan::Image* last_live = nullptr;
     uint64_t repeats = 0, behind_skips = 0;
+    uint64_t last_present_vsync = 0;   // vsyncs at the last Present (the behind-skip limit)
     uint32_t worst_at = 0, slow_frames = 0;
 
     void Present(const ScanoutResult& so, bool menu) {
@@ -977,10 +978,14 @@ struct Renderer {
         // present can cost a whole display refresh (FIFO, or a compositor that throttles
         // mailbox, as on Windows), and when that is slower than the game's 60 Hz the ring
         // backs up and the game waits on it (issue #3).  The display drops a frame instead.
+        // Never more than three in a row, though: a renderer that cannot catch up at all (the game
+        // throttled by the full ring, a steady two-plus vblanks ahead) skipped every present and
+        // froze the window while the game ran on (#3).
         const bool behind = !test && !xsgmenu::IsOpen() &&
-                            int32_t(__atomic_load_n(&shm->game_vblank, __ATOMIC_ACQUIRE) - frame) >= 2;
+                            int32_t(__atomic_load_n(&shm->game_vblank, __ATOMIC_ACQUIRE) - frame) >= 2 &&
+                            vsyncs - last_present_vsync < 4;
         if (behind) behind_skips++;
-        else if (!repeat) Present(so, !test);
+        else if (!repeat) { Present(so, !test); last_present_vsync = vsyncs; }
         else repeats++;
         mark(5);
         if (xsgprof::g_on) {
