@@ -359,7 +359,11 @@ void DoubleDoorFunc(void)
  */
 void AutoDoorStanbyFunc(DoorUnit *door)
 {
+#ifdef PORT_HOST
+    DoorPosition position;   /* CheckDoorPos writes a whole position (16 bytes); an int overran the frame (#3) */
+#else
     int position;
+#endif
     DoorParams *params;
     DoorModel *model;
 
@@ -389,7 +393,11 @@ void AutoDoorStanbyFunc(DoorUnit *door)
  */
 void AutoDoorOpenOpeFunc(DoorUnit *door)
 {
+#ifdef PORT_HOST
+    DoorPosition position;   /* CheckDoorPos writes a whole position (16 bytes); an int overran the frame (#3) */
+#else
     int position;
+#endif
     DoorParams *params;
 
     params = &door->params;
@@ -485,7 +493,11 @@ int AutoDoorCloseOpeFunc(DoorUnit *door)
  */
 void EventDoorStanbyFunc(DoorUnit *door)
 {
+#ifdef PORT_HOST
+    DoorPosition position;   /* CheckDoorPos writes a whole position (16 bytes); an int overran the frame (#3) */
+#else
     int position;
+#endif
     signed char event_signal;
     DoorParams *params;
     DoorModel *model;
@@ -516,7 +528,11 @@ void EventDoorStanbyFunc(DoorUnit *door)
  */
 void EventDoorOpenOpeFunc(DoorUnit *door)
 {
+#ifdef PORT_HOST
+    DoorPosition position;   /* CheckDoorPos writes a whole position (16 bytes); an int overran the frame (#3) */
+#else
     int position;
+#endif
     DoorParams *params;
 
     params = &door->params;
@@ -536,7 +552,11 @@ void EventDoorOpenOpeFunc(DoorUnit *door)
  */
 void EventDoorOpenNowFunc(DoorUnit *door)
 {
+#ifdef PORT_HOST
+    DoorPosition position;   /* CheckDoorPos writes a whole position (16 bytes); an int overran the frame (#3) */
+#else
     int position;
+#endif
     DoorParams *params;
 
     params = &door->params;
@@ -558,7 +578,11 @@ void EventDoorOpenNowFunc(DoorUnit *door)
 
 void EventDoorCloseOpeFunc(DoorUnit *door)
 {
+#ifdef PORT_HOST
+    DoorPosition position;   /* CheckDoorPos writes a whole position (16 bytes); an int overran the frame (#3) */
+#else
     int position;
+#endif
     DoorParams *params = &door->params;
 
     door->open_timer = (short) door->open_timer - 1;
@@ -577,7 +601,11 @@ void EventDoorCloseOpeFunc(DoorUnit *door)
  */
 void MjDoorStanbyFunc(DoorUnit *door)
 {
+#ifdef PORT_HOST
+    DoorPosition position;   /* CheckDoorPos writes a whole position (16 bytes); an int overran the frame (#3) */
+#else
     int position;
+#endif
     DoorParams *params;
     DoorModel *model;
 
