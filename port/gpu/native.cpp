@@ -1087,16 +1087,24 @@ void Live(ParallelGS::GSInterface& gs) {
     Region rg = MakeRegion(*list.front());
     rg.mx = WideMargin(*list.front(), rg);
     // A post-processed frame the replay cannot redo: the paraLLEl-GS frame (1x).
+    // The GS frame lacks what the native batches draw (the 3D scene), so it is no
+    // fallback: hold the last composite for up to a second (a battle's opening
+    // transition reads the frame back), then composite over the GS frame as it is.
     const char* why = "";
-    const xsgfx::Post post = xsgfx::PostState(fbp, &why);
+    xsgfx::Post post = xsgfx::PostState(fbp, &why);
+    static uint32_t good_vsync = 0;
     if (post == xsgfx::Post::Unsupported) {
         static std::string last_why;
+        const bool hold = g_live_img && g_last_vsync - good_vsync < 60;
         if (last_why != why) {
-            Log("vsync %u: post effect not replayable (%s; started by %s): 1x", g_last_vsync, why, xsgfx::PostTrigger(fbp));
+            Log("vsync %u: post effect not replayable (%s; started by %s): %s", g_last_vsync, why,
+                xsgfx::PostTrigger(fbp), hold ? "holding the last frame" : "drawn without it");
             last_why = why;
         }
-        g_live_img.reset();
-        return;
+        if (hold) return;
+        post = xsgfx::Post::None;
+    } else {
+        good_vsync = g_last_vsync;
     }
     // With a post phase the composite starts from the GS frame just before it.
     const uint8_t* vram = xsgfx::PreVram(fbp);
