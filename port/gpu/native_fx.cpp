@@ -466,8 +466,15 @@ bool Veto(uint32_t fbp, const Vtx* v, int n) {
 /* [renderer] native_edge_fx (default 1): the characters' frame-reading soft-edge pass replayed at
    native scale.  Live. */
 bool EdgeFx() {
-    const char* v = xsgcfg::CStr("renderer.native_edge_fx");
-    return !(v && *v == '0');
+    // asked per primitive: the setting is read again only when the settings change
+    static unsigned ver = ~0u;
+    static bool on = true;
+    if (ver != xsgcfg::Version()) {
+        ver = xsgcfg::Version();
+        const char* v = xsgcfg::CStr("renderer.native_edge_fx");
+        on = !(v && *v == '0');
+    }
+    return on;
 }
 
 /* Defer this primitive (see g_ov)?  Records it when so. */
@@ -1024,11 +1031,7 @@ void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterfa
             OwnFlush(path);
             Snapshot(gs);
         }
-        {
-            const size_t o = g_obuf.size();
-            g_obuf.resize(o + 16);
-            std::memcpy(g_obuf.data() + o, oq, 16);
-        }
+        g_obuf.insert(g_obuf.end(), oq, oq + 16);   // (resize() zero-filled through a call per qword)
         if (g_copy_req) {
             g_copy_req = false;
             gs.gif_transfer(path, data + start, i + 16 - start);   // through the copy

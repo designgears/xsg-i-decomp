@@ -520,7 +520,10 @@ struct Region {
    runtime/settings.c xsg_widescreen_cull).  0 for anything but a full-width frame scissor
    (split views, other resolutions keep 4:3). */
 uint32_t WideMargin(const Stored& f, const Region& rg) {
-    if (!xsgcfg::GetBool("display.widescreen")) return 0;
+    static unsigned ver = ~0u;
+    static bool wide = false;
+    if (ver != xsgcfg::Version()) { ver = xsgcfg::Version(); wide = xsgcfg::GetBool("display.widescreen"); }
+    if (!wide) return 0;
     if (rg.w != 512 || Bits(f.scissor, 0, 11) != 0) return 0;
     return 86;
 }
