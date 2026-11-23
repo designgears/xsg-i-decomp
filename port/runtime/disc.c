@@ -1,3 +1,4 @@
+#include <time.h>
 /*
  * Disc and file I/O from the user's own disc image.
  *
@@ -248,7 +249,22 @@ int sceCdStop(void) { return 1; }
 uint32_t sceCdGetReadPos(void) { return read_pos; }
 int sceCdPowerOff(uint32_t *r) { if (r) *r = 0; return 1; }
 void *sceCdPOffCallback(void (*f)(void *), void *a) { (void)f; (void)a; return NULL; }
-int sceCdReadClock(unsigned char *c) { STUB_LOG(""); memset(c, 0, 8); c[1] = 0; c[3] = 0x12; c[5] = 1; c[6] = 1; c[7] = 3; return 1; }
+/* The real-time clock as BCD (sec, min, hour, -, day, month, year): the
+ * play-time counter (PartyTimeUpDate) is the difference of two readings. */
+static unsigned char Bcd(int v) { return (unsigned char)((v / 10) << 4 | (v % 10)); }
+int sceCdReadClock(unsigned char *c)
+{
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    memset(c, 0, 8);
+    c[1] = Bcd(tm.tm_sec);
+    c[2] = Bcd(tm.tm_min);
+    c[3] = Bcd(tm.tm_hour);
+    c[5] = Bcd(tm.tm_mday);
+    c[6] = Bcd(tm.tm_mon + 1);
+    c[7] = Bcd(tm.tm_year % 100);
+    return 1;
+}
 
 /* The game declares this with one argument (xgl_cd.c); the SDK's second
  * argument (layer-1 start) is never passed, so it is not written. */
