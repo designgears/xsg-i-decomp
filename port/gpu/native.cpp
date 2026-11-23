@@ -898,11 +898,20 @@ void DecodeGs(const uint8_t* vram, const Region& rg, std::vector<uint32_t>& out)
     out.resize(2 * n);
     uint32_t* o = out.data();
     ParallelRows(rg.h, [&](uint32_t y0, uint32_t y1) {
-        for (uint32_t y = y0; y < y1; ++y)
+        const uint32_t zpsm = 0x30 | (rg.zpsm & 0xf);
+        for (uint32_t y = y0; y < y1; ++y) {
+            const xsggs::Row fr(rg.fbp, rg.fbw, y, rg.fpsm), zr(rg.zbp, rg.fbw, y, zpsm);
             for (uint32_t x = 0; x < rg.w; ++x) {
-                o[size_t(y) * rg.w + x] = GsPixel(vram, rg.fbp, rg.fbw, rg.fpsm, x, y);
-                o[n + size_t(y) * rg.w + x] = GsZ(vram, rg.zbp, rg.fbw, rg.zpsm, x, y);
+                o[size_t(y) * rg.w + x] = xsggs::Pixel(vram + fr(x), rg.fpsm);
+                const uint8_t* p = vram + zr(x);
+                uint32_t z = uint32_t(p[0]) | uint32_t(p[1]) << 8;
+                if (zpsm != 0x32 && zpsm != 0x3a) {
+                    z |= uint32_t(p[2]) << 16;
+                    if (zpsm == 0x30) z |= uint32_t(p[3]) << 24;
+                }
+                o[n + size_t(y) * rg.w + x] = z;
             }
+        }
     });
 }
 

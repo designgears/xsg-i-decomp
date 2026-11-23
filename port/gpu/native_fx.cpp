@@ -663,7 +663,9 @@ void OwnAd(uint32_t reg, uint64_t v) {
     std::memcpy(q + 16, &v, 8);
     const uint64_t a = reg;
     std::memcpy(q + 24, &a, 8);
-    g_obuf.insert(g_obuf.end(), q, q + 32);
+    const size_t o = g_obuf.size();
+    g_obuf.resize(o + 32);
+    std::memcpy(g_obuf.data() + o, q, 32);
 }
 /* The ownership GS runs on its own thread: it has its own Vulkan device, and
    nothing on the main thread waits for it except the owner-plane reads
@@ -1165,11 +1167,13 @@ bool OwnerPlane(const Surface& sf, std::vector<uint32_t>& out) {
     out.resize(base + size_t(sf.w) * sf.h);
     uint32_t* o = out.data() + base;
     xsgnative::ParallelRows(sf.h, [&](uint32_t y0, uint32_t y1) {
-        for (uint32_t y = y0; y < y1; ++y)
+        for (uint32_t y = y0; y < y1; ++y) {
+            const xsggs::Row row(sf.fbp, sf.fbw, y, sf.psm);
             for (uint32_t x = 0; x < sf.w; ++x) {
-                const uint32_t c = GsPixel(v, sf.fbp, sf.fbw, sf.psm, x, y) & mask;
+                const uint32_t c = xsggs::Pixel(v + row(x), sf.psm) & mask;
                 o[size_t(y) * sf.w + x] = c == (m & mask) || c == (m2 & mask);
             }
+        }
     });
     return true;
 }
@@ -1534,21 +1538,40 @@ void OverlayColour(const Surface& sf, std::vector<uint32_t>& gs) {
             const int x1 = std::min(int(sf.w), int(std::ceil(b.x1)) + 2), y1 = std::min(int(sf.h), int(std::ceil(b.y1)) + 2);
             for (int y = y0; y < y1; ++y) std::memset(veto.data() + size_t(y) * sf.w + x0, 1, size_t(std::max(0, x1 - x0)));
         }
+    // the boxes' pixels, each once (the boxes overlap), a row at a time
+    static std::vector<uint8_t> mark;
+    mark.assign(size_t(sf.w) * sf.h, 0);
+    int ux0 = int(sf.w), uy0 = int(sf.h), ux1 = 0, uy1 = 0;
     for (const OvBox& b : g_ov_box[sf.fbp]) {
         const int x0 = std::max(0, int(std::floor(b.x0)) - 1), y0 = std::max(0, int(std::floor(b.y0)) - 1);
         const int x1 = std::min(int(sf.w), int(std::ceil(b.x1)) + 2), y1 = std::min(int(sf.h), int(std::ceil(b.y1)) + 2);
-        for (int y = y0; y < y1; ++y)
-            for (int x = x0; x < x1; ++x) {
-                if (veto[size_t(y) * sf.w + x]) continue;   // a GS-kept blend here: the main GS's colour
-                const uint32_t c = GsPixel(v, sf.fbp, sf.fbw, sf.psm, uint32_t(x), uint32_t(y));
-                if ((c & mask) == (m & mask) || (c & mask) == (m2 & mask)) continue;   // native: the composite's anyway
-                gs[size_t(y) * sf.w + x] = c;
-                // and its depth: the main GS's Z holds the deferred draws' own Z, so a replayed
-                // draw failed its own Z test against it (menu text: each glyph is drawn with Z
-                // one above its shadow, GREATER; the glyph failed and the 1x text showed through,
-                // dark under the replayed shadows)
-                if (zplane) gs[n + size_t(y) * sf.w + x] = GsZ(v, sf.zbp, sf.fbw, sf.zpsm, uint32_t(x), uint32_t(y));
+        if (x1 <= x0 || y1 <= y0) continue;
+        for (int y = y0; y < y1; ++y) std::memset(mark.data() + size_t(y) * sf.w + x0, 1, size_t(x1 - x0));
+        ux0 = std::min(ux0, x0); uy0 = std::min(uy0, y0); ux1 = std::max(ux1, x1); uy1 = std::max(uy1, y1);
+    }
+    const uint32_t zpsm = 0x30 | (sf.zpsm & 0xf);
+    for (int y = uy0; y < uy1; ++y) {
+        const xsggs::Row row(sf.fbp, sf.fbw, uint32_t(y), sf.psm), zrow(sf.zbp, sf.fbw, uint32_t(y), zpsm);
+        for (int x = ux0; x < ux1; ++x) {
+            const size_t i = size_t(y) * sf.w + x;
+            if (!mark[i] || veto[i]) continue;   // veto: a GS-kept blend here: the main GS's colour
+            const uint32_t c = xsggs::Pixel(v + row(uint32_t(x)), sf.psm);
+            if ((c & mask) == (m & mask) || (c & mask) == (m2 & mask)) continue;   // native: the composite's anyway
+            gs[i] = c;
+            // and its depth: the main GS's Z holds the deferred draws' own Z, so a replayed
+            // draw failed its own Z test against it (menu text: each glyph is drawn with Z
+            // one above its shadow, GREATER; the glyph failed and the 1x text showed through,
+            // dark under the replayed shadows)
+            if (zplane) {
+                const uint8_t* p = v + zrow(uint32_t(x));
+                uint32_t z = uint32_t(p[0]) | uint32_t(p[1]) << 8;
+                if (zpsm != 0x32 && zpsm != 0x3a) {
+                    z |= uint32_t(p[2]) << 16;
+                    if (zpsm == 0x30) z |= uint32_t(p[3]) << 24;
+                }
+                gs[n + i] = z;
             }
+        }
     }
 }
 

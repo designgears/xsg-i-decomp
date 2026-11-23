@@ -48,4 +48,31 @@ inline uint32_t Addr(uint32_t pages, uint32_t fbw, uint32_t x, uint32_t y, uint3
     return ps2host::gs::Memory::Address(pages * 32, fbw, x, y, psm, &nib) & 0x3fffff;
 }
 
+/* Addresses along one row: Row r(pages, fbw, y, psm); r(x). */
+struct Row {
+    const uint32_t* off = nullptr;
+    uint32_t base = 0, pages = 0, fbw = 0, y = 0, psm = 0;
+    Row(uint32_t pg, uint32_t w, uint32_t yy, uint32_t p) : pages(pg), fbw(w), y(yy), psm(p) {
+        const PageTab& t = Tab(p);
+        if (t.ph && w && p < 64) {
+            off = t.off + (yy % t.ph) * 64;
+            base = (pg + (yy / t.ph) * w) * 8192u;
+        }
+    }
+    uint32_t operator()(uint32_t x) const {
+        if (off) return (base + (x >> 6) * 8192u + off[x & 63]) & 0x3fffff;
+        return Addr(pages, fbw, x, y, psm);
+    }
+};
+
+/* A frame-buffer pixel as 0xAABBGGRR from its bytes (16-bit: 5:5:5:1 expanded; 24-bit: alpha 0x80). */
+inline uint32_t Pixel(const uint8_t* p, uint32_t psm) {
+    if (psm == 0x02 || psm == 0x0A) {
+        const uint32_t c = uint32_t(p[0]) | uint32_t(p[1]) << 8;
+        return ((c & 31) << 3) | (((c >> 5) & 31) << 11) | (((c >> 10) & 31) << 19) | ((c & 0x8000) ? 0x80000000u : 0);
+    }
+    const uint32_t c = uint32_t(p[0]) | uint32_t(p[1]) << 8 | uint32_t(p[2]) << 16 | uint32_t(p[3]) << 24;
+    return psm == 0x01 ? (c & 0xffffff) | 0x80000000u : c;
+}
+
 }  // namespace xsggs
