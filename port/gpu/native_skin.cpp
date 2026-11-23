@@ -52,6 +52,36 @@ uint64_t Alloc(uint64_t n) {
     g_arena_head = at + n;
     return at;
 }
+/* Arena writes go to cached memory first and into the (write-combined, device-local) arena in one
+   pass before recording (Begin).  ~3000 batches a vsync in battle each wrote theirs straight into
+   it, and the next atomic operation (a shared_ptr copy) waited for those writes to drain. */
+struct Span { uint64_t off; size_t at, len; };
+std::vector<uint8_t> g_stage;
+std::vector<Span> g_spans;
+void FlushStage();
+uint8_t* Stage(uint64_t off, size_t len) {
+    if (g_stage.size() > (32u << 20)) FlushStage();   // no frame recorded for a while
+    off %= kArena;
+    size_t at = g_stage.size();
+    if (!g_spans.empty()) {
+        Span& b = g_spans.back();
+        const uint64_t end = b.off + b.len;
+        if (off >= end && off - end < 512 && b.at + b.len == at) {   // next to the last: one copy (gap included)
+            const size_t gap = size_t(off - end);
+            g_stage.resize(at + gap + len);
+            b.len += gap + len;
+            return g_stage.data() + at + gap;
+        }
+    }
+    g_stage.resize(at + len);
+    g_spans.push_back({off, at, len});
+    return g_stage.data() + at;
+}
+void FlushStage() {
+    for (const Span& sp : g_spans) std::memcpy(g_arenamap + sp.off, g_stage.data() + sp.at, sp.len);
+    g_spans.clear();
+    g_stage.clear();
+}
 bool PalLive(uint64_t serial) { return serial && g_pal - serial < kPalSlots - 1024; }
 bool ArenaLive(uint64_t at) { return g_arena_head - at < kArena - (16ull << 20); }
 uint64_t g_nbatch, g_nvert, g_ntri, g_nculled, g_nbadbone, g_nprev, g_nset0prev, g_nset0, g_nset0lit;
@@ -134,7 +164,7 @@ void BuildUbo(const Draw& d, SkinUbo* u) {
 void FillUbo(const Draw& d) {
     SkinUbo u;
     BuildUbo(d, &u);
-    std::memcpy(g_arenamap + d.uofs % kArena, &u, sizeof u);
+    std::memcpy(Stage(d.uofs, sizeof u), &u, sizeof u);
 }
 
 }  // namespace
@@ -291,7 +321,7 @@ std::shared_ptr<const Draw> Message(uint32_t kind, uint32_t nvert, const uint8_t
     if (d->nidx) {
         d->vofs = Alloc(n * sizeof(GpuVertex));
         d->iofs = Alloc(d->nidx * 2);
-        GpuVertex* vp = reinterpret_cast<GpuVertex*>(g_arenamap + d->vofs % kArena);
+        GpuVertex* vp = reinterpret_cast<GpuVertex*>(Stage(d->vofs, n * sizeof(GpuVertex)));
         for (uint32_t i = 0; i < n; ++i) {
             const GpuNativeSkinVertex& s = sv[i];
             GpuVertex g;
@@ -303,7 +333,7 @@ std::shared_ptr<const Draw> Message(uint32_t kind, uint32_t nvert, const uint8_t
             std::memcpy(g.pp, pp ? pp + size_t(i) * 4 : s.p, 16);
             std::memcpy(&vp[i], &g, sizeof g);
         }
-        std::memcpy(g_arenamap + d->iofs % kArena, idx.data(), d->nidx * 2);
+        std::memcpy(Stage(d->iofs, d->nidx * 2), idx.data(), d->nidx * 2);
         d->uofs = (Alloc(sizeof(SkinUbo) + 256) + 255) & ~255ull;
         FillUbo(*d);
     }
@@ -340,7 +370,7 @@ bool Set0Prev(const GpuNativeBatch& b, const GpuNativeVertex* v, uint32_t n, Gpu
     return ok;
 }
 
-void Begin() {}
+void Begin() { FlushStage(); }
 
 uint32_t Bind(Vulkan::CommandBuffer& cmd, const Draw& d, int pass) {
     const uint32_t ni = d.nidx;
