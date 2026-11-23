@@ -6,6 +6,7 @@
 #include "menu/cfg.h"
 #include "native.h"
 #include "native_prof.h"
+#include "gs_addr.h"
 
 #include "context.hpp"
 #include "device.hpp"
@@ -57,7 +58,17 @@ std::unique_ptr<Vulkan::Context> g_own_ctx;
 std::unique_ptr<Vulkan::Device> g_own_dev;
 std::unique_ptr<ParallelGS::GSInterface> g_own;   // the ownership GS (own device)
 bool g_own_on = true;
-std::vector<uint8_t> g_obuf;                       // pending ownership-GS data of the current message
+/* Bytes that grow without zero-filling: the ownership stream is appended a qword at a time. */
+template <class T>
+struct NoInit : std::allocator<T> {
+    template <class U> struct rebind { using other = NoInit<U>; };
+    NoInit() = default;
+    template <class U> NoInit(const NoInit<U>&) {}
+    template <class U> void construct(U* p) { ::new (static_cast<void*>(p)) U; }
+    template <class U, class... A> void construct(U* p, A&&... a) { ::new (static_cast<void*>(p)) U(std::forward<A>(a)...); }
+};
+using Bytes = std::vector<uint8_t, NoInit<uint8_t>>;
+Bytes g_obuf;                                       // pending ownership-GS data of the current message
 uint32_t g_frame;                                  // vsync interval being drawn
 std::vector<uint32_t> g_trace;
 bool Tracing() {
@@ -661,16 +672,16 @@ void OwnAd(uint32_t reg, uint64_t v) {
 constexpr uint32_t kOwnFlush = 0xff, kOwnCall = 0xfe;
 struct OwnItem {
     uint32_t first;
-    std::vector<uint8_t> second;
+    Bytes second;
     std::function<void()> fn;
-    OwnItem(uint32_t p, std::vector<uint8_t>&& d) : first(p), second(std::move(d)) {}
+    OwnItem(uint32_t p, Bytes&& d) : first(p), second(std::move(d)) {}
 };
 struct OwnWorker {
     std::thread th;
     std::mutex m;
     std::condition_variable cv, idle_cv;
     std::deque<OwnItem> q;
-    std::vector<std::vector<uint8_t>> pool;   // recycled buffers
+    std::vector<Bytes> pool;   // recycled buffers
     bool busy = false;
     void Run() {
         Util::register_thread_index(0);
@@ -691,8 +702,8 @@ struct OwnWorker {
             if (q.empty()) idle_cv.notify_all();
         }
     }
-    void Push(uint32_t path, std::vector<uint8_t>& data) {
-        std::vector<uint8_t> next;
+    void Push(uint32_t path, Bytes& data) {
+        Bytes next;
         {
             std::lock_guard<std::mutex> l(m);
             q.emplace_back(path, std::move(data));
@@ -705,7 +716,7 @@ struct OwnWorker {
     void Call(std::function<void()> fn) {
         {
             std::lock_guard<std::mutex> l(m);
-            q.emplace_back(kOwnCall, std::vector<uint8_t>());
+            q.emplace_back(kOwnCall, Bytes());
             q.back().fn = std::move(fn);
         }
         cv.notify_one();
@@ -915,8 +926,7 @@ void Snapshot(ParallelGS::GSInterface& gs) {
 }
 
 uint32_t GsPixel(const uint8_t* vram, uint32_t fbp, uint32_t fbw, uint32_t psm, uint32_t x, uint32_t y) {
-    uint32_t nib = 0;
-    const uint32_t a = ps2host::gs::Memory::Address(fbp * 32, fbw, x, y, psm, &nib) & 0x3fffff;
+    const uint32_t a = xsggs::Addr(fbp, fbw, x, y, psm);
     const uint8_t* p = vram + a;
     if (psm == 0x02 || psm == 0x0A) {
         const uint32_t c = uint32_t(p[0]) | uint32_t(p[1]) << 8;
@@ -927,9 +937,8 @@ uint32_t GsPixel(const uint8_t* vram, uint32_t fbp, uint32_t fbw, uint32_t psm, 
 }
 
 uint32_t GsZ(const uint8_t* vram, uint32_t zbp, uint32_t fbw, uint32_t zpsm, uint32_t x, uint32_t y) {
-    uint32_t nib = 0;
     const uint32_t psm = 0x30 | (zpsm & 0xf);
-    const uint32_t a = ps2host::gs::Memory::Address(zbp * 32, fbw, x, y, psm, &nib) & 0x3fffff;
+    const uint32_t a = xsggs::Addr(zbp, fbw, x, y, psm);
     const uint8_t* p = vram + a;
     if (psm == 0x32 || psm == 0x3a) return uint32_t(p[0]) | uint32_t(p[1]) << 8;
     uint32_t v = uint32_t(p[0]) | uint32_t(p[1]) << 8 | uint32_t(p[2]) << 16;
@@ -1031,7 +1040,11 @@ void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterfa
             OwnFlush(path);
             Snapshot(gs);
         }
-        g_obuf.insert(g_obuf.end(), oq, oq + 16);   // (resize() zero-filled through a call per qword)
+        {
+            const size_t o = g_obuf.size();
+            g_obuf.resize(o + 16);   // (no zero fill: Bytes)
+            std::memcpy(g_obuf.data() + o, oq, 16);
+        }
         if (g_copy_req) {
             g_copy_req = false;
             gs.gif_transfer(path, data + start, i + 16 - start);   // through the copy
@@ -1096,7 +1109,7 @@ void Vsync(uint32_t frame, ParallelGS::GSInterface& gs) {
         if (pf.active) { pf.active = false; pf.done = true; }
     g_drawn.clear();
     if (g_own) {
-        if (g_worker) { OwnHandOff(); std::vector<uint8_t> none; g_worker->Push(kOwnFlush, none); }
+        if (g_worker) { OwnHandOff(); Bytes none; g_worker->Push(kOwnFlush, none); }
         else g_own->flush();
     }
     if (frame % 600 == 0)

@@ -900,6 +900,8 @@ struct Renderer {
 
     void Vsync(uint32_t frame, uint32_t field) {
         uint64_t pt[8] = {xsgprof::g_on ? xsgprof::Now() : 0};
+        uint64_t ns0[xsgprof::kStages];
+        if (xsgprof::g_on) std::memcpy(ns0, xsgprof::g_ns, sizeof ns0);
         auto mark = [&](int i) { if (xsgprof::g_on) pt[i] = xsgprof::Now(); };
         ApplyLive();
         xsgaudio::Poll();
@@ -994,6 +996,19 @@ struct Renderer {
                 Log("[prof] slow vsync %u: %.1f ms = native %.1f, gs %.1f (flush %.1f), input %.1f, menu/ui %.1f, present %.1f", frame, tot,
                     double(pt[1] - pt[0]) * 1e-6, double(pt[2] - pt[1]) * 1e-6, double(pt[6] - pt[1]) * 1e-6, double(pt[3] - pt[2]) * 1e-6,
                     double(pt[4] - pt[3]) * 1e-6, double(pt[5] - pt[4]) * 1e-6);
+            // which native stages, when native took most of it
+            if (tot > 12.0 && double(pt[1] - pt[0]) * 1e-6 > 6.0) {
+                static const char* const names[] = {"gif-parse", "gif-fx", "gif-main", "gif-own", "own-wait", "batch", "tex-decode",
+                                                    "batch-skin", "batch-snap", "snapshot", "fx-vsync", "live-wait", "live-decode",
+                                                    "live-record", "live-submit", "other"};
+                char buf[512];
+                int n = 0;
+                for (int k = 0; k < xsgprof::kStages && n < int(sizeof buf) - 32; ++k)
+                    if (const double ms = double(xsgprof::g_ns[k] - ns0[k]) * 1e-6; ms >= 0.3)
+                        n += std::snprintf(buf + n, sizeof buf - n, " %s %.1f", names[k], ms);
+                buf[n] = 0;
+                Log("[prof]   native stages this vsync:%s", buf);
+            }
         }
         if (std::string p = xsgmenu::TestShot(&tw, &th); !p.empty()) WritePngOf(so, p, tw, th, true);
         if (!shot_path.empty()) {

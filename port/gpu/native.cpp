@@ -9,6 +9,7 @@
 #include "native_skin.h"
 #include "native_fx.h"
 #include "native_prof.h"
+#include "gs_addr.h"
 
 #include "gpu_ipc.h"
 #include "device.hpp"
@@ -841,8 +842,7 @@ void WritePng(const std::string& path, uint32_t w, uint32_t h, const std::vector
 }
 
 uint32_t GsPixel(const uint8_t* vram, uint32_t fbp, uint32_t fbw, uint32_t psm, uint32_t x, uint32_t y) {
-    uint32_t nib = 0;
-    const uint32_t a = ps2host::gs::Memory::Address(fbp * 32, fbw, x, y, psm, &nib) & 0x3fffff;
+    const uint32_t a = xsggs::Addr(fbp, fbw, x, y, psm);
     const uint8_t* p = vram + a;
     if (psm == 0x02 || psm == 0x0A) {
         const uint32_t c = uint32_t(p[0]) | uint32_t(p[1]) << 8;
@@ -853,9 +853,8 @@ uint32_t GsPixel(const uint8_t* vram, uint32_t fbp, uint32_t fbw, uint32_t psm, 
 }
 
 uint32_t GsZ(const uint8_t* vram, uint32_t zbp, uint32_t fbw, uint32_t zpsm, uint32_t x, uint32_t y) {
-    uint32_t nib = 0;
     const uint32_t psm = 0x30 | (zpsm & 0xf);
-    const uint32_t a = ps2host::gs::Memory::Address(zbp * 32, fbw, x, y, psm, &nib) & 0x3fffff;
+    const uint32_t a = xsggs::Addr(zbp, fbw, x, y, psm);
     const uint8_t* p = vram + a;
     if (psm == 0x32 || psm == 0x3a) return uint32_t(p[0]) | uint32_t(p[1]) << 8;
     uint32_t v = uint32_t(p[0]) | uint32_t(p[1]) << 8 | uint32_t(p[2]) << 16;
