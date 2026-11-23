@@ -518,7 +518,6 @@ bool Defer(const Vtx* v, int n, uint32_t type) {
         const uint32_t tw = std::min(10u, Bits(tex0, 26, 4)), th = std::min(10u, Bits(tex0, 30, 4));
         const uint32_t tblocks = std::max(1u, (1u << tw) * (1u << th) * 4 / 256);
         // a render target's pages only when an upload replaced them since the GS last drew there
-        const uint32_t tgen = xsgnative::TextureGenMin(tex0);
         // The frame itself, exactly (its base, width and a 24/32-bit format): a frame read, which the
         // replay does at native resolution (Record, kind 2) -- the characters' soft-edge pass draws
         // their triangles again textured from the frame, and on the GS it left every character pixel
@@ -533,7 +532,7 @@ bool Defer(const Vtx* v, int n, uint32_t type) {
         // (its declared size, 512x512, reaches past the 448 rows into the next buffer; only the frame
         // is sampled, so a frame read skips the overlap checks)
         for (uint32_t d : g_rendered)
-            if (!frame_read && Overlaps(tbp, tblocks, d * 32) && (d == fbp || tgen <= g_rt_gen[d])) {
+            if (!frame_read && Overlaps(tbp, tblocks, d * 32) && (d == fbp || xsgnative::PageGen(d) <= g_rt_gen[d])) {
                 g_nrefuse[2]++;
                 return Veto(fbp, v, n);
             }
@@ -1482,11 +1481,12 @@ bool GsRenderedTexture(uint64_t tex0) {
     const uint32_t tbp = Bits(tex0, 0, 14);
     const uint32_t tw = std::min(10u, Bits(tex0, 26, 4)), th = std::min(10u, Bits(tex0, 30, 4));
     const uint32_t tblocks = std::max(1u, (1u << tw) * (1u << th) * 4 / 256);
-    const uint32_t tgen = xsgnative::TextureGenMin(tex0);
+    // GS-rendered while the page the GS drew into has not been uploaded over since (a large
+    // atlas whose other pages are not re-uploaded every frame is not, after one effect).
     for (uint32_t d : g_rendered)
         if (Overlaps(tbp, tblocks, d * 32)) {
             auto it = g_rt_gen.find(d);
-            if (it != g_rt_gen.end() && tgen <= it->second) return true;
+            if (it != g_rt_gen.end() && xsgnative::PageGen(d) <= it->second) return true;
         }
     return false;
 }

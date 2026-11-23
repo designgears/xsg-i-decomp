@@ -51,6 +51,7 @@ const uint8_t* MirrorData();
 uint32_t TextureGen(uint64_t tex0);
 /* The oldest upload generation among a texture's pages (its CLUT not included). */
 uint32_t TextureGenMin(uint64_t tex0);
+uint32_t PageGen(uint32_t page);   // the mirror generation of the last upload into an 8 KB page
 /* A content hash of a texture's pages (its CLUT not included; per-page hashes are cached until an
    upload touches the page). */
 uint64_t TextureHash(uint64_t tex0);

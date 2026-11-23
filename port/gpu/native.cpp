@@ -380,6 +380,7 @@ struct Stored {
     bool hasprev = false;
     int obj = 0;                                 // the object id (actor + 1) of the batch (GPU_NATIVE_OBJECT), 0 none
     bool vram_tex = false;                       // its texture is GS-rendered: decoded from the GS memory at Live
+    std::shared_ptr<const std::array<uint16_t, 512>> clut;   // vram_tex, indexed: the CLUT buffer when it was drawn
     uint64_t prim, tex0, clamp, tex1, xyoff, texa, fogcol, scissor, alpha, test, frame, zbuf;
 };
 /* The batches of the last frame drawn into each frame buffer (FRAME.FBP).  A
@@ -1119,10 +1120,10 @@ void Live(ParallelGS::GSInterface& gs) {
         for (const Stored* s : list) {
             if (!s->vram_tex) continue;
             if (!mem) mem = static_cast<const uint8_t*>(gs.map_vram_read(0, 4u << 20));
-            auto& t = done[{s->tex0, s->texa}];
+            auto& t = done[{s->tex0 ^ uint64_t(uintptr_t(s->clut.get())) * 31, s->texa}];
             if (!t) {
                 t = std::make_shared<Tex>();
-                t->px = DecodeTexture(mem, s->tex0, s->texa, &t->w, &t->h);
+                t->px = DecodeTexture(mem, s->tex0, s->texa, &t->w, &t->h, s->clut ? s->clut->data() : nullptr);
             }
             const_cast<Stored*>(s)->tex = t;
         }
@@ -1641,6 +1642,17 @@ void Snap(Stored& s, const uint32_t* tagw) {
         }
         s.tex = it->second;
         s.vram_tex = xsgfx::GsRenderedTexture(s.tex0);
+        if (s.vram_tex && indexed) {
+            static std::shared_ptr<const std::array<uint16_t, 512>> last;
+            static uint64_t last_hash = 0;
+            if (!last || last_hash != g_cbuf.hash) {
+                auto c = std::make_shared<std::array<uint16_t, 512>>();
+                std::memcpy(c->data(), g_cbuf.slot, sizeof(uint16_t) * 512);
+                last = c;
+                last_hash = g_cbuf.hash;
+            }
+            s.clut = last;
+        }
     }
 }
 /* A content hash per 8 KB page of the mirror, recomputed only after an upload
@@ -1821,6 +1833,7 @@ uint32_t TextureGenMin(uint64_t tex0) {
     for (uint32_t i = 0; i < np; ++i) gen = std::min(gen, g_page_gen[(p0 + i) & 511]);
     return np ? gen : 0;
 }
+uint32_t PageGen(uint32_t page) { return g_page_gen[page & 511]; }
 std::vector<uint32_t> DecodeVramTexture(const uint8_t* vram, uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h) {
     return DecodeTexture(vram, tex0, texa, w, h);
 }
