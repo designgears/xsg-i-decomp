@@ -406,6 +406,8 @@ uint32_t g_last_vsync, g_vsyncs;
 Vulkan::ImageHandle g_live_img;     // the composite of the displayed buffer, scale g_scale
 uint32_t g_live_w, g_live_h;        // its frame-buffer size (pixels at 1x)
 uint32_t g_live_mx;                 // widescreen: its side bands (1x pixels each side; the image is w + 2 mx wide)
+Vulkan::ImageHandle g_hold_img;     // the last composite without an unreplayable post effect
+uint32_t g_hold_w, g_hold_h, g_hold_mx;
 /* Without the live path, batches are kept (and textured) only in the few vsyncs before a shot. */
 bool Near() {
     if (g_live) return true;
@@ -1089,21 +1091,30 @@ void Live(ParallelGS::GSInterface& gs) {
     rg.mx = WideMargin(*list.front(), rg);
     // A post-processed frame the replay cannot redo: the paraLLEl-GS frame (1x).
     // The GS frame lacks what the native batches draw (the 3D scene), so it is no
-    // fallback: hold the last composite for up to a second (a battle's opening
-    // transition reads the frame back), then composite over the GS frame as it is.
+    // fallback: hold the last good composite for up to three seconds (a battle's
+    // opening transition reads the frame back, and its frames between may have no
+    // native batches at all), then composite over the GS frame as it is.
     const char* why = "";
     xsgfx::Post post = xsgfx::PostState(fbp, &why);
     static uint32_t good_vsync = 0;
+    bool good = true;
     if (post == xsgfx::Post::Unsupported) {
         static std::string last_why;
-        const bool hold = g_live_img && g_last_vsync - good_vsync < 60;
+        const bool hold = g_hold_img && g_last_vsync - good_vsync < 180;
         if (last_why != why) {
             Log("vsync %u: post effect not replayable (%s; started by %s): %s", g_last_vsync, why,
                 xsgfx::PostTrigger(fbp), hold ? "holding the last frame" : "drawn without it");
             last_why = why;
         }
-        if (hold) return;
+        if (hold) {
+            g_live_img = g_hold_img;
+            g_live_w = g_hold_w;
+            g_live_h = g_hold_h;
+            g_live_mx = g_hold_mx;
+            return;
+        }
         post = xsgfx::Post::None;
+        good = false;
     } else {
         good_vsync = g_last_vsync;
     }
@@ -1278,6 +1289,12 @@ void Live(ParallelGS::GSInterface& gs) {
     g_live_w = rg.w;
     g_live_h = rg.h;
     g_live_mx = rg.mx;
+    if (good) {
+        g_hold_img = out;
+        g_hold_w = rg.w;
+        g_hold_h = rg.h;
+        g_hold_mx = rg.mx;
+    }
     g_live_frames++;
 }
 
@@ -1499,6 +1516,7 @@ void Apply(ParallelGS::GSInterface& gs) {
     if (!want) {
         g_on = false;
         g_live_img.reset();
+        g_hold_img.reset();
         Log("off (menu)");
         return;
     }
