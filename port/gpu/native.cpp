@@ -897,8 +897,9 @@ uint32_t DisplayFbp(ParallelGS::GSInterface& gs) {
 /* The native batches of the displayed buffer (empty when it has none). */
 uint32_t g_good_vsync = 0;   // the last vsync whose composite had no unreplayable post effect
 
-/* Whether the displayed GS frame (512x448 CT32 from FBP) is nearly one colour that is not black:
-   at least 90 % of a sample of its words equal the most common one. */
+/* Whether the displayed GS frame (512x448 CT32 from FBP) is mostly one colour that is not black:
+   at least 75 % of a sample of its pixels within 12 per channel of the most common (coarse)
+   colour. The gray left on screen during an event reload is a slight gradient, plus the radar. */
 bool FlatFrame(ParallelGS::GSInterface& gs, uint32_t fbp) {
     gs.flush();
     const uint8_t* vram = static_cast<const uint8_t*>(gs.map_vram_read(0, 4u << 20));
@@ -908,11 +909,18 @@ bool FlatFrame(ParallelGS::GSInterface& gs, uint32_t fbp) {
     std::unordered_map<uint32_t, uint32_t> count;
     uint32_t n = 0, best = 0, best_v = 0;
     for (size_t i = 0; i < words; i += 61, ++n) {
-        const uint32_t v = w[i] & 0xffffff, c = ++count[v];
+        const uint32_t v = w[i] & 0xf0f0f0, c = ++count[v];
         if (c > best) { best = c; best_v = v; }
     }
-    const uint32_t r = best_v & 0xff, g = (best_v >> 8) & 0xff, b = (best_v >> 16) & 0xff;
-    return best * 10 >= n * 9 && r + g + b > 48;
+    const int r0 = int(best_v & 0xff) + 8, g0 = int((best_v >> 8) & 0xff) + 8, b0 = int((best_v >> 16) & 0xff) + 8;
+    if (r0 + g0 + b0 < 64) return false;   // black: a fade, not a held scene
+    uint32_t near = 0;
+    for (size_t i = 0; i < words; i += 61) {
+        const uint32_t v = w[i];
+        const int r = int(v & 0xff), g = int((v >> 8) & 0xff), b = int((v >> 16) & 0xff);
+        near += std::abs(r - r0) <= 12 && std::abs(g - g0) <= 12 && std::abs(b - b0) <= 12;
+    }
+    return near * 4 >= n * 3;
 }
 
 std::vector<const Stored*> DisplayList(ParallelGS::GSInterface& gs, uint32_t* fbp_out) {
