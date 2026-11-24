@@ -895,6 +895,26 @@ uint32_t DisplayFbp(ParallelGS::GSInterface& gs) {
 }
 
 /* The native batches of the displayed buffer (empty when it has none). */
+uint32_t g_good_vsync = 0;   // the last vsync whose composite had no unreplayable post effect
+
+/* Whether the displayed GS frame (512x448 CT32 from FBP) is nearly one colour that is not black:
+   at least 90 % of a sample of its words equal the most common one. */
+bool FlatFrame(ParallelGS::GSInterface& gs, uint32_t fbp) {
+    gs.flush();
+    const uint8_t* vram = static_cast<const uint8_t*>(gs.map_vram_read(0, 4u << 20));
+    const size_t off = size_t(fbp) * 8192, words = 512 * 448;
+    if (!vram || off + words * 4 > (4u << 20)) return false;
+    const uint32_t* w = reinterpret_cast<const uint32_t*>(vram + off);
+    std::unordered_map<uint32_t, uint32_t> count;
+    uint32_t n = 0, best = 0, best_v = 0;
+    for (size_t i = 0; i < words; i += 61, ++n) {
+        const uint32_t v = w[i] & 0xffffff, c = ++count[v];
+        if (c > best) { best = c; best_v = v; }
+    }
+    const uint32_t r = best_v & 0xff, g = (best_v >> 8) & 0xff, b = (best_v >> 16) & 0xff;
+    return best * 10 >= n * 9 && r + g + b > 48;
+}
+
 std::vector<const Stored*> DisplayList(ParallelGS::GSInterface& gs, uint32_t* fbp_out) {
     std::vector<const Stored*> list;
     const uint32_t fbp = DisplayFbp(gs);
@@ -1093,7 +1113,21 @@ void ShadowPass(Vulkan::CommandBuffer& cmd, const std::vector<const Stored*>& li
 void Live(ParallelGS::GSInterface& gs) {
     uint32_t fbp;
     auto list = DisplayList(gs, &fbp);
-    if (list.empty()) { g_live_img.reset(); return; }
+    if (list.empty()) {
+        // A field frame with no native batches whose GS frame is one flat colour (the clear
+        // colour, plus the radar): the game stopped drawing 3D but did not clear (an event
+        // item pickup reloading the scene). On a PS2 the last scene stays on screen; here
+        // the GS frame never had it, so it showed solid gray (#3). Keep the last composite.
+        if (g_hold_img && g_last_vsync - g_good_vsync < 180 && FlatFrame(gs, fbp)) {
+            g_live_img = g_hold_img;
+            g_live_w = g_hold_w;
+            g_live_h = g_hold_h;
+            g_live_mx = g_hold_mx;
+            return;
+        }
+        g_live_img.reset();
+        return;
+    }
     // At 30 fps the same frame is on display for two vsyncs: keep its composite.
     static uint32_t last_fbp = ~0u, last_gen = ~0u;
     const uint32_t gen = g_fb[fbp].vsync;
@@ -1109,7 +1143,7 @@ void Live(ParallelGS::GSInterface& gs) {
     // native batches at all), then composite over the GS frame as it is.
     const char* why = "";
     xsgfx::Post post = xsgfx::PostState(fbp, &why);
-    static uint32_t good_vsync = 0;
+    uint32_t& good_vsync = g_good_vsync;
     bool good = true;
     if (post == xsgfx::Post::Unsupported) {
         static std::string last_why;
