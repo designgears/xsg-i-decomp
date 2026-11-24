@@ -557,6 +557,14 @@ static struct { int used; uint32_t lsn, size, pos; int host_fd; } fds[MAX_FD];
 int sceOpen(const char *name, int flags, ...)
 {
     const char *p = strchr(name, ':');
+    /* No PS2 hard disk: pfs0:/hdd0: files must not resolve to the disc's
+     * root files of the same name (pfs0:/xenosaga.00 would read the disc's
+     * archive index as the HDD install's and break every file read after a
+     * save with the HDD option on is loaded). */
+    if (!strncmp(name, "pfs", 3) || !strncmp(name, "hdd", 3)) {
+        xsg_logf("[io] sceOpen %s flags=0x%x -> no hard disk\n", name, flags);
+        return -1;
+    }
     p = p ? p + 1 : name;
     for (int i = 3; i < MAX_FD; i++) {
         if (fds[i].used)
