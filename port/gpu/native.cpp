@@ -573,6 +573,27 @@ struct PickRead { Vulkan::BufferHandle buf; Vulkan::Fence fence; };
 std::vector<PickRead> g_picks;
 std::vector<Vulkan::BufferHandle> g_pick_pool;   // 4-byte read-back buffers, reused
 
+/* The GS blend (A - B) * C + D (A/B/D: 0 Cs, 1 Cd, 2 zero; C the source alpha or FIX,
+   which the fragment stage outputs as its alpha) as a Vulkan blend, src * Cs op dst * Cd.
+   False for the forms a fixed-function blend cannot express (Cs * (1 + a) - Cd * a ...). */
+bool BlendOf(uint32_t A, uint32_t B, uint32_t D, VkBlendFactor* sf, VkBlendFactor* df, VkBlendOp* op) {
+    constexpr VkBlendFactor Z = VK_BLEND_FACTOR_ZERO, O = VK_BLEND_FACTOR_ONE, SA = VK_BLEND_FACTOR_SRC_ALPHA,
+                            ISA = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    constexpr VkBlendOp ADD = VK_BLEND_OP_ADD, SUB = VK_BLEND_OP_SUBTRACT, RSUB = VK_BLEND_OP_REVERSE_SUBTRACT;
+    auto set = [&](VkBlendFactor s, VkBlendFactor d, VkBlendOp o) { *sf = s; *df = d; *op = o; return true; };
+    if (A == 3 || B == 3 || D == 3) return false;
+    if (A == B) return D == 0 ? set(O, Z, ADD) : D == 1 ? set(Z, O, ADD) : set(Z, Z, ADD);     // D
+    if (A == 0 && B == 1) return D == 1 ? set(SA, ISA, ADD) : D == 2 ? set(SA, SA, SUB) : false;   // (Cs - Cd) a + D
+    if (A == 0 && B == 2) return D == 1 ? set(SA, O, ADD) : D == 2 ? set(SA, Z, ADD) : false;      // Cs a + D
+    if (A == 1 && B == 0)                                                                          // (Cd - Cs) a + D
+        return D == 0 ? set(ISA, SA, ADD) : D == 2 ? set(SA, SA, RSUB)
+                      : set(SA, O, RSUB);   // + Cd: approximated as Cd - Cs a (as before)
+    if (A == 1 && B == 2) return D == 0 ? set(O, SA, ADD) : D == 2 ? set(Z, SA, ADD) : false;      // Cd a + D
+    if (A == 2 && B == 0) return D == 1 ? set(SA, O, RSUB) : D == 0 ? set(ISA, Z, ADD) : set(Z, Z, ADD);   // D - Cs a
+    if (A == 2 && B == 1) return D == 1 ? set(Z, ISA, ADD) : D == 0 ? set(O, SA, SUB) : set(Z, Z, ADD);    // D - Cd a
+    return false;
+}
+
 GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*>& list, const Region& rg, int scale,
                     unsigned* odd_blend_out) {
     GpuTarget t;
@@ -703,21 +724,13 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
         cmd->set_blend_enable(false);
         bool blended = false;
         if (abe) {
-            if (A == 0 && B == 1 && D == 1 && C != 1) {
+            VkBlendFactor sf, df;
+            VkBlendOp op;
+            if (C != 1 && BlendOf(A, B, D, &sf, &df, &op)) {
                 cmd->set_blend_enable(true);
                 blended = true;
-                cmd->set_blend_factors(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
-                cmd->set_blend_op(VK_BLEND_OP_ADD);
-            } else if (A == 0 && B == 2 && D == 1 && C != 1) {
-                cmd->set_blend_enable(true);
-                blended = true;
-                cmd->set_blend_factors(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE);
-                cmd->set_blend_op(VK_BLEND_OP_ADD);
-            } else if (A == 1 && B == 0 && D == 1 && C != 1) {   // Cd - (Cs - ... ) : (Cd - Cs) * a + Cd ~ subtract
-                cmd->set_blend_enable(true);
-                blended = true;
-                cmd->set_blend_factors(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE);
-                cmd->set_blend_op(VK_BLEND_OP_REVERSE_SUBTRACT);
+                cmd->set_blend_factors(sf, df);
+                cmd->set_blend_op(op);
             } else {
                 odd_blend++;
             }
