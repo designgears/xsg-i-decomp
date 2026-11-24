@@ -380,7 +380,8 @@ struct Stored {
     bool hasprev = false;
     int obj = 0;                                 // the object id (actor + 1) of the batch (GPU_NATIVE_OBJECT), 0 none
     bool vram_tex = false;                       // its texture is GS-rendered: decoded from the GS memory at Live
-    std::shared_ptr<const std::array<uint16_t, 512>> clut;   // vram_tex, indexed: the CLUT buffer when it was drawn
+    std::shared_ptr<const std::array<uint16_t, 512>> clut;
+    bool list = false;   // set 0 with ADC-dropped triangles: v is a triangle list   // vram_tex, indexed: the CLUT buffer when it was drawn
     uint64_t prim, tex0, clamp, tex1, xyoff, texa, fogcol, scissor, alpha, test, frame, zbuf;
 };
 /* The batches of the last frame drawn into each frame buffer (FRAME.FBP).  A
@@ -681,7 +682,8 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
             if (!n) continue;
         } else {
             cmd->set_program(g_prog);
-            cmd->set_primitive_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+            if (!n) continue;
+            cmd->set_primitive_topology(s->list ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
             auto* vp = static_cast<GpuNativeVertex*>(cmd->allocate_vertex_data(0, n * sizeof(GpuNativeVertex), sizeof(GpuNativeVertex)));
             std::memcpy(vp, s->v.data(), n * sizeof(GpuNativeVertex));
             cmd->set_vertex_attrib(0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(GpuNativeVertex, p));
@@ -1844,6 +1846,27 @@ void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) 
     s.v.resize(nvert);
     std::memcpy(s.v.data(), pv, nvert * sizeof(GpuNativeVertex));
     s.hasprev = xsgskin::Set0Prev(s.b, pv, nvert, s.v.data(), s.mprev);
+    // The GS draws no strip triangle whose last vertex has ADC set: the program sets it for
+    // a vertex outside the clip guard band and the two after it (it has no clipper), so a
+    // triangle crossing the camera never reaches the GS. Drawn here it can cover the whole
+    // screen (#3: the Mission Key close-up, solid gray). Such batches become a triangle list.
+    if (len >= sizeof(GpuNativeBatch) + nvert * sizeof(GpuNativeVertex) + (nvert + 31) / 32 * 4) {
+        const uint32_t* adc = reinterpret_cast<const uint32_t*>(pv + nvert);
+        bool any = false;
+        for (uint32_t i = 2; i < nvert && !any; ++i) any = adc[i >> 5] >> (i & 31) & 1;
+        if (any) {
+            std::vector<GpuNativeVertex> t;
+            t.reserve(nvert * 3);
+            for (uint32_t i = 2; i < nvert; ++i)
+                if (!(adc[i >> 5] >> (i & 31) & 1)) {
+                    t.push_back(s.v[i - 2]);
+                    t.push_back(s.v[i - 1]);
+                    t.push_back(s.v[i]);
+                }
+            s.v = std::move(t);
+            s.list = true;
+        }
+    }
     Snap(s, s.b.tag);
     Push(std::move(s));
 }

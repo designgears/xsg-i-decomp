@@ -403,7 +403,7 @@ bool NativeStrip(u32 pc, u32 top, u32 itop) {
         return true;
     }
     static std::vector<u8> buf;
-    buf.resize(sizeof(GpuNativeBatch) + n * sizeof(GpuNativeVertex));
+    buf.assign(sizeof(GpuNativeBatch) + n * sizeof(GpuNativeVertex) + (n + 31) / 32 * 4, 0);
     GpuNativeBatch* b = reinterpret_cast<GpuNativeBatch*>(buf.data());
     std::memcpy(b->m, Q(962), 64);
     std::memcpy(b->scale, Q(966), 16);
@@ -422,6 +422,18 @@ bool NativeStrip(u32 pc, u32 top, u32 itop) {
         std::memcpy(v[i].c, Q(top + 1 + 2 * n + i), 16);
         std::memcpy(&v[i].t, Q(top + 1 + n + i) + 12, 4);
         v[i].pad[0] = v[i].pad[1] = v[i].pad[2] = 0;
+    }
+    {   /* the ADC bit of every vertex, from the program's own XYZF2 (clipped vertices and
+           the two after them, facing): the GS draws no strip triangle a set bit ends */
+        u32* adc = reinterpret_cast<u32*>(v + n);
+        u32 out;
+        std::memcpy(&out, Q(1017), 4);
+        out &= 0xffff;
+        for (u32 i = 0; i < n; ++i) {
+            u32 xw;
+            std::memcpy(&xw, Q(out + 1 + 3 * i + 2) + 12, 4);
+            if (xw & 0x8000) adc[i >> 5] |= 1u << (i & 31);
+        }
     }
     xsggpu::Native(GPU_NATIVE_SET0_STRIP, n, buf.data(), u32(buf.size()));
     /* XGKICK of the packet(s), as Path1Kick feeds them. */
