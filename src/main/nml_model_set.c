@@ -2253,7 +2253,13 @@ void nmlModelSetTexture(const char *texture)
      * 'X','T','X' (texture[2] is compared against texture[0], not a literal,
      * per the original disassembly). */
     if (texture == 0 ||
+#ifndef PORT_HOST
         (u32)texture - NML_TEXTURE_RAM_BASE > NML_TEXTURE_RAM_MAX_OFFSET ||
+#endif
+        /* PS2 RAM window (0x200000..0x2000000) is skipped on the host: the
+         * map units' textures (MAP_drawUnitAt, svDrawModel) live in static
+         * buffers such as uwamono_dat outside it.  A rejected texture left
+         * the model untextured, so it sampled whatever was uploaded last. */
         ((u32)texture & NML_TEXTURE_ALIGN_MASK) != 0 ||
         texture[0] != 'X' || texture[1] != 'T' || texture[2] != texture[0]) {
         return;
