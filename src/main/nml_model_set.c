@@ -3111,9 +3111,18 @@ int nmlModelLexDataCheck(NmlModel *model)
     char *block;
     char *name;
 
+#ifndef PORT_HOST
     if ((u32)(base + 0xFFE00000) > 0x1DFFFFF) {
         goto done;
     }
+#else
+    /* PS2 RAM check (0x200000..0x2000000). On the host the game's static
+     * buffers (uwamono_dat: save points, item boxes, barrels) sit outside
+     * that window, so only reject a null model. */
+    if (base == 0) {
+        goto done;
+    }
+#endif
     if ((u32)model & 0xF) {
         goto done;
     }
