@@ -1850,7 +1850,8 @@ void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) 
     // a vertex outside the clip guard band and the two after it (it has no clipper), so a
     // triangle crossing the camera never reaches the GS. Drawn here it can cover the whole
     // screen (#3: the Mission Key close-up, solid gray). Such batches become a triangle list.
-    if (len >= sizeof(GpuNativeBatch) + nvert * sizeof(GpuNativeVertex) + (nvert + 31) / 32 * 4) {
+    static const bool adc_on = xsgcfg::GetInt("debug.native_adc") != 0;   // 0: A/B test switch
+    if (adc_on && len >= sizeof(GpuNativeBatch) + nvert * sizeof(GpuNativeVertex) + (nvert + 31) / 32 * 4) {
         const uint32_t* adc = reinterpret_cast<const uint32_t*>(pv + nvert);
         bool any = false;
         for (uint32_t i = 2; i < nvert && !any; ++i) any = adc[i >> 5] >> (i & 31) & 1;
