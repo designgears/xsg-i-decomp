@@ -1674,15 +1674,19 @@ void Snap(Stored& s, const uint32_t* tagw) {
         s.tex = it->second;
         s.vram_tex = xsgfx::GsRenderedTexture(s.tex0);
         if (s.vram_tex && indexed) {
-            static std::shared_ptr<const std::array<uint16_t, 512>> last;
-            static uint64_t last_hash = 0;
-            if (!last || last_hash != g_cbuf.hash) {
-                auto c = std::make_shared<std::array<uint16_t, 512>>();
-                std::memcpy(c->data(), g_cbuf.slot, sizeof(uint16_t) * 512);
-                last = c;
-                last_hash = g_cbuf.hash;
+            // One snapshot per CLUT content: the live pass decodes each (TEX0, snapshot) once a
+            // frame, and a scene that switches palettes back and forth (A, B, A, ...) between
+            // batches otherwise gets a new snapshot, and a new decode, per switch (#3: the
+            // A.G.W.S. cutscene decoded 18 Mpx a frame for 4 distinct textures).
+            static std::unordered_map<uint64_t, std::shared_ptr<const std::array<uint16_t, 512>>> snaps;
+            if (snaps.size() > 256 && !snaps.count(g_cbuf.hash)) snaps.clear();
+            auto& c = snaps[g_cbuf.hash];
+            if (!c) {
+                auto n = std::make_shared<std::array<uint16_t, 512>>();
+                std::memcpy(n->data(), g_cbuf.slot, sizeof(uint16_t) * 512);
+                c = n;
             }
-            s.clut = last;
+            s.clut = c;
         }
     }
 }
