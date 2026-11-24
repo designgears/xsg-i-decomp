@@ -3831,6 +3831,20 @@ JntStaticChannel *JNT_computeMatrix(JntWork *work, JntStaticChannel *channel)
         owner->movement.w = distance;
         owner->movement.x = owner->position.x;
         owner->movement.z = owner->position.z;
+#ifdef PORT_HOST
+        /* The EE FPU has no NaN or infinity (results saturate at +-FLT_MAX), so on a
+         * PS2 this filter stays finite and settles again. On the host a NaN position
+         * (Shion's actor while she pilots the A.G.W.S.) stuck in it for good, and the
+         * hair sway it drives (EXM moved hair) flung her hair joints to infinity in
+         * every later battle (#3). Restart the filter at rest instead. */
+        if (!__builtin_isfinite(owner->movement.y) || !__builtin_isfinite(owner->movement.w) ||
+            !__builtin_isfinite(owner->movement.x) || !__builtin_isfinite(owner->movement.z)) {
+            owner->movement.x = __builtin_isfinite(owner->position.x) ? owner->position.x : 0.0f;
+            owner->movement.z = __builtin_isfinite(owner->position.z) ? owner->position.z : 0.0f;
+            owner->movement.y = 0.0f;
+            owner->movement.w = 0.0f;
+        }
+#endif
     }
     work->channel_start_index = -1;
     work->attribute_difference = work->requested_attribute_key - work->attribute_key;
