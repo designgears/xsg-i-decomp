@@ -220,6 +220,36 @@ void xsg_room_tick(int kind, unsigned event_id)
         xsg_logf("[room] vblank %u: back in the field\n", xsg_frame);
     }
 
+    if (kind == 2) {   /* debug.pos / debug.pos_log: place the player, log where it is */
+        extern char GameLoopState[];
+        extern float UnduGet(float x, float z);
+        static int next_pos;
+        char *actor = *(char **)(GameLoopState + 4);   /* as MapChangeResource places it */
+        const char *pl = xsg_cfg("debug.pos_log");
+        unsigned every = pl ? (unsigned)strtoul(pl, 0, 10) : 0;
+        if (actor && every && xsg_frame % every == 0)
+            xsg_logf("[room] vblank %u: player at %.2f %.2f %.2f\n", xsg_frame, *(float *)(actor + 0x10),
+                     *(float *)(actor + 0x14), *(float *)(actor + 0x18));
+        const char *p = xsg_cfg("debug.pos");   /* "X,Z@V;X,Z@V;..." (V: vblank, ascending) */
+        for (int i = 0; actor && p && *p; ++i) {
+            char *e;
+            float x = strtof(p, &e), z = 0;
+            if (*e == ',') z = strtof(e + 1, &e);
+            unsigned v = *e == '@' ? (unsigned)strtoul(e + 1, &e, 10) : 0;
+            if (i == next_pos && xsg_frame >= v) {
+                float y = UnduGet(x, z);
+                *(float *)(actor + 0x10) = x;
+                *(float *)(actor + 0x18) = z;
+                if (y != -1000.0f) *(float *)(actor + 0x14) = y;
+                xsg_logf("[room] vblank %u: player placed at %.2f %.2f %.2f\n", xsg_frame, x, y, z);
+                ++next_pos;
+                break;
+            }
+            p = strchr(e, ';');
+            p = p ? p + 1 : 0;
+        }
+    }
+
     {   /* debug.jump2 = SCENE@V: a second jump once the field runs at vblank V or later */
         static int jumped2;
         const char *j2 = xsg_cfg("debug.jump2");

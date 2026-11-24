@@ -108,6 +108,8 @@ XSG_SETTING("debug.pmode_raw", "XSG_GPU_PMODE_RAW", "0", "0|1", 0, "Scan out PMO
 XSG_SETTING("debug.stream", "XSG_STREAM", "", 0, 0, "Raw 512x448 RGB24 live stream FIFO path.")
 XSG_SETTING("debug.jump", 0, "", 0, 0, "Test room: once the first field runs, jump to this scene (cf1234, ev0123; cf1234:N for entrance N; port/runtime/rooms.c).")
 XSG_SETTING("debug.jump2", 0, "", 0, 0, "Test: a second jump, SCENE[:N]@V, once the field runs at vblank V or later (port/runtime/rooms.c).")
+XSG_SETTING("debug.pos", 0, "", 0, 0, "Test: place the player, X,Z@V;X,Z@V;... (vblanks ascending; Y from the floor height; port/runtime/rooms.c).")
+XSG_SETTING("debug.pos_log", 0, "", 0, 0, "Test: log the player position every N vblanks.")
 XSG_SETTING("debug.room", 0, "", 0, 0, "Test room by name: a scene plus pad steps (battle, battle_kosmos, menu, menu_skills, ...; port/runtime/rooms.c).")
 XSG_SETTING("debug.give_all", 0, "0", "0|1", 0, "At the first field: whole party, A.G.W.S., money and every item, weapon, ammo and accessory (rooms.c).")
 XSG_SETTING("debug.scene_list", 0, "0", "0|1", 0, "Log every scene file on the disc at the first field.")
