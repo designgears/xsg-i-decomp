@@ -7,6 +7,9 @@
  *       Once the first field scene is running, jump to that scene the way the
  *       developers' debug menu does (Java_xeno_util_Runtime_jump_sub).  cfNNNN
  *       are field scenes (map + its event script), evNNNN story events.
+ *       An optional ":N" (cf0250:2) picks entrance N instead of the default.
+ *   debug.jump2 = cf1234[:N]@V
+ *       A second jump, once the field is running at vblank V or later.
  *   debug.scene_list = 1
  *       At the same point, log every cfNNNN / evNNNN scene file on the disc.
  *
@@ -217,6 +220,20 @@ void xsg_room_tick(int kind, unsigned event_id)
         xsg_logf("[room] vblank %u: back in the field\n", xsg_frame);
     }
 
+    {   /* debug.jump2 = SCENE@V: a second jump once the field runs at vblank V or later */
+        static int jumped2;
+        const char *j2 = xsg_cfg("debug.jump2");
+        const char *at = j2 ? strchr(j2, '@') : 0;
+        if (!jumped2 && at && kind == 2 && xsg_frame >= (unsigned)strtoul(at + 1, 0, 10)) {
+            long t2 = parse_scene(j2);
+            const char *c = strchr(j2, ':');
+            jumped2 = 1;
+            xsg_logf("[room] vblank %u: jump2 to %ld\n", xsg_frame, t2);
+            if (t2 >= 0)
+                Java_xeno_util_Runtime_jump_sub((int)t2, c && c < at ? atoi(c + 1) : -1);
+        }
+    }
+
     if (started || kind != 2)
         return;
     started = 1;
@@ -262,6 +279,9 @@ void xsg_room_tick(int kind, unsigned event_id)
             if (se && !strcmp(se, "jump"))
                 xsg_skip_events = 0;
         }
-        Java_xeno_util_Runtime_jump_sub((int)target, -1);
+        {   /* debug.jump = cf0250:2 -> entrance 2 */
+            const char *c = jump ? strchr(jump, ':') : 0;
+            Java_xeno_util_Runtime_jump_sub((int)target, c ? atoi(c + 1) : -1);
+        }
     }
 }
