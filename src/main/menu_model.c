@@ -2032,6 +2032,9 @@ XglTaskPrefix *MenuModelWeaponCreate(MenuModelTaskWork *unit,
 }
 
 extern unsigned char JpegEnv11_10[];
+#ifdef PORT_HOST
+extern unsigned short guno_eid_tbl[29];
+#endif
 extern int MenuScenarioNoGet(void);
 extern unsigned short func_A1A2E8(int);
 extern int func_A191C0(int chrNo);
@@ -2083,7 +2086,14 @@ void MenuModelCreate(XglTaskPrefix **arg0, int arg1)
       else
         if (((u32) (arg1 - 0x22)) < 0x1DU)
       {
+#ifdef PORT_HOST
+        /* PS2: JpegEnv11_10 + 0x5C + arg1*2 is guno_eid_tbl[arg1 - 0x22], the
+         * table that follows it in the data; the host does not keep that
+         * layout (the U.M.N. database showed no Gnosis model). */
+        unit->resourceId = guno_eid_tbl[arg1 - 0x22];
+#else
         unit->resourceId = *((unsigned short *) ((JpegEnv11_10 + 0x5C) + (arg1 << 1)));
+#endif
       }
       else
       {
