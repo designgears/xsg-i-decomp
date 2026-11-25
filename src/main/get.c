@@ -306,6 +306,14 @@ void Get_One_Step(float length, const Point4 *source,
     float x_step = destination->x - source->x;
     float z_step = destination->z - source->z;
     float inverse_distance = 1.0f / Get_Distance(source, destination);
+#ifdef PORT_HOST
+    /* The EE FPU saturates 1/0 to FLT_MAX, and 0 * FLT_MAX is 0: an enemy
+     * standing exactly on its target takes a zero step.  IEEE gives inf and
+     * 0 * inf = NaN, which turned a patrolling enemy's position NaN (invisible,
+     * gone from the radar). */
+    if (!(inverse_distance <= 3.4028235e38f))
+        inverse_distance = 3.4028235e38f;
+#endif
 
     output->x = x_step * inverse_distance * length;
     output->y = 0.0f;
