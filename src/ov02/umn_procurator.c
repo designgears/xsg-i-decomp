@@ -26,7 +26,14 @@ int UmnManzaiControl(void)
             if ((flag & 0x206) == 0)
             if (PadData.half_2a == 0x20) {
                 UmnManzaiFlag |= 1;
+#ifdef PORT_HOST
+                /* PS2: UmnWork + 0x7C + code * 0xA4 is the message (+0x60) of
+                 * UmnManzaiWin[code - 1], which follows UmnWork in ov02's data.
+                 * The host does not keep that layout: index the window. */
+                if (eMessageNextPage((unsigned char *)&UmnManzaiWin[*UmnManzaiText - 1] + 0x60, 0) == 0) {
+#else
                 if (eMessageNextPage(UmnWork + 0x7C + *UmnManzaiText * 0xA4, 0) == 0) {
+#endif
                     next = UmnEventTextNextGet(1);
                     xglSoundEffectNormalID(1, 0);
                     if (next == 0) {
