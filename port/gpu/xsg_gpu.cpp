@@ -898,6 +898,34 @@ struct Renderer {
 
 
 
+    /* EXTWRITE: the PCRTC writes the picture of the circuit EXTBUF.FBIN names
+       back into local memory at EXTBUF.  The game's field interpolation (defocus
+       type 9) displays that buffer on circuit 1, so without the write-back it
+       shows stale memory (gray).  Done here as a local->local transfer of the
+       whole frame (the PS2 writes it field by field). */
+    void ExtWrite() {
+        const auto& pr = gs.get_priv_register_state();
+        const uint64_t extwrite = pr.qwords_lo[(0xd0 >> 4) * 2];
+        if (!(extwrite & 1)) return;
+        const uint64_t extbuf = pr.qwords_lo[(0xb0 >> 4) * 2], extdata = pr.qwords_lo[(0xc0 >> 4) * 2];
+        const uint64_t dispfb = pr.qwords_lo[(((extbuf >> 20) & 3) == 1 ? 0x90 : 0x70) >> 4 << 1];
+        const uint64_t sbp = (dispfb & 0x1ff) << 5, sbw = (dispfb >> 9) & 0x3f, psm = (dispfb >> 15) & 0x1f;
+        const uint64_t sx = (dispfb >> 32) & 0x7ff, sy = (dispfb >> 43) & 0x7ff;
+        const uint64_t dbp = extbuf & 0x3fff, dbw = (extbuf >> 14) & 0x3f;
+        const uint64_t w = ((extdata >> 32) & 0xfff) + 1;
+        uint64_t h = ((extdata >> 44) & 0x7ff) + 1;
+        if (!((extbuf >> 22) & 1)) h *= 2;   // WFFMD 0: one field per vsync, both fields together
+        if (sbp == dbp || !sbw || !dbw) return;
+        const uint64_t q[10] = {
+            4 | (1ull << 15) | (1ull << 60), 0xe,                                // GIFtag A+D x4, EOP
+            sbp | sbw << 16 | psm << 24 | dbp << 32 | dbw << 48 | psm << 56, 0x50,   // BITBLTBUF
+            sx | sy << 16, 0x51,                                                 // TRXPOS
+            w | h << 32, 0x52,                                                   // TRXREG
+            2, 0x53};                                                            // TRXDIR local->local
+        if (xsgnative::On()) xsgnative::Gif(2, reinterpret_cast<const uint8_t*>(q), sizeof q, gs);
+        else gs.gif_transfer(2, q, sizeof q);
+    }
+
     void Vsync(uint32_t frame, uint32_t field) {
         uint64_t pt[8] = {xsgprof::g_on ? xsgprof::Now() : 0};
         uint64_t ns0[xsgprof::kStages];
@@ -916,6 +944,7 @@ struct Renderer {
         info.force_progressive = true;
         info.anti_blur = true;
         info.high_resolution_scanout = hires != 0;
+        ExtWrite();
         gs.flush();
         mark(6);
         ScanoutResult so = gs.vsync(info);

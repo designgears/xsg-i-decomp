@@ -108,6 +108,12 @@ void sceGsPutDispEnv(void *e)
     GS_PRIV(0x70) = d[2];
     GS_PRIV(0x80) = d[3];
     GS_PRIV(0xE0) = d[4];
+    /* libgraph's sceGsPutDispEnv sets circuit 2 (DISPFB2/DISPLAY2) as well.
+     * xglRenderDispEnvMove then writes DISPFB1/DISPLAY1 itself; its field
+     * interpolation mode (defocus type 9, e.g. Shion's dream) shows the
+     * EXTBUF write-back of circuit 2, which xsg-gpu copies at vsync. */
+    GS_PRIV(0x90) = d[2];
+    GS_PRIV(0xA0) = d[3];
 }
 int sceGsSetDefDrawEnv(void *e, int psm, int w, int h, int zt, int zp) { STUB_LOG("psm=%d %dx%d", psm, w, h); (void)e; (void)zt; (void)zp; return 8; }
 int sceGsPutDrawEnv(void *e) { STUB_LOG("%p", e); xsg_gs_send_packet(e); return 0; }
