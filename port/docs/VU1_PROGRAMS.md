@@ -114,6 +114,8 @@ sub-batch.
 | 2 | 0x2fe8 / 0x3020 (Face/Back of 0x2be8) | 4 / 4 | (shared) | | | ✔ (face/back) |
 | 0 | 0x1418 → 0x1458 *lit* (+ Face/Back 0x1648 / 0x16a0) | 11 + 2 | 81 | 312 | tstrip | ✔ `set0_lit` (battle cf9002, vblank 2300) |
 | 0 | 0x1f60 → 0x1fa0 *lit_env*, 6 kicks (+ 0x23a8 / 0x2400) | 12 | 232 | 1,812 | + env strip, tag 1010 | ✔ `set0_lit_env` (same capture) |
+| 0 | 0x16f8 → 0x1738 *lit_spec* (+ Face/Back 0x1a58 / 0x1ab0) | | | | tstrip | ✔ `set0_lit_spec` (Woglinde decks, cf0040, ~250 batches a frame) |
+| 0 | 0x16f8 → 0x1738 *lit_spec* (+ Face/Back 0x1a58 / 0x1ab0) | | | | tstrip | ✔ `set0_lit_spec` (Woglinde decks cf0040, 2026-11-26; ~250 batches a frame) |
 
 A reference now exists for every one of the 53,693 runs (all set-0 and set-2 programs that
 ran). "blend 8" is a **two-bone** blend: B.x/B.y are the two bone addresses, B.z/B.w their
@@ -128,8 +130,7 @@ loop (`mul vf5,vf5,vf5` repeated `1008.x` times), then to a second strip with GI
 triangle-facing mode, and branch into the main loop.
 
 **Set 0, other entries** (`vu1_features.py --set 0`): 0x0de0 rigid strip with the 0x408 header
-(no morph); 0x11e0/0x1320 per-vertex subroutine form (calls 0x888, 0x900/0x9f8); 0x16f8 lit +
-specular; 0x1b08 two-pass; plus their Face/Back stubs. None of these ran in the captured frames.
+(no morph); 0x11e0/0x1320 per-vertex subroutine form (calls 0x888, 0x900/0x9f8); 0x1b08 two-pass; plus their Face/Back stubs. None of these ran in the captured frames.
 
 **Set 0 lit loops** (`vu1_set0_lit.c`; they ran in the battle room cf9002, vblank 2300): entries
 0x1418 and 0x1f60 run 0x0050 and then stop at 0x05d8. The MSCNT resume is **0x05e8**, which is

@@ -562,7 +562,7 @@ bool NativeSkin(u32 pc, u32 top, u32 itop) {
 }
 
 /* XSG_GPU_NATIVE=1, set 0 lit loops (VU1_PROGRAMS.md §2): MSCNT batches (resume
-   0x05e8) into loop 0x1458 "lit" or 0x1fa0 "lit_env" (six kicks) run the C
+   0x05e8) into loop 0x1458 "lit", 0x1738 "lit_spec" or 0x1fa0 "lit_env" (six kicks) run the C
    reference (vu1_set0_lit.c, bit-exact) as NativeSkin does, and vertex batches
    send GPU_NATIVE_SET0_LIT: a GpuNativeSkin with no bone streams (P and N are
    already object space) plus the loop's fog (vf9 after the run: 1007 for 0x1458,
@@ -583,7 +583,7 @@ bool NativeSet0Lit(u32 pc, u32 top, u32 itop) {
     if (!is_set0) return false;
     xsgvu::SaveRegs(R->regs);
     const u32 loop = (R->regs.vi[15] & 0xffff) * 8;
-    if (loop != 0x1458 && loop != 0x1fa0) return false;
+    if (loop != 0x1458 && loop != 0x1fa0 && loop != 0x1738) return false;
     u8* d = Vu1Data();
     auto Q = [&](u32 q) { return d + (q & 0x3ff) * 16; };
     auto ilw = [&](u32 q, int l) { u32 v; std::memcpy(&v, Q(q) + 4 * l, 4); return v & 0xffff; };
@@ -639,7 +639,7 @@ bool NativeSet0Lit(u32 pc, u32 top, u32 itop) {
         b->facing = ilw(995, 1);
         b->ifirst = ifirst;
         b->mirror_on = 0;   /* set 0 has no mirror */
-        if (!env) {   /* loop 0x1458 ignores 1008.z (no renormalise) */
+        if (loop == 0x1458) {   /* loop 0x1458 ignores 1008.z (no renormalise) */
             u32 z = 0;
             std::memcpy(&b->c1008[2], &z, 4);
         }

@@ -179,8 +179,8 @@ int Variant(uint32_t loop) {
     return -1;
 }
 
-/* Set 0 (GPU_NATIVE_SET0_LIT): 0x1458 lit, 0x1fa0 lit + specular + env strip. */
-static int Set0Variant(uint32_t loop) { return loop == 0x1458 ? 0 : loop == 0x1fa0 ? 3 : -1; }
+/* Set 0 (GPU_NATIVE_SET0_LIT): 0x1458 lit, 0x1738 lit + specular, 0x1fa0 lit + specular + env strip. */
+static int Set0Variant(uint32_t loop) { return loop == 0x1458 ? 0 : loop == 0x1738 ? 1 : loop == 0x1fa0 ? 3 : -1; }
 
 static int Group(uint32_t loop) {
     if (loop < 0x1790) return 0;
