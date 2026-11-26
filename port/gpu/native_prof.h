@@ -31,6 +31,7 @@ enum Stage {
     FxVsync,      // xsgfx::Vsync (ownership flush)
     LiveWait,     // Live: GS flush + VRAM wait
     LiveDecode,   // Live: CPU decode of the displayed buffer (colour, Z, owner)
+    OwnRead,      // ownership GS flush + VRAM read-back (part of LiveDecode)
     LiveRecord,   // Live: command recording (draws, composite, replay, mv)
     LiveSubmit,   // Live: submit
     Other,        // rest of xsgnative::Vsync

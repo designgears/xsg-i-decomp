@@ -1182,6 +1182,7 @@ bool OwnerPlane(const Surface& sf, std::vector<uint32_t>& out) {
     }
     if (!v) {
         OwnSync();
+        xsgprof::Scope ps(xsgprof::OwnRead);
         g_own->flush();
         v = static_cast<const uint8_t*>(g_own->map_vram_read(0, 4u << 20));
     }
@@ -1541,6 +1542,7 @@ void OverlayColour(const Surface& sf, std::vector<uint32_t>& gs) {
     }
     if (!v) {
         OwnSync();
+        xsgprof::Scope ps(xsgprof::OwnRead);
         g_own->flush();
         v = static_cast<const uint8_t*>(g_own->map_vram_read(0, 4u << 20));
     }

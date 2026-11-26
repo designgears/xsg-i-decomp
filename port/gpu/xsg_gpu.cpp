@@ -1028,7 +1028,7 @@ struct Renderer {
             // which native stages, when native took most of it
             if (tot > 12.0 && double(pt[1] - pt[0]) * 1e-6 > 6.0) {
                 static const char* const names[] = {"gif-parse", "gif-fx", "gif-main", "gif-own", "own-wait", "batch", "tex-decode",
-                                                    "batch-skin", "batch-snap", "snapshot", "fx-vsync", "live-wait", "live-decode",
+                                                    "batch-skin", "batch-snap", "snapshot", "fx-vsync", "live-wait", "live-decode", "own-read",
                                                     "live-record", "live-submit", "other"};
                 char buf[512];
                 int n = 0;

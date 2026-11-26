@@ -1,3 +1,6 @@
+#include <mutex>
+#include <condition_variable>
+#include <chrono>
 /*
  * xsg-gpu native renderer: set-0 strip batches (VU1 loop 0x0c18) drawn by our
  * own Vulkan pipeline at XSG_GPU_NATIVE_SCALE and composited live over the
@@ -1939,15 +1942,54 @@ std::vector<uint32_t> DecodeVramTexture(const uint8_t* vram, uint64_t tex0, uint
     return DecodeTexture(vram, tex0, texa, w, h);
 }
 
+/* Rows split over four threads: this one plus three workers that live for the whole run.
+   Creating threads per call (several calls a frame) cost milliseconds on Windows, where the
+   live decode took 9 ms a frame instead of 1.5 (#3). */
+namespace {
+struct RowPool {
+    static constexpr uint32_t kThreads = 4;
+    std::mutex m;
+    std::condition_variable go, done;
+    const std::function<void(uint32_t, uint32_t)>* fn = nullptr;
+    uint32_t h = 0, step = 0, gen = 0, left = 0;
+    RowPool() {
+        for (uint32_t i = 1; i < kThreads; ++i)
+            std::thread([this, i] {
+                uint32_t seen = 0;
+                for (;;) {
+                    std::unique_lock<std::mutex> lk(m);
+                    go.wait(lk, [&] { return gen != seen; });
+                    seen = gen;
+                    const auto* f = fn;
+                    const uint32_t a = std::min(h, i * step), b = std::min(h, (i + 1) * step);
+                    lk.unlock();
+                    if (a < b) (*f)(a, b);
+                    lk.lock();
+                    if (--left == 0) done.notify_one();
+                }
+            }).detach();
+    }
+};
+}  // namespace
+
 void ParallelRows(uint32_t h, const std::function<void(uint32_t, uint32_t)>& fn) {
-    constexpr uint32_t kThreads = 4;
     if (h < 64) { fn(0, h); return; }
-    std::thread th[kThreads - 1];
-    const uint32_t step = (h + kThreads - 1) / kThreads;
-    for (uint32_t i = 1; i < kThreads; ++i)
-        th[i - 1] = std::thread([&fn, i, step, h] { fn(std::min(h, i * step), std::min(h, (i + 1) * step)); });
+    static RowPool pool;
+    static std::mutex busy;   // one caller at a time (the live path runs on one thread)
+    std::lock_guard<std::mutex> bl(busy);
+    const uint32_t step = (h + RowPool::kThreads - 1) / RowPool::kThreads;
+    {
+        std::lock_guard<std::mutex> lk(pool.m);
+        pool.fn = &fn;
+        pool.h = h;
+        pool.step = step;
+        pool.left = RowPool::kThreads - 1;
+        pool.gen++;
+    }
+    pool.go.notify_all();
     fn(0, std::min(h, step));
-    for (auto& t : th) t.join();
+    std::unique_lock<std::mutex> lk(pool.m);
+    pool.done.wait(lk, [&] { return pool.left == 0; });
 }
 
 }  // namespace xsgnative
