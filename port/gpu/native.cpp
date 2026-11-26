@@ -641,6 +641,22 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
     const Vulkan::BufferHandle ubuf = dev.create_buffer(ubi);
     uint8_t* const umap = static_cast<uint8_t*>(dev.map_host_buffer(*ubuf, Vulkan::MEMORY_ACCESS_WRITE_BIT));
     VkDeviceSize uoff = 0;
+    // The set-0 strips' vertices likewise: one buffer for the pass, bound per draw at an offset
+    // (allocate_vertex_data per draw was ~12 % of RenderGpu in the busy Woglinde rooms, #3).
+    size_t vbytes = 0;
+    for (const Stored* s : list)
+        if (!s->skin) vbytes += s->v.size() * sizeof(GpuNativeVertex);
+    Vulkan::BufferHandle vbuf;
+    uint8_t* vmap = nullptr;
+    if (vbytes) {
+        Vulkan::BufferCreateInfo vbi = {};
+        vbi.domain = Vulkan::BufferDomain::LinkedDeviceHostPreferDevice;
+        vbi.size = vbytes;
+        vbi.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        vbuf = dev.create_buffer(vbi);
+        vmap = static_cast<uint8_t*>(dev.map_host_buffer(*vbuf, Vulkan::MEMORY_ACCESS_WRITE_BIT));
+    }
+    VkDeviceSize voff = 0;
 
     cmd->image_barrier(*color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                        VK_PIPELINE_STAGE_2_NONE, 0, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -687,8 +703,9 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
             cmd->set_program(g_prog);
             if (!n) continue;
             cmd->set_primitive_topology(s->list ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
-            auto* vp = static_cast<GpuNativeVertex*>(cmd->allocate_vertex_data(0, n * sizeof(GpuNativeVertex), sizeof(GpuNativeVertex)));
-            std::memcpy(vp, s->v.data(), n * sizeof(GpuNativeVertex));
+            std::memcpy(vmap + voff, s->v.data(), n * sizeof(GpuNativeVertex));
+            cmd->set_vertex_binding(0, *vbuf, voff, sizeof(GpuNativeVertex));
+            voff += n * sizeof(GpuNativeVertex);
             cmd->set_vertex_attrib(0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(GpuNativeVertex, p));
             cmd->set_vertex_attrib(1, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(GpuNativeVertex, c));
             cmd->set_vertex_attrib(2, 0, VK_FORMAT_R32_SFLOAT, offsetof(GpuNativeVertex, t));
@@ -790,6 +807,7 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
         else cmd->draw(n);
     }
     dev.unmap_host_buffer(*ubuf, Vulkan::MEMORY_ACCESS_WRITE_BIT);
+    if (vbuf) dev.unmap_host_buffer(*vbuf, Vulkan::MEMORY_ACCESS_WRITE_BIT);
     cmd->end_render_pass();
     cmd->image_barrier(*t.id, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
