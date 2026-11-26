@@ -39,9 +39,13 @@ bool Init(Vulkan::Device* dev);
    ownership GS, split where a snapshot has to be taken. */
 /* pre: called with each qword before it is parsed here (native.cpp's register state and upload
    mirror), so a draw recorded mid-message sees the textures uploaded before it in that message,
-   not the last upload of the message (one texture area is reloaded many times per message). */
+   not the last upload of the message (one texture area is reloaded many times per message).
+   pre_image: optional bulk form for IMAGE data: offered nq qwords of an IMAGE transfer, it takes
+   them all and returns nq if its own parser is inside an IMAGE transfer of at least nq qwords,
+   else takes none and returns 0 (then they go through pre one at a time). */
 void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterface& gs,
-         void (*pre)(void* ctx, const uint8_t* q) = nullptr, void* ctx = nullptr);
+         void (*pre)(void* ctx, const uint8_t* q) = nullptr, void* ctx = nullptr,
+         uint32_t (*pre_image)(void* ctx, const uint8_t* q, uint32_t nq) = nullptr);
 /* GPU_MSG_NATIVE arrived: the next `ntags` PATH1 GIF tags are that batch's
    output (set 0: one; set-2 two-pass programs: both tags of their packet). */
 void NativeNext(uint32_t ntags = 1);

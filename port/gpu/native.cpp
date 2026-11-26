@@ -1657,7 +1657,14 @@ void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterfa
     PathParse& p = g_path[path & 3];
     // qword by qword together with the effect parser, so its draws see the uploads before them
     // the GIF state tracker, per qword ahead of the effect parser (a plain function pointer: per 16 bytes)
-    xsgfx::Gif(path, data, len, gs, [](void* c, const uint8_t* q) { GifQword(*static_cast<PathParse*>(c), q); }, &p);
+    xsgfx::Gif(path, data, len, gs, [](void* c, const uint8_t* q) { GifQword(*static_cast<PathParse*>(c), q); }, &p,
+               [](void* c, const uint8_t* q, uint32_t nq) -> uint32_t {
+                   PathParse& pp = *static_cast<PathParse*>(c);
+                   if (!pp.left || pp.flg < 2 || pp.left < nq) return 0;
+                   for (uint32_t k = 0; k < nq; ++k) XferQword(q + 16 * size_t(k));
+                   pp.left -= nq;
+                   return nq;
+               });
     XferFlush();   // a message of another path may come next
 }
 
@@ -1688,9 +1695,21 @@ void Snap(Stored& s, const uint32_t* tagw) {
     s.tex = white;
     if (Bits(prim, 4, 1)) {
         // (TEX0, TEXA) -> the newest generation of its pages and their content hash.
+        // Hash tables, not trees: two lookups per textured batch (#3, busy scenes).
         struct Ver { uint32_t gen; uint64_t hash; };
-        static std::map<std::pair<uint64_t, uint64_t>, Ver> ver;
-        static std::map<std::tuple<uint64_t, uint64_t, uint64_t>, std::shared_ptr<Tex>> cache;
+        struct K3 {
+            uint64_t a, b, c;
+            bool operator==(const K3& o) const { return a == o.a && b == o.b && c == o.c; }
+        };
+        struct H3 {
+            size_t operator()(const K3& k) const {
+                uint64_t h = k.a * 0x9e3779b97f4a7c15ull ^ (k.b + 0x632be59bd9b4e019ull) * 0xff51afd7ed558ccdull ^
+                             k.c * 0xc4ceb9fe1a85ec53ull;
+                return size_t(h ^ (h >> 29));
+            }
+        };
+        static std::unordered_map<K3, Ver, H3> ver;
+        static std::unordered_map<K3, std::shared_ptr<Tex>, H3> cache;
         if (cache.size() > 1024) cache.clear();
         if (ver.size() > 4096) ver.clear();
         const uint64_t t0 = s.tex0 & ((1ull << 61) - 1);
@@ -1699,7 +1718,7 @@ void Snap(Stored& s, const uint32_t* tagw) {
         const uint32_t cpage = Bits(t0, 37, 14) / 32;
         for (uint32_t i = 0; i < np; ++i) gen = std::max(gen, g_page_gen[(p0 + i) & 511]);
         gen = std::max(gen, std::max(g_page_gen[cpage & 511], g_page_gen[(cpage + 1) & 511]));
-        Ver& vv = ver[{t0, s.texa}];
+        Ver& vv = ver[K3{t0, s.texa, 0}];
         if (!vv.hash || vv.gen != gen) {
             uint64_t h = 1469598103934665603ull;
             auto mix = [&](uint32_t page) { h = (h ^ PageHash(page & 511)) * 1099511628211ull; };
@@ -1709,7 +1728,7 @@ void Snap(Stored& s, const uint32_t* tagw) {
             vv.hash = h | 1;
         }
         const bool indexed = Bits(t0, 20, 6) >= 0x13;   // its colours: the CLUT buffer now
-        auto key = std::make_tuple(t0, s.texa, vv.hash ^ (indexed ? g_cbuf.hash * 31 : 0));
+        const K3 key{t0, s.texa, vv.hash ^ (indexed ? g_cbuf.hash * 31 : 0)};
         auto it = cache.find(key);
         if (it == cache.end()) {
             auto t = std::make_shared<Tex>();

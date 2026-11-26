@@ -1046,7 +1046,8 @@ void SeedOwn(const uint8_t* vram) {
 }
 
 void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterface& gs,
-         void (*pre)(void* ctx, const uint8_t* q), void* ctx) {
+         void (*pre)(void* ctx, const uint8_t* q), void* ctx,
+         uint32_t (*pre_image)(void* ctx, const uint8_t* q, uint32_t nq)) {
     path &= 3;
     PathParse& p = g_path[path];
     OwnPath(path);
@@ -1056,6 +1057,30 @@ void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterfa
     if (g_obuf.capacity() < g_obuf.size() + len)   // one qword out per qword in: no growth inside the loop
         g_obuf.reserve(std::max(g_obuf.capacity() * 2, g_obuf.size() + len + (256u << 10)));
     for (uint32_t i = 0; i + 16 <= len; i += 16) {
+        // IMAGE data (texture uploads, most of the GIF bytes): nothing here reads it, so a run
+        // goes through in one piece -- the upload mirror, then the ownership stream (#3: the
+        // per-qword path was the largest single cost of xsg-gpu's thread in busy scenes).
+        if (p.left && p.flg >= 2 && (!pre || pre_image)) {
+            const uint32_t nq = std::min<uint32_t>(p.left, (len - i) / 16);
+            if (nq > 1 && (!pre || pre_image(ctx, data + i, nq) == nq)) {
+                const size_t o = g_obuf.size();
+                g_obuf.resize(o + size_t(nq) * 16);
+                std::memcpy(g_obuf.data() + o, data + i, size_t(nq) * 16);
+                p.left -= nq;
+                i += (nq - 1) * 16;
+                if (!p.left && p.eop && path == 1 && g_in_native) { g_in_native = false; g_restore_after = true; }
+                if (g_restore_after) {
+                    g_restore_after = false;
+                    if (g_own) {
+                        OwnAd(0x1a, g_saved[0]);
+                        OwnAd(0x3d, g_saved[1]);
+                        OwnAd(0x0a, g_saved[2]);
+                        OwnAd(0x45, g_saved[3]);
+                    }
+                }
+                continue;
+            }
+        }
         if (pre) pre(ctx, data + i);
         Qword(path, p, data + i, oq);
         if (g_snap_req) {

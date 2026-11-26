@@ -1315,6 +1315,17 @@ int main(int argc, char** argv) {
                 else r.gs.gif_transfer(2, inj.data(), inj.size());
             }
             r.gif_bytes += h.len;
+            {   // Submit the 1x GS work every ~N KB of GIF data ([debug] gs_flush_kb, 0 = off), so the
+                // GPU renders the frame while it is still arriving; at the vsync the composite then
+                // waits only for the tail (#3: live-wait was 3-4 ms a frame on a discrete GPU).
+                static const uint32_t kb = [] {
+                    const char* s = xsgcfg::CStr("debug.gs_flush_kb");
+                    return s && *s ? uint32_t(std::atoi(s)) : 512u;
+                }();
+                static uint64_t since;
+                since += h.len;
+                if (kb && since >= uint64_t(kb) << 10) { since = 0; r.gs.flush(); }
+            }
             break;
         }
         case GPU_MSG_PRIV: {
