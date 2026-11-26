@@ -1578,7 +1578,9 @@ void OverlayColour(const Surface& sf, std::vector<uint32_t>& gs) {
         ux0 = std::min(ux0, x0); uy0 = std::min(uy0, y0); ux1 = std::max(ux1, x1); uy1 = std::max(uy1, y1);
     }
     const uint32_t zpsm = 0x30 | (sf.zpsm & 0xf);
-    for (int y = uy0; y < uy1; ++y) {
+    if (uy1 <= uy0) return;
+    xsgnative::ParallelRows(uint32_t(uy1 - uy0), [&](uint32_t r0, uint32_t r1) {
+    for (int y = uy0 + int(r0); y < uy0 + int(r1); ++y) {
         const xsggs::Row row(sf.fbp, sf.fbw, uint32_t(y), sf.psm), zrow(sf.zbp, sf.fbw, uint32_t(y), zpsm);
         for (int x = ux0; x < ux1; ++x) {
             const size_t i = size_t(y) * sf.w + x;
@@ -1601,6 +1603,7 @@ void OverlayColour(const Surface& sf, std::vector<uint32_t>& gs) {
             }
         }
     }
+    });
 }
 
 bool Pmode(Vulkan::CommandBuffer& cmd, const ParallelGS::GSInterface& gs, int s, uint32_t w, uint32_t h,

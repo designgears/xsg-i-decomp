@@ -95,7 +95,15 @@ struct Hist {
     float mirror = 0;
     bool mirror_on = false;
 };
-std::unordered_map<uint64_t, Hist> g_hist2, g_hist0;
+/* (VIF address << 32 | occurrence): std::hash is the identity, and the low bits (occurrence)
+   barely vary, so buckets filled unevenly; a mixed hash and a reserved table keep lookups short. */
+struct KeyHash {
+    size_t operator()(uint64_t k) const {
+        k ^= k >> 33; k *= 0xff51afd7ed558ccdull; k ^= k >> 33; k *= 0xc4ceb9fe1a85ec53ull; k ^= k >> 33;
+        return size_t(k);
+    }
+};
+std::unordered_map<uint64_t, Hist, KeyHash> g_hist2, g_hist0;
 constexpr uint32_t kMaxAge = 6;   // vblanks: older history is a "new" draw (zero motion)
 
 inline uint64_t Key(uint32_t key, uint32_t occ) { return uint64_t(key) << 32 | occ; }
@@ -201,6 +209,8 @@ bool Init(Vulkan::Device* dev) {
     fl.sets[0].meta[0].array_size = 1;
     fl.sets[0].meta[1].array_size = 1;
     fl.sets[0].meta[2].array_size = 1;
+    g_hist0.reserve(16384);
+    g_hist2.reserve(4096);
     g_prog = dev->request_program(dev->request_shader(kVert, sizeof kVert, &vl), dev->request_shader(kFrag, sizeof kFrag, &fl));
     cl.sets[0].sampled_image_mask = 7;
     cl.sets[0].storage_image_mask = 8 | 16;
