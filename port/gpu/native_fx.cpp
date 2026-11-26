@@ -264,7 +264,31 @@ void Record(PostFrame& pf, uint32_t fbp, const Vtx* v, int n, uint32_t type, boo
     GpuPrim p;
     std::memset(&p, 0, sizeof p);
     const uint32_t gtype = type == 6 ? 6 : (type >= 3 && type <= 5) ? 3 : type;
-    if (gtype != 6 && gtype != 3) { Bad(pf, "point/line primitive"); return; }
+    if (gtype != 6 && gtype != 3) {
+        // Points and lines (battle target markers and beams, #3): one pixel wide on the GS.
+        // Replayed as what the GS covers: a point as a 1x1 sprite, a line as a quad one pixel
+        // across its minor axis (two triangles), each keeping its vertices' colours.
+        if (type == 0 && n >= 1) {
+            Vtx s[2] = {v[0], v[0]};
+            s[0].x -= 8; s[0].y -= 8;
+            s[1].x += 8; s[1].y += 8;
+            Record(pf, fbp, s, 2, 6, mirror_ok);
+            return;
+        }
+        if ((type == 1 || type == 2) && n >= 2) {
+            const int dx = int(v[1].x) - int(v[0].x), dy = int(v[1].y) - int(v[0].y);
+            const bool xmajor = std::abs(dx) >= std::abs(dy);
+            Vtx a0 = v[0], a1 = v[0], b0 = v[1], b1 = v[1];
+            if (xmajor) { a0.y -= 8; a1.y += 8; b0.y -= 8; b1.y += 8; }
+            else { a0.x -= 8; a1.x += 8; b0.x -= 8; b1.x += 8; }
+            const Vtx t0[3] = {a0, a1, b0}, t1[3] = {b0, a1, b1};
+            Record(pf, fbp, t0, 3, 3, mirror_ok);
+            Record(pf, fbp, t1, 3, 3, mirror_ok);
+            return;
+        }
+        Bad(pf, "point/line primitive");
+        return;
+    }
     const bool fst = Bits(prim, 8, 1);
     for (int i = 0; i < n; ++i) {
         p.xy[i][0] = (float(v[i].x) - float(Bits(xyoff, 0, 16))) / 16.0f;
@@ -1125,7 +1149,9 @@ void Vsync(uint32_t frame, ParallelGS::GSInterface& gs) {
 
 const uint8_t* PreVram(uint32_t fbp) {
     auto it = g_post.find(fbp);
-    if (it == g_post.end() || !it->second.done || !it->second.snapped) return nullptr;
+    // An effect the replay could not record is drawn from the GS frame as it ended (with what the
+    // game drew after the effect started, the battle HUD among it), not from before it (#3).
+    if (it == g_post.end() || !it->second.done || !it->second.snapped || it->second.bad) return nullptr;
     return g_snap[fbp].main.data();
 }
 
@@ -1150,7 +1176,7 @@ bool OwnerPlane(const Surface& sf, std::vector<uint32_t>& out) {
     if (!g_own) return false;
     const uint8_t* v = nullptr;
     auto it = g_post.find(sf.fbp);
-    if (it != g_post.end() && it->second.done && it->second.snapped && g_own) {
+    if (it != g_post.end() && it->second.done && it->second.snapped && !it->second.bad && g_own) {
         OwnSync();   // the snapshot may still be running on the ownership thread
         v = g_snap[sf.fbp].own.data();
     }
