@@ -1752,10 +1752,17 @@ void OverlayColour(const Surface& sf, std::vector<uint32_t>& gs) {
         const xsggs::Row row(sf.fbp, sf.fbw, uint32_t(y), sf.psm), zrow(sf.zbp, sf.fbw, uint32_t(y), zpsm);
         for (int x = ux0; x < ux1; ++x) {
             const size_t i = size_t(y) * sf.w + x;
-            if (!mark[i] || veto[i]) continue;   // veto: a GS-kept blend here: the main GS's colour
+            if (!mark[i]) continue;
             const uint32_t c = xsggs::Pixel(v + row(uint32_t(x)), sf.psm);
-            if ((c & mask) == (m & mask) || (c & mask) == (m2 & mask)) continue;   // native: the composite's anyway
-            gs[i] = c;
+            // Colour: not where a GS-kept blend lies (veto: the main GS's colour) nor over native
+            // content (the composite's).  Depth: everywhere in the boxes -- the main GS's Z holds
+            // what the deferred draws themselves wrote, and the ownership GS drew everything else
+            // (the GS-kept blends too).  In the Pleroma dock a full-screen tint kept on the GS vetoed
+            // the whole frame, the dialogue window's alpha quad (Z 0xfffff1, GREATER) then failed
+            // against its own text's Z (0xffffff), and the text blended with the window's alpha:
+            // gray instead of white (#3).
+            const bool native_px = (c & mask) == (m & mask) || (c & mask) == (m2 & mask);
+            if (!native_px && !veto[i]) gs[i] = c;
             // and its depth: the main GS's Z holds the deferred draws' own Z, so a replayed
             // draw failed its own Z test against it (menu text: each glyph is drawn with Z
             // one above its shadow, GREATER; the glyph failed and the 1x text showed through,
