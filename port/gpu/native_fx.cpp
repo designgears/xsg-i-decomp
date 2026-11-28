@@ -1303,7 +1303,7 @@ void ReplayList(Vulkan::CommandBuffer& cmd, uint32_t fbp, PostFrame& pf, int s, 
         for (GpuPrim& p : wide) {
             if (p.kind[0] != 6 || p.sc[0] > 0 || p.sc[2] < int(w) - 1) continue;
             const int l = p.xy[0][0] <= p.xy[1][0] ? 0 : 1, r = 1 - l;
-            if (p.xy[l][0] > 0.0f || p.xy[r][0] < fw) continue;
+            if (p.xy[l][0] > 0.0f || p.xy[r][0] < fw - 1.0f) continue;   // (games draw to 511 as often as to 512)
             const float x0 = p.xy[l][0], x1 = p.xy[r][0];
             if (p.kind[2] == 2 && x1 > x0) {
                 const float du = (p.xy[r][2] - p.xy[l][2]) / (x1 - x0);
