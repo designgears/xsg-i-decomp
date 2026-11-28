@@ -1463,6 +1463,12 @@ void ReplayList(Vulkan::CommandBuffer& cmd, uint32_t fbp, PostFrame& pf, int s, 
         cmd.dispatch(uint32_t(q.x1 - q.x0 + 7) / 8, uint32_t(q.y1 - q.y0 + 7) / 8, 1);
         prof_disp++;
     };
+    // [debug] fx_one_by_one: segments up to this size get a dispatch per primitive (was 32; the
+    // soft-edge pass's segments of 5-30 small triangles were ~1800 dispatches a frame, #3)
+    static const size_t kOneByOne = [] {
+        const char* s = xsgcfg::CStr("debug.fx_one_by_one");
+        return s && *s ? size_t(std::atoi(s)) : size_t(4);
+    }();
     auto flush_seg = [&] {
         if (seg.empty()) return;
         // a barrier first when the segment overlaps what was drawn since the last one
@@ -1479,7 +1485,7 @@ void ReplayList(Vulkan::CommandBuffer& cmd, uint32_t fbp, PostFrame& pf, int s, 
                 if (k) barrier();
                 draw_one(seg[k]);
             }
-        } else if (!seg_ov && seg.size() <= 32) {
+        } else if (!seg_ov && seg.size() <= kOneByOne) {   // a few: a dispatch each; more: one binned dispatch
             for (const SegE& q : seg) draw_one(q);
         } else {
             draw_binned(0, seg.size());
@@ -1492,7 +1498,9 @@ void ReplayList(Vulkan::CommandBuffer& cmd, uint32_t fbp, PostFrame& pf, int s, 
     };
     cmd.set_program(g_prog);
     // what `copy` lacks of `color`: everything at first, then what was drawn since the last copy
-    int dirty[4] = {0, 0, W, H};
+    static std::vector<std::array<int, 4>> drects;   // drawn since their last copy (s x samples)
+    drects.assign(1, {0, 0, W, H});                   // the copy starts empty
+    const GpuPrim* last_read = nullptr;   // the frame read just before (a run of one draw)
     for (size_t i = 0; i < pf.prims.size(); ++i) {
         const GpuPrim& p = prims[i];
         const Vulkan::Image* src = white.get();
@@ -1525,21 +1533,74 @@ void ReplayList(Vulkan::CommandBuffer& cmd, uint32_t fbp, PostFrame& pf, int s, 
         const SegE q = {uint32_t(i), bx0, by0, bx1, by1, zmax};
         prof_frame += p.kind[2] == 2;
         prof_tex += p.kind[2] == 1;
+        // A frame read whose sampled area (its UV box, in s x samples, plus the filter's reach)
+        // misses everything drawn since the last copy reads an up-to-date copy as it is: no
+        // flush, copy or barriers.  The cutscene glows read the frame in hundreds of small
+        // pieces that do not touch each other (#3: ev1080 / cf0540 post 7-18 ms a frame).
+        // The copy is brought up to date only where this read samples: the rectangles drawn since
+        // their last copy that meet its sampled box (in s x samples, plus the filter's reach) are
+        // copied, clipped to the box.  The soft-edge pass reads the frame ~1500 times a frame,
+        // each right after its mask; copying the union of everything drawn since the last copy
+        // moved megabytes per read (#3: ev1080 / cf0540 post 7-18 ms a frame on an RTX 5060).
+        int sb[4] = {0, 0, W, H};
+        bool boxed = false;
         if (p.kind[2] == 2) {
+            float u0 = 1e9f, v0 = 1e9f, u1 = -1e9f, v1 = -1e9f;
+            const bool fst = Bits(p.kind[1], 8, 1) != 0u;
+            boxed = true;
+            for (int k = 0; k < nv && boxed; ++k) {
+                float u = p.xy[k][2], v = p.xy[k][3];
+                if (!fst) {   // STQ: s/q, t/q times the texture size (perspective-correct values stay in the hull)
+                    const float q = nv == 2 ? p.q[1] : p.q[k];
+                    if (!(q > 1e-12f) || !std::isfinite(q)) { boxed = false; break; }
+                    u = u / q * float(p.tsz[0]);
+                    v = v / q * float(p.tsz[1]);
+                }
+                if (!std::isfinite(u) || !std::isfinite(v)) { boxed = false; break; }
+                u0 = std::min(u0, u); v0 = std::min(v0, v); u1 = std::max(u1, u); v1 = std::max(v1, v);
+            }
+            if (boxed) {
+                sb[0] = std::max(0, int(std::floor((u0 + float(mx) - 2.0f) * s)));
+                sb[1] = std::max(0, int(std::floor((v0 - 2.0f) * s)));
+                sb[2] = std::min(W, int(std::ceil((u1 + float(mx) + 2.0f) * s)));
+                sb[3] = std::min(H, int(std::ceil((v1 + 2.0f) * s)));
+                if (sb[2] <= sb[0] || sb[3] <= sb[1]) { sb[0] = sb[1] = 0; sb[2] = sb[3] = 0; }
+            }
+        }
+        // The triangles of one frame-reading draw (a strip, the same texture and blend state as
+        // the read before) read the frame as it was when the draw began: on the GS they go
+        // through the texture cache, which sees the frame's new pixels only after a TEXFLUSH.
+        // The soft-edge strips read pixels their neighbours just wrote, and a copy per triangle
+        // was ~1500 copies and dispatches a frame in the cutscenes (#3).  [debug] fx_read_runs = 0
+        // refreshes before every triangle instead.
+        static const bool read_runs = !(xsgcfg::CStr("debug.fx_read_runs") && std::atoi(xsgcfg::CStr("debug.fx_read_runs")) == 0);
+        const bool same_run = read_runs && p.kind[2] == 2 && last_read && last_read->kind[1] == p.kind[1] &&
+                              std::memcmp(last_read->tex, p.tex, sizeof p.tex) == 0 &&
+                              std::memcmp(last_read->st, p.st, sizeof p.st) == 0 && std::memcmp(last_read->fb, p.fb, sizeof p.fb) == 0;
+        last_read = p.kind[2] == 2 ? &p : nullptr;
+        bool stale = false;
+        if (p.kind[2] == 2 && !same_run)
+            for (const auto& d : drects)
+                if (d[0] < sb[2] && sb[0] < d[2] && d[1] < sb[3] && sb[1] < d[3]) { stale = true; break; }
+        if (p.kind[2] == 2 && !stale) {
+            src = copy.get();
+        } else if (p.kind[2] == 2) {
             flush_seg();
             cmd.barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                         VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
-            // The copy mirrors the frame; only what was drawn since the last copy is copied again
-            // (the union of those primitives' boxes).  The characters' soft-edge pass has dozens of
-            // frame reads per frame, and a whole-frame copy each (2736 x 1792 at 4x) held the
-            // renderer below 60 vsyncs/s, so it never presented again (#3).
-            if (dirty[2] > dirty[0] && dirty[3] > dirty[1]) {
-                const VkImageSubresourceLayers sub = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
-                cmd.copy_image(*copy, color, {dirty[0], dirty[1], 0}, {dirty[0], dirty[1], 0},
-                               {uint32_t(dirty[2] - dirty[0]), uint32_t(dirty[3] - dirty[1]), 1}, sub, sub);
+            const VkImageSubresourceLayers sub = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+            if (!boxed || drects.size() > 64) {   // the union, as before
+                int u[4] = {INT32_MAX, INT32_MAX, INT32_MIN, INT32_MIN};
+                for (const auto& d : drects) { u[0] = std::min(u[0], d[0]); u[1] = std::min(u[1], d[1]); u[2] = std::max(u[2], d[2]); u[3] = std::max(u[3], d[3]); }
+                if (u[2] > u[0] && u[3] > u[1])
+                    cmd.copy_image(*copy, color, {u[0], u[1], 0}, {u[0], u[1], 0}, {uint32_t(u[2] - u[0]), uint32_t(u[3] - u[1]), 1}, sub, sub);
+                drects.clear();
+            } else {   // every rectangle drawn since its last copy (a group's masks, all at once)
+                for (const auto& d : drects)
+                    if (d[2] > d[0] && d[3] > d[1])
+                        cmd.copy_image(*copy, color, {d[0], d[1], 0}, {d[0], d[1], 0}, {uint32_t(d[2] - d[0]), uint32_t(d[3] - d[1]), 1}, sub, sub);
+                drects.clear();
             }
-            dirty[0] = dirty[1] = INT32_MAX;
-            dirty[2] = dirty[3] = INT32_MIN;
             cmd.barrier(VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                         VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
             pending.clear();
@@ -1556,8 +1617,21 @@ void ReplayList(Vulkan::CommandBuffer& cmd, uint32_t fbp, PostFrame& pf, int s, 
             if (!t.img) t.img = Storage(t.w, t.h, VK_FORMAT_R8G8B8A8_UNORM, t.px.data());
             src = t.img.get();
         }
-        dirty[0] = std::min(dirty[0], bx0); dirty[1] = std::min(dirty[1], by0);
-        dirty[2] = std::max(dirty[2], bx1); dirty[3] = std::max(dirty[3], by1);
+        if (!drects.empty()) {   // merged into the last rectangle when it meets it
+            auto& l = drects.back();
+            if (bx0 <= l[2] && l[0] <= bx1 && by0 <= l[3] && l[1] <= by1) {
+                l = {std::min(l[0], bx0), std::min(l[1], by0), std::max(l[2], bx1), std::max(l[3], by1)};
+            } else {
+                drects.push_back({bx0, by0, bx1, by1});
+            }
+        } else {
+            drects.push_back({bx0, by0, bx1, by1});
+        }
+        // An untextured primitive samples nothing: it joins the open segment whatever that binds
+        // (the soft-edge pass alternates untextured alpha masks with frame reads, and a new
+        // segment per primitive was ~1800 dispatches a frame in the cutscenes, #3)
+        const bool untex = Bits(p.kind[1], 4, 1) == 0u;
+        if (untex && seg_src) src = seg_src;
         if (src != seg_src) flush_seg();
         seg_src = src;
         // (only decides between separate dispatches and binning, which a segment past 32 gets anyway)
@@ -1566,7 +1640,7 @@ void ReplayList(Vulkan::CommandBuffer& cmd, uint32_t fbp, PostFrame& pf, int s, 
             seg_ov = a.x0 < q.x1 && q.x0 < a.x1 && a.y0 < q.y1 && q.y0 < a.y1 && overlaps(p, prims[a.prim]);
         }
         seg.push_back(q);
-        if (p.kind[2] == 2) flush_seg();   // the next frame read needs it in the copy
+        if (p.kind[2] == 2 && stale) flush_seg();   // the next frame read needs it in the copy
     }
     flush_seg();
     if (xsgprof::g_on && pf.prims.size() >= 500)
