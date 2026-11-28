@@ -647,7 +647,11 @@ static void wav_header(void)
 #define ALSA_BUF_MS 250
 #define FILL_FLOOR_MS 20
 #define RING_TARGET_MS 40 /* queued in xsg-gpu's ring (its device buffer comes on top) */
-#define RING_STREAM_MS 100 /* while a VAG stream plays (auto): a cushion for stream holds */
+/* while a VAG stream plays (auto): a cushion for stream holds, which last at most
+   HOLD_VBLANKS (4, ~67 ms).  It was 100: the voice queued that far ahead played ~100 ms
+   behind the faces, whose lip animation is keyed to game frames (#3, lip-sync drift in the
+   Elsa cutscenes). */
+#define RING_STREAM_MS 70
 static double target_ms = 60;
 static int fade_in, in_gap;
 static int16_t last_out[2];
