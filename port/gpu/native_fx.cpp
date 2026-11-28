@@ -14,6 +14,7 @@
 #include "ps2host/gs.h"
 #include "thread_id.hpp"
 
+#include <array>
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>
@@ -133,6 +134,14 @@ std::map<uint32_t, PostFrame> g_post;
    which has the scene without them.  Per FBP; nat_frame as g_post's. */
 std::map<uint32_t, PostFrame> g_ov;
 struct OvBox { float x0, y0, x1, y1; };
+struct VetoList { uint32_t frame = ~0u; std::vector<OvBox> boxes; };
+/* Per FBP: the triangles (sprites as two) of GS draws gated by DATE that read a copy of a frame
+   (Draw), the frame they were drawn in; OwnerPlane hands the pixels they cover back to the GS. */
+struct FrTris { uint32_t frame = ~0u; std::vector<std::array<float, 6>> tris; };
+std::map<uint32_t, FrTris> g_fr_tris;
+struct CopyDst { uint32_t bp, blocks, frame; };
+std::vector<CopyDst> g_copy_dst;   // this frame's GS-side (local -> local) copies (SetReg TRXDIR 2)
+bool OverlapsCopy(uint64_t tex0);   // below
 std::map<uint32_t, std::vector<OvBox>> g_ov_box;
 bool g_kick_rw;      // the vertex kick being parsed can be rewritten for the ownership GS
 bool g_defer_kick;   // ... and it was deferred: rewrite it so the ownership GS does not draw
@@ -412,6 +421,36 @@ void Draw(uint32_t path, const Vtx* v, int n, uint32_t type) {
         for (auto& [f, q] : g_post)
             if (q.active && f != fbp) q.post_drawn.insert(fbp);
     }
+    // A GS draw textured from a GS-rendered buffer (a frame, or a copy of one) that is no post
+    // effect: in the ownership GS it reads the marker colour wherever native content was copied,
+    // so a refraction over a native character (the stealth suit in MC_ELS01, a frame copy drawn
+    // inside the character's alpha mark) left the marker -- the composite then took native's
+    // pixels and the effect vanished (#3).  The pixels its triangles cover go back to the GS
+    // (OwnerPlane).  Only draws gated by the destination alpha test (DATE: the effect is confined
+    // to a mark a native batch wrote) that read a copy the GS made of a buffer this frame; reads
+    // of the frame itself (the characters' soft-edge pass) and render-to-texture buffers (blurs)
+    // are replayed or drawn over native content as before.  [debug] fx_frame_read_box = 0 turns this off.
+    static const bool fr_on = !(xsgcfg::CStr("debug.fx_frame_read_box") && std::atoi(xsgcfg::CStr("debug.fx_frame_read_box")) == 0);
+    if (fr_on && writes && Bits(prim, 4, 1) && Bits(g.reg[0x47 + c], 14, 1) && Bits(g.reg[0x06 + c], 0, 14) != fbp * 32 &&
+        OverlapsCopy(g.reg[0x06 + c])) {
+        const uint64_t xyoff = g.reg[0x18 + c];
+        float x[3], y[3];
+        const int m = std::min(n, 3);
+        for (int i = 0; i < m; ++i) {
+            x[i] = (float(v[i].x) - float(Bits(xyoff, 0, 16))) / 16.0f;
+            y[i] = (float(v[i].y) - float(Bits(xyoff, 32, 16))) / 16.0f;
+        }
+        FrTris& fl = g_fr_tris[fbp];
+        if (fl.frame != g_frame) { fl.frame = g_frame; fl.tris.clear(); }
+        if (fl.tris.size() < 16384) {
+            if (type == 6 && m == 2) {   // sprite: two triangles
+                fl.tris.push_back({x[0], y[0], x[1], y[0], x[0], y[1]});
+                fl.tris.push_back({x[1], y[0], x[1], y[1], x[0], y[1]});
+            } else if (m == 3) {
+                fl.tris.push_back({x[0], y[0], x[1], y[1], x[2], y[2]});
+            }
+        }
+    }
     if (it == g_post.end() || it->second.nat_frame != g_frame) return;
     PostFrame& pf = it->second;
     // Trigger: a read of this buffer (or its Z) as a texture, or a draw over most of the screen.
@@ -473,7 +512,6 @@ void Draw(uint32_t path, const Vtx* v, int n, uint32_t type) {
 
 /* A blended draw over native content that stays on the GS: inside its box the composite keeps
    the main GS's colour (the ownership GS drew it over the marker).  Returns false. */
-struct VetoList { uint32_t frame = ~0u; std::vector<OvBox> boxes; };
 std::map<uint32_t, VetoList> g_ov_veto;   // per FBP, for the frame it was drawn in
 bool Veto(uint32_t fbp, const Vtx* v, int n) {
     VetoList& vl = g_ov_veto[fbp];
@@ -669,6 +707,8 @@ void SetReg(uint32_t path, uint32_t a, uint64_t v) {
             const uint32_t bpp = dpsm == 0 || dpsm == 1 ? 4 : dpsm == 2 || dpsm == 0xa ? 2 : 4;
             g_rendered.insert(dbp / 32);
             g_rt_gen[dbp / 32] = xsgnative::MirrorGen();
+            if (!g_copy_dst.empty() && g_copy_dst.front().frame != g_frame) g_copy_dst.clear();
+            if (g_copy_dst.size() < 64) g_copy_dst.push_back({dbp, std::max(1u, dbw * 64 * rows * bpp / 256), g_frame});
             g_copy_off = (dbp * 256) & 0x3fffff;
             g_copy_len = std::min<uint32_t>((4u << 20) - g_copy_off, ((dbw * 64 * rows * bpp + 8191) / 8192 + 1) * 8192);
             for (auto& [fbp, pf] : g_post) g_copy_req |= pf.active && pf.snapped;
@@ -1226,6 +1266,23 @@ bool OwnerPlane(const Surface& sf, std::vector<uint32_t>& out) {
             }
         }
     });
+    if (auto fr = g_fr_tris.find(sf.fbp); fr != g_fr_tris.end())
+        for (const auto& tr : fr->second.tris) {   // pixel centres inside the triangle (either winding)
+            const float x0 = tr[0], y0 = tr[1], x1 = tr[2], y1 = tr[3], x2 = tr[4], y2 = tr[5];
+            const float area = (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0);
+            if (std::fabs(area) < 1e-6f) continue;
+            const int bx0 = std::max(0, int(std::floor(std::min({x0, x1, x2})))), by0 = std::max(0, int(std::floor(std::min({y0, y1, y2}))));
+            const int bx1 = std::min(int(sf.w) - 1, int(std::ceil(std::max({x0, x1, x2})))), by1 = std::min(int(sf.h) - 1, int(std::ceil(std::max({y0, y1, y2}))));
+            const float s = area > 0 ? 1.0f : -1.0f;
+            for (int py = by0; py <= by1; ++py)
+                for (int px = bx0; px <= bx1; ++px) {
+                    const float cx = px + 0.5f, cy = py + 0.5f;
+                    const float w0 = s * ((x1 - cx) * (y2 - cy) - (x2 - cx) * (y1 - cy));
+                    const float w1 = s * ((x2 - cx) * (y0 - cy) - (x0 - cx) * (y2 - cy));
+                    const float w2 = s * ((x0 - cx) * (y1 - cy) - (x1 - cx) * (y0 - cy));
+                    if (w0 >= 0 && w1 >= 0 && w2 >= 0) o[size_t(py) * sf.w + px] = 0;
+                }
+        }
     return true;
 }
 
@@ -1528,6 +1585,18 @@ static PostFrame* OverlayOf(uint32_t fbp) {
 }
 
 bool Overlay(uint32_t fbp) { return OverlayOf(fbp) != nullptr; }
+
+namespace {
+/* The texture lies in a copy the GS made of a buffer this frame (TRXDIR local -> local). */
+bool OverlapsCopy(uint64_t tex0) {
+    const uint32_t tbp = Bits(tex0, 0, 14);
+    const uint32_t tw = std::min(10u, Bits(tex0, 26, 4)), th = std::min(10u, Bits(tex0, 30, 4));
+    const uint32_t tblocks = std::max(1u, (1u << tw) * (1u << th) * 4 / 256);
+    for (const CopyDst& d : g_copy_dst)
+        if (d.frame == g_frame && tbp < d.bp + d.blocks && d.bp < tbp + tblocks) return true;
+    return false;
+}
+}  // namespace
 
 bool GsRenderedTexture(uint64_t tex0) {
     const uint32_t tbp = Bits(tex0, 0, 14);

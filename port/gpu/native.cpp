@@ -767,9 +767,15 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
                                : ztst == 2 ? VK_COMPARE_OP_GREATER_OR_EQUAL : VK_COMPARE_OP_GREATER);
         if (shadow) cmd->set_blend_enable(false);
         // Motion vectors: written by opaque draws that write colour (translucent layers keep what is under them).
-        const bool cw = Bits(s->frame, 32, 32) != 0xffffffffu;
         // object ids (the mouse's picking and outlines): with the motion vectors, opaque draws only
-        cmd->set_color_write_mask((cw ? 0xf : 0) | (cw && !blended ? 0x30 | 0x100 : 0));
+        // FRAME.FBMSK per channel (a channel whose 8 bits are all masked is not written): the
+        // stealth suit's alpha-only mark pass (FBMSK 0x00ffffff) wrote its colour over the
+        // character, which then vanished in MC_ELS01 (#3).  Motion and ids only with colour.
+        const uint32_t fmsk = Bits(s->frame, 32, 32);
+        const uint32_t cmask = ((fmsk & 0xffu) != 0xffu ? 1u : 0u) | ((fmsk >> 8 & 0xffu) != 0xffu ? 2u : 0u) |
+                               ((fmsk >> 16 & 0xffu) != 0xffu ? 4u : 0u) | ((fmsk >> 24 & 0xffu) != 0xffu ? 8u : 0u);
+        const bool rgbw = (cmask & 7) != 0;
+        cmd->set_color_write_mask(cmask | (rgbw && !blended ? 0x30 | 0x100 : 0));
         // Texture.
         auto it = g_teximg.find(s->tex.get());
         if (it == g_teximg.end()) {
